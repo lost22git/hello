@@ -1,0 +1,16 @@
+set windows-shell := ["powershell", "-nologo", "-noprofile", "-command"]
+
+_default:
+  @just --list
+
+# Download deps
+deps:
+  git clone https://github.com/laytan/odin-http.git
+
+# Run proxy server
+run:
+  odin run .
+
+# Build proxy server executable binary
+build *flags :
+  odin build . {{ flags }}
