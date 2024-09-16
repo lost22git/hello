@@ -1,0 +1,7 @@
+target/
+bin/
+debug/
+
+*.exe
+*.obj
+*.pdb
