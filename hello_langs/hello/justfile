@@ -1,0 +1,178 @@
+set windows-shell := [ "powershell", "-nologo", "-noprofile", "-c" ]
+
+_default:
+ @just --list --unsorted
+
+
+# Clean executable files
+[windows]
+clean:
+  rm *.exe.obj 
+  rm *.exe
+# Clean executable files
+[linux]
+clean:
+  rm *.o -f
+  find . -type f ! -name "*.*" -name "hello*" | xargs -r rm
+
+
+# List executable files
+[windows]
+ls:
+  ls *.exe | sort Length
+# List executable files
+[linux]
+ls:
+  ls -l | grep -E 'hello_\w+$' | sort --key=5n
+
+
+# List all executable files (Windows + Linux)
+[windows]
+la:
+  ls hello* | where { -not $_.Name.Contains(".") -or $_.Name.Endswith(".exe") } | sort Length
+# List all executable files (Windows + Linux)
+[linux]
+la:
+  ls -l | grep -E 'hello_\w+(\.exe)?$' | sort --key=5n
+
+
+# Build all langs
+build:
+  just rust
+  just nim
+  just go
+  just odin
+  just zig
+  just c3
+  just crystal
+  just hare
+  just ls
+
+
+# Run executable files
+[windows]
+run:
+  ls *.exe | % { & ".\$($_.Name)" }
+# Run executable files
+[linux]
+run:
+  find . -type f ! -name "*.*" -name "hello*" | xargs -r -I{} sh -c "{}"
+
+
+# Benchmark
+[windows]
+bench:
+  Invoke-Expression "hyperfine --warmup 10 $(ls *.exe | % {$r=@()} {$r+=$_.Name} {$r -join ' '})"
+# Benchmark
+[linux]
+bench:
+  hyperfine -N --warmup 10 $(find . -type f ! -name "*.*" -name "hello*")
+
+
+# Detect executable files type
+[windows]
+file:
+  ls *.exe | % { file $_.Name }
+# Detect executable files type
+[linux]
+file:
+  find . -type f ! -name "*.*" -name "hello*" | xargs -r file
+
+
+# List dlls of executable files
+[windows]
+ldd:
+  ls *.exe | % { dumpbin /imports $_.Name }
+# List dlls of executable files
+[linux]
+ldd:
+  find . -type f ! -name "*.*" -name "hello*" | xargs -r ldd
+
+
+# upx executable files
+[windows]
+upx:
+  ls *.exe | % { upx $_.Name }
+# upx executable files
+[linux]
+upx:
+  find . -type f ! -name "*.*" -name "hello*" | xargs -r -I {} sh -c "upx {} || true"
+
+
+#########
+# langs #
+#########
+
+[windows]
+rust:
+  rustc --target x86_64-pc-windows-msvc -C target-feature=+crt-static -C opt-level='z' -C strip=symbols --verbose hello_rust.rs
+[linux]
+rust:
+  # PIE: -C relocation-model=default or -C relocation-model=pie
+  # rustc --target x86_64-unknown-linux-musl -C target-feature=+crt-static -C relocation-model=static -C opt-level='z' -C strip=symbols -C link-args='-Wl,--build-id=none' --verbose hello_rust.rs
+  rustc -C linker=zigccrust -C link-args="-target x86_64-linux-musl" --target x86_64-unknown-linux-musl -C target-feature=+crt-static -C opt-level='z' -C strip=symbols --verbose hello_rust.rs
+
+
+[windows]
+nim:
+  nim c --cc:vcc -d:release -d:strip --opt:size --threads:off hello_nim.nim 
+[linux]
+nim:
+  # --passL:'-static-pie'
+  # nim c --gcc.exe:musl-gcc --gcc.linkerexe:musl-gcc --passL:'-Oz -s -static' -d:release --opt:size --threads:off hello_nim.nim
+  nim c --cc:clang --clang.exe:zigcc --clang.linkerexe:zigcc --passC:'-Oz -s -static -target x86_64-linux-musl' --passL:'-Oz -s -static -target x86_64-linux-musl' -d:release --opt:size --threads:off hello_nim.nim
+
+
+[windows]
+go:
+  go build -ldflags "-s -w -buildid=" -x hello_go.go 
+[linux]
+go:
+  # -buildmode=pie
+  # CC=/bin/x86_64-linux-musl-gcc go build -ldflags '-s -w -buildid= -linkmode external -extldflags "-static"' -x hello_go.go 
+  CC=zigcc go build -ldflags '-s -w -buildid= -linkmode external -extldflags "-Oz -s -static -target x86_64-linux-musl"' -x hello_go.go 
+
+
+[windows]
+odin:
+  odin build hello_odin.odin -o:minimal -file -show-timings -show-more-timings -show-system-calls -extra-linker-flags:"-s -static"
+[linux]
+odin:
+  # Odin not support PIE
+  # https://github.com/odin-lang/Odin/issues/919#issuecomment-828480742 
+  odin build hello_odin.odin -o:minimal -file -show-timings -show-more-timings -show-system-calls -extra-linker-flags:"-s -static -L /usr/lib/x86_64-linux-musl --target=x86_64-linux-musl -Wl,--build-id=none"
+
+
+[windows]
+zig:
+  zig build-exe -target x86_64-windows-msvc -O ReleaseSmall -static -fstrip -fsingle-threaded -ftime-report --verbose-cc --verbose-link hello_zig.zig 
+[linux]
+zig:
+  # -fPIE
+  zig build-exe -target x86_64-linux-musl -O ReleaseSmall -static -fstrip -fsingle-threaded -ftime-report --verbose-cc --verbose-link hello_zig.zig 
+
+
+[windows]
+c3:
+  # c3c --debug-stats --print-linking --wincrt=static -Oz compile hello_c3.c3
+[linux]
+c3:
+  # --reloc=PIE
+  # c3c --debug-stats --print-linking --cc /usr/bin/x86_64-linux-musl-gcc -L /usr/lib/x86_64-linux-musl -z '-s -static' --reloc=none -Oz compile hello_c3.c3
+  c3c --debug-stats --print-linking --cc zigcc -z '-s -static -no-pie -target x86_64-linux-musl' --reloc=none -Oz compile hello_c3.c3
+
+
+[windows]
+crystal:
+  crystal build --verbose --progress --time --stats --no-debug --release --static hello_crystal.cr
+[linux]
+crystal:
+  # crystal build --verbose --progress --time --stats --no-debug --release --static --target x86_64-linux-musl --link-flags '-s -Wl,--build-id=none' hello_crystal.cr
+  CC=zigcc crystal build --verbose --progress --time --stats --no-debug --release --link-flags '-s -static -no-pie -target x86_64-linux-musl -Wl,--build-id=none -L{{justfile_directory()}}/libs -lunwind' hello_crystal.cr
+
+[windows]
+hare:
+  # "TODO"
+[linux]
+hare:
+  hare build -v -R hello_hare.ha && strip hello_hare
