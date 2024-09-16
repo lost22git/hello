@@ -1,0 +1,7 @@
+set windows-shell := ["cmd", "/c"]
+
+_default:
+  @just --list
+
+test:
+  go test -count=1 
