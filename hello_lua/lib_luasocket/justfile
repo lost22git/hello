@@ -1,0 +1,10 @@
+
+_default:
+ @just --list
+
+[unix]
+run *flags:
+  lua -l src/setup src/main.lua {{ flags }}
+
+install *flags:
+  luarocks install --deps-only {{ flags }} lib_luasocket-dev-1.rockspec

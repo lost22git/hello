@@ -1,0 +1,82 @@
+set windows-shell := ["pwsh", "-nologo", "-noprofile", "-command"]
+
+init_lua_content := "
+local fm = require('fullmoon')
+
+fm.setRoute('/hello', function(r) return 'Hello Fullmoon' end)
+
+fm.run()
+" 
+
+_default:
+  @just --list
+
+
+# Get redbean latest version
+redbean-version:
+  curl https://redbean.dev/latest.txt
+
+
+# Download redbean with given version
+[unix]
+redbean-download version:
+  curl -o redbean.com https://redbean.dev/redbean-{{ version }}.com
+  chmod +x redbean.com
+# Download redbean with given version
+[windows]
+redbean-download version:
+  curl -o redbean.com https://redbean.dev/redbean-{{ version }}.com
+
+
+# Download latest version fullmoon.lua
+_fm-download:
+  curl -o fullmoon.lua https://raw.githubusercontent.com/pkulchenko/fullmoon/master/fullmoon.lua
+
+
+# Initialize fullmoon project
+fm-init:
+  just redbean-download 3.0.0
+  just _fm-download
+  mkdir ./.lua
+  mv fullmoon.lua ./.lua
+  echo "{{ init_lua_content }}" > .init.lua
+
+
+# Clean fullmoon project
+fm-clean:
+  rm build.com
+
+
+# Build fullmoon project
+fm-build:
+  cp redbean.com build.com
+  zip build.com .init.lua .lua/*
+
+
+# Run fullmoon project
+[unix]
+fm-run *flags:
+  just fm-build
+  lua_path="" ./build.com {{ flags }}
+# Run fullmoon project
+[windows]
+fm-run *flags:
+  just fm-build
+  ($env:lua_path="") ; ./build.com {{ flags }}
+
+
+# Kill fullmoon server processes
+[unix]
+fm-kill:
+  killall -9 build.com
+# Kill fullmoon server processes
+[windows]
+fm-kill:
+  get-process build.com | stop-process -Force
+
+
+# Run http testing
+fm-test:
+  just fm-run -d
+  -hurl test.hurl
+  just fm-kill
