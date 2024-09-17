@@ -1,0 +1,12 @@
+set windows-shell := ["powershell", "-nologo", "-noprofile", "-command"]
+
+_default:
+  @just --list
+
+# Run proxy server
+run:
+  crystal run --error-trace proxy_server.cr
+
+# Build proxy server executable binary
+build *flags :
+  crystal build --release {{ flags }} proxy_server.cr

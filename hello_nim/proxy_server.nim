@@ -2,42 +2,49 @@
 ///usr/bin/env nim r -d:ssl "$0" "$@" ; exit $?
 ]#
 
-import std/[strutils, strformat, os]
+import std/[strutils, strformat, os, uri]
 import std/[asyncnet, asynchttpserver, asyncdispatch, httpclient]
 
 const PROXY = getEnv("HTTPS_PROXY", "http://localhost:55556")
 
-proc respondStreaming(req: Request, resp: AsyncResponse) {.async.} =
+proc respondStreaming(req: Request, res: AsyncResponse) {.async.} =
   # send status line
-  await req.client.send("HTTP/1.1 " & $resp.code() & "\c\L")
+  await req.client.send("HTTP/1.1 " & $res.code() & "\c\L")
   # send headers
-  await req.sendHeaders(resp.headers)
+  await req.sendHeaders(res.headers)
   await req.client.send("\c\L")
   # send body
   while true:
-    let (hasData, data) = await resp.bodyStream.read()
-    if not hasData:
-      break
-    else:
+    let (hasData, data) = await res.bodyStream.read()
+    if hasData:
       await req.client.send(data)
+    else:
+      break
 
-proc respondFully(req: Request, resp: AsyncResponse) {.async.} =
-  let body = await resp.body
-  req.respond(resp.code(), body, resp.headers)
+proc respondFully(req: Request, res: AsyncResponse) {.async.} =
+  let body = await res.body
+  req.respond(res.code(), body, res.headers)
+
+proc getProxyTarget(req: Request): string =
+  let q = req.url.query
+  for kv in q.split('&'):
+    if kv.startsWith("target="):
+      return kv[len("target=") .. ^1]
+  raise newException(ValueError, "Param not found: target")
 
 proc cb(req: Request) {.async.} =
-  req.headers["host"] = "httpbin.org"
   var client = newAsyncHttpClient(proxy = newProxy(PROXY))
   defer:
     client.close()
   try:
-    let uri = fmt"https://httpbin.org{req.url.path}"
-    echo fmt"Do request: [{req.reqMethod}] {uri}"
-    var resp = await client.request(
-      url = uri, httpMethod = req.reqMethod, headers = req.headers, body = req.body
+    let target = getProxyTarget(req).parseUri()
+    req.headers["host"] = target.hostname
+    echo fmt"Do request: [{req.reqMethod}] {target}"
+    var res = await client.request(
+      url = target, httpMethod = req.reqMethod, headers = req.headers, body = req.body
     )
-    await req.respondStreaming(resp)
-    # await req.respondFully(resp)
+    await req.respondStreaming(res)
+    # await req.respondFully(res)
   except:
     await req.respond(Http500, getCurrentExceptionMsg())
 
