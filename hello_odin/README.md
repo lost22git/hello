@@ -53,3 +53,4 @@ PROS:
 CONS:
 - [API documentaion lacks examples](https://pkg.odin-lang.org/)
 - no control flow expression
+- [ no closure ](https://odin-lang.org/docs/faq/#does-odin-have-closures) 
