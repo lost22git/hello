@@ -94,8 +94,7 @@ api_proxy :: proc(req: ^http.Request, res: ^http.Response) {
 			req_ctx := cast(^RequestContext)req_ctx
 			defer free(req_ctx)
 
-			req := req_ctx.req
-			res := req_ctx.res
+			using req_ctx
 
 			if err != nil {
 				http.respond(res, http.body_error_status(err))
