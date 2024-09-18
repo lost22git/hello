@@ -20,7 +20,7 @@ const server = serve({
         target,
         {
           verbose: true,
-          proxy: proxy, // TODO: Error on windows
+          proxy: proxy,
           method: req.method,
           headers: req.headers,
           body: req.body,
