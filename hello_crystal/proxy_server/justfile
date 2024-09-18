@@ -10,3 +10,7 @@ run:
 # Build proxy server executable binary
 build *flags :
   crystal build --release {{ flags }} proxy_server.cr
+
+# Perform http testing
+test:
+  hurl test.hurl --no-output

@@ -1,6 +1,42 @@
 require "http/client"
 require "http/server"
 require "uri"
+require "log"
+require "colorize"
+
+Log.setup do |c|
+  console = Log::IOBackend.new io: STDOUT, dispatcher: Log::DispatchMode::Sync, formatter: MyLogFmt.new
+  c.bind "*", :debug, console
+end
+
+class MyLogFmt
+  include Log::Formatter
+
+  def initialize
+  end
+
+  def format(entry : Log::Entry, io : IO)
+    severity_color = case entry.severity
+                     when .error?, .fatal? then :red
+                     when .warn?           then :yellow
+                     when .info?           then :green
+                     when .debug?          then :blue
+                     else                       :default
+                     end
+
+    io << " ["
+    io << entry.severity.to_s[0].upcase.colorize.mode(:bold).fore(severity_color)
+    io << "] "
+    entry.timestamp.to_s(io, "%Y-%m-%d %H:%M:%S")
+    io << " - "
+    io << entry.message
+    if !entry.data.empty?
+      io << " { "
+      entry.data.to_s(io)
+      io << " } "
+    end
+  end
+end
 
 server = HTTP::Server.new([
   HTTP::ErrorHandler.new,
@@ -9,7 +45,7 @@ server = HTTP::Server.new([
 ]) do |context|
   target = URI.parse(context.request.query_params["target"])
   context.request.headers["host"] = target.host.not_nil!
-  puts "Do request: [#{context.request.method.upcase}] #{target}"
+  Log.info &.emit("Fetching", method: context.request.method.upcase, target: target.to_s)
   context.request.path = target.path
   context.request.query = target.query
   HTTP::Client.new(target.host.not_nil!, target.port) do |client|
@@ -23,5 +59,5 @@ server = HTTP::Server.new([
 end
 
 address = server.bind_tcp 8000
-puts "Proxy server is listening on http://#{address}"
+Log.info { "Proxy server is listening on http://#{address}" }
 server.listen
