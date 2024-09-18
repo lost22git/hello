@@ -42,7 +42,7 @@ type ProxyHandler struct {
 func headerCopyFrom(dst http.Header, src http.Header) {
 	for k, v := range src {
 		for _, s := range v {
-			dst.Set(k, s)
+			dst.Add(k, s)
 		}
 	}
 }
