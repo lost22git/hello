@@ -1,28 +1,25 @@
 package main
 
 import (
-	"fmt"
+	"errors"
+	"io"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 )
 
-type ProxyHandler struct {
-	Client *http.Client
+func setupLogger() {
+	logLevel := &slog.LevelVar{}
+	logLevel.Set(slog.LevelDebug)
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{AddSource: false, Level: logLevel})
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
 }
 
-func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	uri := "https://httpbin.org" + r.URL.Path
-	if request, err := http.NewRequest(r.Method, uri, r.Body); err != nil {
-		panic(err)
-	} else {
-		request.Header.Set("Host", "httpbin.org")
-		fmt.Printf("Do request: [%s] %s\n", r.Method, uri)
-		if response, err := h.Client.Do(request); err != nil {
-			panic(err)
-		} else {
-			response.Write(w)
-		}
-	}
+func main() {
+	setupLogger()
+	StartServer()
 }
 
 func StartServer() {
@@ -32,12 +29,42 @@ func StartServer() {
 		Timeout:   10 * time.Second,
 	}
 	http.Handle("GET /", proxyHandler)
-	fmt.Println("Proxy server is running on :8000")
+	slog.Info("Proxy server is running on :8000")
 	if err := http.ListenAndServe(":8000", nil); err != nil {
 		panic(err)
 	}
 }
 
-func main() {
-	StartServer()
+type ProxyHandler struct {
+	Client *http.Client
+}
+
+func headerCopyFrom(dst http.Header, src http.Header) {
+	for k, v := range src {
+		for _, s := range v {
+			dst.Set(k, s)
+		}
+	}
+}
+
+func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if target := r.URL.Query().Get("target"); target != "" {
+		if targetReq, err := http.NewRequest(r.Method, target, r.Body); err == nil {
+			slog.Info("Do request", "method", targetReq.Method, "target", targetReq.URL)
+			if targetRes, err := h.Client.Do(targetReq); err == nil {
+				headerCopyFrom(w.Header(), targetRes.Header)
+				w.WriteHeader(targetRes.StatusCode)
+				if _, err := io.Copy(w, targetRes.Body); err != nil {
+					panic(err)
+				}
+				defer targetRes.Body.Close()
+			} else {
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
+	} else {
+		panic(errors.New("Param not found: target"))
+	}
 }

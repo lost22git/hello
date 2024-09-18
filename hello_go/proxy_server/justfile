@@ -1,0 +1,16 @@
+set windows-shell := ["powershell", "-nologo", "-noprofile", "-command"]
+
+_default:
+  @just --list
+
+# Run proxy server
+run:
+  go run main.go
+
+# Build proxy server executable binary
+build *flags :
+  go build -x {{ flags }} main.go
+
+# perform http test
+test:
+  hurl test.hurl --no-output
