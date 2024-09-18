@@ -169,13 +169,12 @@ fm.setRoute({ '/user', method = 'POST', _ = vaidate_user_add_param }, function(r
   return fm.serveContent('json', ApiResult.ok({ id = user.id }))
 end)
 
--- add /proxy?uri=http(s)://* route to http(s)?://*
+-- add /proxy?target=http(s)://* route to http(s)?://*
 fm.setRoute({ '/proxy', method = { 'GET', 'POST' } }, function(r)
   fm.logInfo('[proxy]...')
-  fm.logInfo('[proxy] fetching [%s] %s' % { r.method, r.params.uri })
+  fm.logInfo('[proxy] fetching [%s] %s' % { r.method, r.params.target })
 
-  -- fetch remote resource and respond to client
-  local status, headers, body = Fetch(r.params.uri, { method = r.method, body = r.body, headers = r.headers })
+  local status, headers, body = Fetch(r.params.target, { method = r.method, body = r.body, headers = r.headers })
   return fm.serveResponse(status, headers, body)
 end)
 

@@ -33,5 +33,5 @@ jsonpath "$.msg" == "OK"
 jsonpath "$.data.id" != null
 
 # proxy
-GET http://localhost:8080/proxy?uri=https://httpbin.org/status/444
+GET http://localhost:8080/proxy?target=https://httpbin.org/status/444
 HTTP 444
