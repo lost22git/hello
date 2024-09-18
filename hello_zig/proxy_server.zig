@@ -13,6 +13,43 @@ pub const std_options = .{
     .logFn = myLogFn,
 };
 
+const CSI = struct {
+    const Style = enum(u8) {
+        bold = 1,
+        italic = 2,
+        fgRed = 31,
+        fgGreen = 32,
+        fgYellow = 33,
+        fgBlue = 34,
+    };
+
+    const csi = "\x1b[";
+
+    inline fn stringFromInt(comptime int: u32, comptime buf: []u8) ![]const u8 {
+        return try std.fmt.bufPrint(buf, "{}", .{int});
+    }
+
+    pub inline fn fmt(comptime s: []const u8, comptime styles: []const Style) []const u8 {
+        comptime var result: []const u8 = csi;
+        {
+            inline for (styles, 0..) |style, i| {
+                const code = comptime blk: {
+                    var buf: [2]u8 = undefined;
+                    break :blk try stringFromInt(@intFromEnum(style), &buf);
+                };
+                result = result ++ code;
+                if (i < styles.len - 1) {
+                    result = result ++ ";";
+                }
+            }
+            result = result ++ "m";
+        } // add styles
+        result = result ++ s; // add s
+        result = result ++ csi ++ "m"; // add reset
+        return result;
+    }
+};
+
 pub fn myLogFn(
     comptime level: std.log.Level,
     comptime scope: @TypeOf(.EnumLiteral),
@@ -20,18 +57,11 @@ pub fn myLogFn(
     args: anytype,
 ) void {
     _ = scope;
-    const csi = "\x1b[";
-    const bold_red = csi ++ "1;31m";
-    const bold_green = csi ++ "1;32m";
-    const bold_yellow = csi ++ "1;33m";
-    const bold_blue = csi ++ "1;34m";
-    const reset = csi ++ "m";
-
     const level_str = switch (level) {
-        .debug => bold_blue ++ "D" ++ reset,
-        .info => bold_green ++ "I" ++ reset,
-        .warn => bold_yellow ++ "W" ++ reset,
-        .err => bold_red ++ "E" ++ reset,
+        .debug => CSI.fmt("D", &.{ .bold, .fgBlue }),
+        .info => CSI.fmt("I", &.{ .bold, .fgGreen }),
+        .warn => CSI.fmt("W", &.{ .bold, .fgYellow }),
+        .err => CSI.fmt("E", &.{ .bold, .fgRed }),
     };
     std.debug.print(" [" ++ level_str ++ "] " ++ format ++ "\n", args);
 }
@@ -80,67 +110,84 @@ fn handleRequestError(request: *std.http.Server.Request, err: anyerror) !void {
     try request.respond(try std.fmt.bufPrint(&error_content_buf, "Error while handling request, err: {any}\n", .{err}), .{ .status = .internal_server_error });
 }
 
-fn createProxy() std.http.Client.Proxy {
-    return .{ .host = "127.0.0.1", .port = 55556, .protocol = .plain, .supports_connect = false, .authorization = null };
-}
-
-fn handleRequest(allocator: std.mem.Allocator, request: *std.http.Server.Request) !void {
+fn handleRequest(arena: std.mem.Allocator, req: *std.http.Server.Request) !void {
     log.debug("Handling request...", .{});
 
     // new client
-    var proxy = createProxy();
     var client = std.http.Client{
-        .allocator = allocator,
-        .http_proxy = &proxy,
-        .https_proxy = &proxy,
+        .allocator = arena,
     };
     defer client.deinit();
+    try std.http.Client.initDefaultProxies(&client, arena);
 
-    // make client request
-    const uri_str = try std.fmt.allocPrint(allocator, "https://github.com{s}", .{request.head.target});
-    defer allocator.free(uri_str);
-    const response_header_buf = try allocator.alloc(u8, CLIENT_RESPONSE_HEADER_MAX_SIZE);
-    defer allocator.free(response_header_buf);
-    var client_request = blk: {
-        const uri = try std.Uri.parse(uri_str);
-        const method = request.head.method;
-        log.info("Do client request [{s}] {any}", .{ @tagName(method), uri });
-        break :blk try client.open(method, uri, .{ .server_header_buffer = response_header_buf });
+    // make target request
+    const target = try getProxyTarget(req.head.target);
+    const target_res_header_buf = try arena.alloc(u8, CLIENT_RESPONSE_HEADER_MAX_SIZE);
+    defer arena.free(target_res_header_buf);
+    var target_req = blk: {
+        const uri = try std.Uri.parse(target);
+        const host = uri.host.?.percent_encoded;
+        log.debug("target host: {s}", .{host});
+        const method = req.head.method;
+        log.info("Fetching [{s}] {any}", .{ @tagName(method), uri });
+        break :blk try client.open(method, uri, .{ .server_header_buffer = target_res_header_buf, .headers = .{ .host = .{ .override = host }, .user_agent = .{ .override = "curl" } } });
     };
-    defer client_request.deinit();
+    defer target_req.deinit();
 
-    // send client request and wait for client response
+    // send target request and wait for target response
     {
-        try client_request.send();
-        var fifo = std.fifo.LinearFifo(u8, .{ .Static = FIFO_BUFFER_SIZE }).init();
-        defer fifo.deinit();
-        try fifo.pump(try request.reader(), client_request.writer());
-        try client_request.finish();
-        try client_request.wait();
+        log.debug(">> host => {any}", .{target_req.headers.host});
+        log.debug(">> user_agent => {any}", .{target_req.headers.user_agent});
+        log.debug(">> connection => {any}", .{target_req.headers.connection});
+        log.debug(">> authorization => {any}", .{target_req.headers.authorization});
+        log.debug(">> content_type => {any}", .{target_req.headers.content_type});
+        log.debug(">> accept_encoding => {any}", .{target_req.headers.accept_encoding});
+        try target_req.send();
+        try ioCopy(try req.reader(), target_req.writer());
+        try target_req.finish();
+        try target_req.wait();
     }
 
-    log.info("Client response status => {any}", .{client_request.response.status});
-    log.info("Client response content-length => {any}", .{client_request.response.content_length});
-    log.info("Client response transfer_encoding => {any}", .{client_request.response.transfer_encoding});
+    log.debug("<< status => {any}", .{target_req.response.status});
+    log.debug("<< content-length => {any}", .{target_req.response.content_length});
+    log.debug("<< transfer_encoding => {any}", .{target_req.response.transfer_encoding});
 
-    // send client response as server response
+    // respond with target response
     {
-        const send_buf = try allocator.alloc(u8, SERVER_RESPONSE_SEND_BUFFER_SIZE);
-        defer allocator.free(send_buf);
-        var response = request.respondStreaming(.{
-            .send_buffer = send_buf,
-            .content_length = client_request.response.content_length,
+        const res_send_buf = try arena.alloc(u8, SERVER_RESPONSE_SEND_BUFFER_SIZE);
+        defer arena.free(res_send_buf);
+        var res = req.respondStreaming(.{
+            .send_buffer = res_send_buf,
+            .content_length = target_req.response.content_length,
             .respond_options = .{
-                .status = client_request.response.status,
-                .version = client_request.response.version,
-                .reason = client_request.response.reason,
-                .keep_alive = client_request.response.keep_alive,
+                .status = target_req.response.status,
+                .version = target_req.response.version,
+                .reason = target_req.response.reason,
+                .keep_alive = target_req.response.keep_alive,
             },
         });
-        try response.flush(); // pre-flush headers
-        var fifo = std.fifo.LinearFifo(u8, .{ .Static = FIFO_BUFFER_SIZE }).init();
-        defer fifo.deinit();
-        try fifo.pump(client_request.reader(), response.writer());
-        try response.end();
+        try res.flush(); // pre-flush headers
+        try ioCopy(target_req.reader(), res.writer());
+        try res.end();
     }
+}
+
+fn ioCopy(reader: anytype, writer: anytype) !void {
+    var fifo = std.fifo.LinearFifo(u8, .{ .Static = FIFO_BUFFER_SIZE }).init();
+    defer fifo.deinit();
+    try fifo.pump(reader, writer);
+}
+
+fn getProxyTarget(request_target: []const u8) ![]const u8 {
+    log.debug("[getProxyTarget] request_target: {s}", .{request_target});
+    if (std.mem.indexOf(u8, request_target, "?")) |index| {
+        const query = request_target[(index + 1)..];
+        var iter = std.mem.tokenize(u8, query, "&");
+        while (iter.next()) |kv| {
+            if (std.mem.startsWith(u8, kv, "target=")) {
+                return kv[("target=".len)..];
+            }
+        }
+    }
+    return error.ProxyTargetNotFound;
 }
