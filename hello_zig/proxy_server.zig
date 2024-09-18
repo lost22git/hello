@@ -182,7 +182,7 @@ fn getProxyTarget(request_target: []const u8) ![]const u8 {
     log.debug("[getProxyTarget] request_target: {s}", .{request_target});
     if (std.mem.indexOf(u8, request_target, "?")) |index| {
         const query = request_target[(index + 1)..];
-        var iter = std.mem.tokenize(u8, query, "&");
+        var iter = std.mem.tokenizeScalar(u8, query, '&');
         while (iter.next()) |kv| {
             if (std.mem.startsWith(u8, kv, "target=")) {
                 return kv[("target=".len)..];

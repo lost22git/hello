@@ -1,6 +1,20 @@
 # Zig Lang Learning
 
-## Some Links
+## Installation
+
+https://github.com/ziglang/zig/wiki/Building-Zig-From-Source
+
+```shell
+git clone git@github.com:ziglang/zig.git && cd zig
+mkdir build
+cd build
+cmake ..
+make install
+ln -sf $(pwd)/stage3/bin/zig /usr/local/bin/zig
+zig fmt
+```
+
+## Resources
 
 - https://codeberg.org/ziglings/exercises/
 - https://github.com/ziglang/zig-spec
