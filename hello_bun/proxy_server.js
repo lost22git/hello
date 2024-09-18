@@ -2,18 +2,22 @@
 
 import { serve } from "bun";
 
-const proxy = "http://127.0.0.1:55556";
+const proxy = process.env.HTTPS_PROXY
 
 const server = serve({
   port: 8000,
   fetch: async (req) => {
-    const uri = req.url.replace("http://localhost:8000", "https://github.com");
-    console.log(`Do request: [${req.method}] ${uri}`);
-    req.headers.set("Host", "github.com");
+    var target = URL.parse(req.url).searchParams.get("target");
+    if (target == null || target == "") {
+      return new Response("Param not found: target", { code: 400 })
+    }
+    target = URL.parse(target);
+    console.log(`Do request: [${req.method}] ${target}`);
     req.headers.set("User-Agent", "curl");
+    req.headers.set("host", target.host)
     try {
       return await fetch(
-        uri,
+        target,
         {
           verbose: true,
           proxy: proxy, // TODO: Error on windows
