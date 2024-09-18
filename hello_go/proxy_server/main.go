@@ -52,12 +52,12 @@ func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if targetReq, err := http.NewRequest(r.Method, target, r.Body); err == nil {
 			slog.Info("Do request", "method", targetReq.Method, "target", targetReq.URL)
 			if targetRes, err := h.Client.Do(targetReq); err == nil {
+        defer targetRes.Body.Close()
 				headerCopyFrom(w.Header(), targetRes.Header)
 				w.WriteHeader(targetRes.StatusCode)
 				if _, err := io.Copy(w, targetRes.Body); err != nil {
 					panic(err)
 				}
-				defer targetRes.Body.Close()
 			} else {
 				panic(err)
 			}
