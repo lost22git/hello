@@ -39,7 +39,7 @@ proc cb(req: Request) {.async.} =
   try:
     let target = getProxyTarget(req).parseUri()
     req.headers["host"] = target.hostname
-    echo fmt"Do request: [{req.reqMethod}] {target}"
+    echo fmt"Fetching [{req.reqMethod}] {target}"
     var res = await client.request(
       url = target, httpMethod = req.reqMethod, headers = req.headers, body = req.body
     )

@@ -14,3 +14,8 @@ run:
 # Build proxy server executable binary
 build *flags :
   odin build . {{ flags }}
+
+
+# Performf http testing
+test:
+  hurl test.hurl --no-output

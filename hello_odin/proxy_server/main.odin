@@ -103,10 +103,10 @@ api_proxy :: proc(req: ^http.Request, res: ^http.Response) {
 
 			target := get_proxy_target(req)
 			method := req.line.?.method
-			log.infof("[api_proxy] Do request: [%v] %v", method, target)
+			log.infof("[api_proxy] Fetching [%v] %v", method, target)
 
 			// target client request init and send
-			client_res, err := client_request(
+			target_res, err := client_request(
 				target = target,
 				method = method,
 				headers = req.headers,
@@ -115,27 +115,27 @@ api_proxy :: proc(req: ^http.Request, res: ^http.Response) {
 			if err != nil {
 				http.respond_plain(
 					res,
-					fmt.aprintf("Request failed: %s", err),
+					fmt.aprintf("Error sending target request : %s", err),
 					.Internal_Server_Error,
 				)
 				return
 			}
-			defer client.response_destroy(&client_res)
+			defer client.response_destroy(&target_res)
 
 			// target client response read body
-			client_res_body, allocation, berr := client.response_body(&client_res)
+			target_res_body, allocation, berr := client.response_body(&target_res)
 			if berr != nil {
 				http.respond_plain(
 					res,
-					fmt.aprintf("Error retrieving response body: %s", berr),
+					fmt.aprintf("Error retrieving target response body: %s", berr),
 					.Internal_Server_Error,
 				)
 				return
 			}
-			defer client.body_destroy(client_res_body, allocation)
+			defer client.body_destroy(target_res_body, allocation)
 
 			body_string := ""
-			switch b in client_res_body {
+			switch b in target_res_body {
 			case client.Body_Plain:
 				body_string = b
 			case client.Body_Url_Encoded:
@@ -145,8 +145,8 @@ api_proxy :: proc(req: ^http.Request, res: ^http.Response) {
 			// respond to source
 			server_respond(
 				res,
-				status = client_res.status,
-				headers = client_res.headers,
+				status = target_res.status,
+				headers = target_res.headers,
 				body = body_string,
 			)
 		},
@@ -191,15 +191,15 @@ client_request :: proc(
 	client.Error,
 ) {
 	// init request
-	client_req: client.Request
-	client.request_init(&client_req, method)
-	defer client.request_destroy(&client_req)
+	req: client.Request
+	client.request_init(&req, method)
+	defer client.request_destroy(&req)
 	// set headers
-	headers_clone_from(&client_req.headers, headers)
+	headers_clone_from(&req.headers, headers)
 	// set body
-	bytes.buffer_init_string(&client_req.body, body)
+	bytes.buffer_init_string(&req.body, body)
 	// send request
-	return client.request(&client_req, target)
+	return client.request(&req, target)
 }
 
 server_respond :: proc(

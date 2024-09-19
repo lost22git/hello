@@ -50,7 +50,7 @@ func headerCopyFrom(dst http.Header, src http.Header) {
 func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if target := r.URL.Query().Get("target"); target != "" {
 		if targetReq, err := http.NewRequest(r.Method, target, r.Body); err == nil {
-			slog.Info("Do request", "method", targetReq.Method, "target", targetReq.URL)
+			slog.Info("Fetching", "method", targetReq.Method, "target", targetReq.URL)
 			if targetRes, err := h.Client.Do(targetReq); err == nil {
         defer targetRes.Body.Close()
 				headerCopyFrom(w.Header(), targetRes.Header)
