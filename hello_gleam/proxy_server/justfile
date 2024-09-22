@@ -1,0 +1,16 @@
+
+set windows-shell := ["cmd", "/c"]
+
+_default:
+  @just --list
+
+test:
+  hurl test.hurl --no-output
+
+dev:
+  gleam run
+
+build:
+  gleam add --dev gleescript
+  gleam run -m gleescript
+
