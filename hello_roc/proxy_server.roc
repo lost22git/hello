@@ -1,3 +1,4 @@
+#!/usr/bin/env -S roc --linker=legacy
 app [Model, server] { pf: platform "https://github.com/roc-lang/basic-webserver/releases/download/0.9.0/taU2jQuBf-wB8EJb0hAkrYLYOGacUU5Y9reiHG45IY4.tar.br" }
 
 import pf.Stdout
@@ -32,10 +33,9 @@ apiProxy = \req ->
 
     Stdout.line! "Fetching [$(Http.methodToStr req.method)] $(target)"
 
+    # targetRes <- Task.await ({ req & url: target, timeout: NoTimeout } |> Http.send)
     targetRes = { req & url: target, timeout: NoTimeout } |> Http.send!
     dbg targetRes
 
     Task.ok targetRes
-
-# Task.ok { targetRes & status: 200 }
 

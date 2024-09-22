@@ -3,9 +3,15 @@
 ]#
 
 import std/[strutils, strformat, os, uri]
+import std/logging
 import std/[asyncnet, asynchttpserver, asyncdispatch, httpclient]
 
 const PROXY = getEnv("HTTPS_PROXY", "http://localhost:55556")
+
+let globalLogger =
+  newConsoleLogger(fmtStr = "$datetime $levelname - ", levelThreshold = lvlAll)
+
+addHandler(globalLogger)
 
 proc respondStreaming(req: Request, res: AsyncResponse) {.async.} =
   # send status line
@@ -39,7 +45,7 @@ proc cb(req: Request) {.async.} =
   try:
     let target = getProxyTarget(req).parseUri()
     req.headers["host"] = target.hostname
-    echo fmt"Fetching [{req.reqMethod}] {target}"
+    info "Fetching", " [", req.reqMethod, "] ", target
     var res = await client.request(
       url = target, httpMethod = req.reqMethod, headers = req.headers, body = req.body
     )
@@ -51,7 +57,7 @@ proc cb(req: Request) {.async.} =
 proc main() {.async.} =
   var server = newAsyncHttpServer()
   server.listen(Port(8000))
-  echo fmt"Proxy server is running on {server.getPort().uint16()}"
+  info "Proxy server is running on ", server.getPort().uint16()
   while true:
     if server.shouldAcceptRequest():
       await server.acceptRequest(cb)
