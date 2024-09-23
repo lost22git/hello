@@ -1,8 +1,10 @@
 import gleam/bytes_builder
 import gleam/erlang/process
 import gleam/http
-import gleam/http/request
-import gleam/http/response.{type Response as HttpResponse}
+import gleam/http/request.{Request as RequestValue}
+import gleam/http/response.{
+  type Response as HttpResponse, Response as ResponseValue,
+}
 import gleam/httpc
 import gleam/list
 import gleam/result.{map, map_error, try}
@@ -33,6 +35,8 @@ fn middleware(req: Request, handle_request: fn(Request) -> Response) -> Response
   handle_request(req)
 }
 
+/// App Error
+///
 type AppErr {
   ParamNotFound(value: String)
   FailedToClientRequestInit(target: String)
@@ -40,6 +44,8 @@ type AppErr {
   FailedToServerRequestReadBody
 }
 
+/// App Error handler
+///
 fn handle_app_err(err: AppErr) -> Response {
   case err {
     ParamNotFound(s) ->
@@ -57,6 +63,8 @@ fn handle_app_err(err: AppErr) -> Response {
   }
 }
 
+/// server request handler
+///
 fn handle_request(req: Request) -> Response {
   use req <- middleware(req)
 
@@ -69,10 +77,15 @@ fn handle_request(req: Request) -> Response {
   }
 }
 
+/// proxy route handler
+///
 fn api_proxy(req: Request) -> Result(Response, AppErr) {
   fetch_target(req) |> map(from_target_response)
 }
 
+/// fetch target
+/// send target client request and receive target client response
+///
 fn fetch_target(req: Request) -> Result(HttpResponse(BitArray), AppErr) {
   // get target from request query params
   use query <- try(
@@ -102,16 +115,15 @@ fn fetch_target(req: Request) -> Result(HttpResponse(BitArray), AppErr) {
     |> request.set_method(req.method)
 
   // target request set headers
-  let target_req =
-    list.fold(req.headers, target_req, fn(req, kv) {
-      request.set_header(req, kv.0, kv.1)
-    })
+  let target_req = RequestValue(..target_req, headers: req.headers)
 
   // send target request
   httpc.send_bits(target_req)
   |> map_error(fn(_) { FailedToClientRequestSend(target) })
 }
 
+/// convert target client response into server response
+///
 fn from_target_response(target_res: HttpResponse(BitArray)) -> Response {
   let res =
     wisp.response(target_res.status)
@@ -120,11 +132,7 @@ fn from_target_response(target_res: HttpResponse(BitArray)) -> Response {
       |> bytes_builder.from_bit_array
       |> wisp.Bytes,
     )
-  let res =
-    list.fold(target_res.headers, res, fn(res, kv) {
-      wisp.set_header(res, kv.0, kv.1)
-    })
-  res
+  ResponseValue(..res, headers: target_res.headers)
 }
 
 fn recover(r: Result(a, b), recover_fn: fn(b) -> a) -> a {
@@ -134,6 +142,8 @@ fn recover(r: Result(a, b), recover_fn: fn(b) -> a) -> a {
   }
 }
 
+/// plain response
+///
 fn plain_response(body: StringBuilder, status: Int) -> Response {
   wisp.response(status)
   |> wisp.string_builder_body(body)
