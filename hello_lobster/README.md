@@ -15,6 +15,6 @@ cd ..
 ln -s $(pwd)/bin/lobster /usr/local/bin/lobster
 ```
 
-# Resources
+## Resources
 
 ## Summary
