@@ -6,7 +6,7 @@
 ## Summary
 
 PROS:
-- Amazing compilation error report
+- Friendly compilation error report
 - Fast compilation speed
 - Great type inference
 - Rust for Compiler, Zig for Stdlib
@@ -15,5 +15,6 @@ PROS:
 - Auto download missing deps when run/build application
 
 CONS:
-
+- no partial-applicaion function
+- cannot create new record by appending new fields to the old
 
