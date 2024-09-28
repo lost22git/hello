@@ -17,4 +17,4 @@ PROS:
 CONS:
 - no partial-applicaion function
 - cannot create new record by appending new fields to the old
-
+- [ cannot redefine or mutate variables  ](https://www.roc-lang.org/tutorial#defs)
