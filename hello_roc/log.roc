@@ -14,7 +14,9 @@ csiReset = "$(csi)m"
 
 AnsiStyle : [
     Bold,
+    Dim,
     Italic,
+    Underline,
     FgRed,
     FgGreen,
     FgYellow,
@@ -30,7 +32,9 @@ ansiStyleToInt : AnsiStyle -> U8
 ansiStyleToInt = \style ->
     when style is
         Bold -> 1
-        Italic -> 2
+        Dim -> 2
+        Italic -> 3
+        Underline -> 4
         FgRed -> 31
         FgGreen -> 32
         FgYellow -> 33
