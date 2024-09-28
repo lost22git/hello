@@ -3,10 +3,14 @@ app [main] { pf: platform "https://github.com/roc-lang/basic-cli/releases/downlo
 
 import pf.Stdout
 import pf.Utc
+import pf.Env
 
 ###############
 ## Ansi Code ##
 ###############
+
+csi = "\u(001b)["
+csiReset = "$(csi)m"
 
 AnsiStyle : [
     Bold,
@@ -21,6 +25,7 @@ AnsiStyle : [
     BgBlue,
 ]
 
+## convert ansi style to int
 ansiStyleToInt : AnsiStyle -> U8
 ansiStyleToInt = \style ->
     when style is
@@ -35,9 +40,7 @@ ansiStyleToInt = \style ->
         BgYellow -> 43
         BgBlue -> 44
 
-csi = "\u(001b)["
-csiReset = "$(csi)m"
-
+## format input string with ansi styles
 ansiStr : Str, List AnsiStyle -> Str
 ansiStr = \str, styles ->
     joinStyles = styles |> List.map ansiStyleToInt |> List.map Num.toStr |> Str.joinWith ";"
@@ -54,6 +57,7 @@ Level : [
     Error,
 ]
 
+## convert levle to int
 levelToInt : Level -> I8
 levelToInt = \lv ->
     when lv is
@@ -62,6 +66,17 @@ levelToInt = \lv ->
         Warn -> 20
         Error -> 30
 
+## convert plain string to level
+levelFromStr : Str -> Result Level [LevelFromStrErr Str]
+levelFromStr = \s ->
+    when s is
+        "DBG" -> Ok Debug
+        "INF" -> Ok Info
+        "WAR" -> Ok Warn
+        "ERR" -> Ok Error
+        _ -> Err (LevelFromStrErr s)
+
+## convert levle to plain string
 levelToStr : Level -> Str
 levelToStr = \lv ->
     when lv is
@@ -70,6 +85,7 @@ levelToStr = \lv ->
         Warn -> "WAR"
         Error -> "ERR"
 
+## get ansi styles of given level
 levelToAnsiStyles : Level -> List AnsiStyle
 levelToAnsiStyles = \lv ->
     when lv is
@@ -78,13 +94,31 @@ levelToAnsiStyles = \lv ->
         Warn -> [Bold, FgYellow]
         Error -> [Bold, FgRed]
 
+## convert level to ansi string
 levelToAnsiStr : Level -> Str
 levelToAnsiStr = \lv -> ansiStr (levelToStr lv) (levelToAnsiStyles lv)
 
+## read Level from environment variable `ROC_LOG_LEVEL`
+levelFromEnv : {} -> Task Level _
+levelFromEnv = \_ ->
+    Env.var "ROC_LOG_LEVEL"
+        |> Task.await \s -> (levelFromStr s |> Task.fromResult)
+        |> Task.onErr! \_ -> Task.ok Info
+
+## check if can log
+canLog : Level -> Task Bool _
+canLog = \lv ->
+    minLv = levelFromEnv! {}
+    Task.ok ((levelToInt minLv) <= (levelToInt lv))
+
+## log msg with level
 log : Level, Str -> Task {} _
 log = \lv, msg ->
-    now = Utc.now! {} |> utcToRFC3339
-    Stdout.line! "$(now) $(levelToAnsiStr lv) - $(msg)"
+    if canLog! lv then
+        now = Utc.now! {} |> utcToRFC3339
+        Stdout.line! "$(now) $(levelToAnsiStr lv) - $(msg)"
+    else
+        Task.ok {}
 
 debug : Str -> Task {} _
 debug = \msg -> log Debug msg
@@ -116,9 +150,11 @@ daysPer4Years = 365 * 4 + 1
 daysPerMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 daysPerMonthLeap = [0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
+## check year if leap year or not
 isLeapYear : U16 -> Bool
 isLeapYear = \year -> (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 
+## convert days to record {days, year, month, day, dayOfYear}
 daysToYMD : Int _ -> { days : Int _, year : U16, month : U8, day : U8, dayOfYear : U16 }
 daysToYMD = \daysTotal ->
     num400 = daysTotal // daysPer400Years
@@ -147,14 +183,11 @@ daysToYMD = \daysTotal ->
             \state, monthIndex ->
                 when List.get state.dpm monthIndex is
                     Err _ -> crash "Unreachable branch: failed to get month days by month index: $(Num.toStr monthIndex)"
-                    Ok d ->
-                        if d > state.days then
-                            Break state
-                        else
-                            Continue { state & days: (state.days - d), month: state.month + 1 }
+                    Ok d -> if d > state.days then Break state else Continue { state & days: (state.days - d), month: state.month + 1 }
 
     { days: daysTotal, year: Num.toU16 year, month: Num.toU8 month, day: Num.toU8 days, dayOfYear: Num.toU16 dayOfYear }
 
+## convert seconds to record {seconds, hour, minute, second}
 secondsToHMS : Int _ -> { seconds : Int _, hour : U8, minute : U8, second : U8 }
 secondsToHMS = \seconds -> {
     seconds: seconds,
@@ -163,11 +196,14 @@ secondsToHMS = \seconds -> {
     second: (seconds % sPerMin) |> Num.toU8,
 }
 
+## convert unix timestamp (seconds) to days
 unixToDays = \unixS -> unixS // sPerDay
 
+## convert unix timestamp (seconds) to seconds of day
 unixToDaySeconds = \unixS -> unixS % sPerDay
 
-# utcToRFC3339 : Utc -> Str
+## convert utc to RFC3339 format string
+utcToRFC3339 : Utc.Utc -> Str
 utcToRFC3339 = \utc ->
     unixS = utc |> Utc.toMillisSinceEpoch |> \x -> x // msPerS
     { year, month, day } = unixS |> unixToDays |> daysToYMD
@@ -176,6 +212,9 @@ utcToRFC3339 = \utc ->
     time = "$(Num.toStr hour):$(Num.toStr minute):$(Num.toStr second)"
     "$(date)T$(time)Z"
 
+##########
+## Main ##
+##########
 main =
     debug! "this is a msg"
     info! "this is a msg"
