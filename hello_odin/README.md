@@ -64,7 +64,7 @@ CONS:
     - [x] Static Type
     - [x] Type auto inference
     - [x] Value Types
-    - [x] Reference Types
+    - [ ] Reference Types
     - [x] Pointer Types
     - [x] Sum Types
     - [x] Range Type
@@ -125,6 +125,7 @@ CONS:
     - [ ] try-catch throw/raise
     - [ ] Result Type
     - [x] Multiple return values
+    - [ ] Error Union Types
 - [ ] Pattern Matching
 - [x] Generic Types (Parametric Polymorphism)
 - [x] SubType Polymorphism
@@ -152,7 +153,7 @@ CONS:
     - [ ] C
     - [ ] C++
     - [ ] Javascript
-    - [ ] WASM
+    - [x] WASM
     - [x] LLVM
     - [ ] JVM
     - [ ] BEAM

@@ -125,6 +125,7 @@ CONS:
     - [x] try-catch throw/raise
     - [ ] Result Type
     - [ ] Multiple return values
+    - [ ] Error Union Types
 - [ ] Pattern Matching
 - [x] Generic Types (Parametric Polymorphism)
 - [x] SubType Polymorphism

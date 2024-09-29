@@ -74,6 +74,7 @@
     - [ ] try-catch throw/raise
     - [x] Result Type
     - [ ] Multiple return values
+    - [ ] Error Union Types
 - [x] Pattern Matching
 - [x] Generic Types (Parametric Polymorphism)
 - [x] SubType Polymorphism
@@ -101,7 +102,7 @@
     - [ ] C
     - [ ] C++
     - [ ] Javascript
-    - [ ] WASM
+    - [x] WASM
     - [x] LLVM
     - [ ] JVM
     - [ ] BEAM
