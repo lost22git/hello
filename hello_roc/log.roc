@@ -6,137 +6,6 @@ import pf.Utc
 import pf.Env
 
 ###############
-## Ansi Code ##
-###############
-
-csi = "\u(001b)["
-csiReset = "$(csi)m"
-
-AnsiStyle : [
-    Bold,
-    Dim,
-    Italic,
-    Underline,
-    FgRed,
-    FgGreen,
-    FgYellow,
-    FgBlue,
-    BgRed,
-    BgGreen,
-    BgYellow,
-    BgBlue,
-]
-
-## convert ansi style to int
-ansiStyleToInt : AnsiStyle -> U8
-ansiStyleToInt = \style ->
-    when style is
-        Bold -> 1
-        Dim -> 2
-        Italic -> 3
-        Underline -> 4
-        FgRed -> 31
-        FgGreen -> 32
-        FgYellow -> 33
-        FgBlue -> 34
-        BgRed -> 41
-        BgGreen -> 42
-        BgYellow -> 43
-        BgBlue -> 44
-
-## format input string with ansi styles
-ansiStr : Str, List AnsiStyle -> Str
-ansiStr = \str, styles ->
-    joinStyles = styles |> List.map ansiStyleToInt |> List.map Num.toStr |> Str.joinWith ";"
-    "$(csi)$(joinStyles)m$(str)$(csiReset)"
-
-#########
-## Log ##
-#########
-
-Level : [
-    Debug,
-    Info,
-    Warn,
-    Error,
-]
-
-## convert levle to int
-levelToInt : Level -> I8
-levelToInt = \lv ->
-    when lv is
-        Debug -> 0
-        Info -> 10
-        Warn -> 20
-        Error -> 30
-
-## convert plain string to level
-levelFromStr : Str -> Result Level [LevelFromStrErr Str]
-levelFromStr = \s ->
-    when s is
-        "DBG" -> Ok Debug
-        "INF" -> Ok Info
-        "WAR" -> Ok Warn
-        "ERR" -> Ok Error
-        _ -> Err (LevelFromStrErr s)
-
-## convert levle to plain string
-levelToStr : Level -> Str
-levelToStr = \lv ->
-    when lv is
-        Debug -> "DBG"
-        Info -> "INF"
-        Warn -> "WAR"
-        Error -> "ERR"
-
-## get ansi styles of given level
-levelToAnsiStyles : Level -> List AnsiStyle
-levelToAnsiStyles = \lv ->
-    when lv is
-        Debug -> [Bold, FgBlue]
-        Info -> [Bold, FgGreen]
-        Warn -> [Bold, FgYellow]
-        Error -> [Bold, FgRed]
-
-## convert level to ansi string
-levelToAnsiStr : Level -> Str
-levelToAnsiStr = \lv -> ansiStr (levelToStr lv) (levelToAnsiStyles lv)
-
-## read Level from environment variable `ROC_LOG_LEVEL`
-levelFromEnv : {} -> Task Level _
-levelFromEnv = \_ ->
-    Env.var "ROC_LOG_LEVEL"
-        |> Task.await \s -> (levelFromStr s |> Task.fromResult)
-        |> Task.onErr! \_ -> Task.ok Info
-
-## check if can log
-canLog : Level -> Task Bool _
-canLog = \lv ->
-    minLv = levelFromEnv! {}
-    Task.ok ((levelToInt minLv) <= (levelToInt lv))
-
-## log msg with level
-log : Level, Str -> Task {} _
-log = \lv, msg ->
-    if canLog! lv then
-        now = Utc.now! {} |> utcToRFC3339
-        Stdout.line! "$(now) $(levelToAnsiStr lv) - $(msg)"
-    else
-        Task.ok {}
-
-debug : Str -> Task {} _
-debug = \msg -> log Debug msg
-
-info : Str -> Task {} _
-info = \msg -> log Info msg
-
-warn : Str -> Task {} _
-warn = \msg -> log Warn msg
-
-error : Str -> Task {} _
-error = \msg -> log Error msg
-
-###############
 ## Date Time ##
 ###############
 
@@ -215,6 +84,156 @@ utcToRFC3339 = \utc ->
     date = "$(Num.toStr year)-$(Num.toStr month)-$(Num.toStr day)"
     time = "$(Num.toStr hour):$(Num.toStr minute):$(Num.toStr second)"
     "$(date)T$(time)Z"
+
+###############
+## Ansi Code ##
+###############
+
+csi = "\u(001b)["
+csiReset = "$(csi)m"
+
+AnsiStyle : [
+    Bold,
+    Dim,
+    Italic,
+    Underline,
+    FgRed,
+    FgGreen,
+    FgYellow,
+    FgBlue,
+    BgRed,
+    BgGreen,
+    BgYellow,
+    BgBlue,
+]
+
+## convert ansi style to int
+ansiStyleToInt : AnsiStyle -> U8
+ansiStyleToInt = \style ->
+    when style is
+        Bold -> 1
+        Dim -> 2
+        Italic -> 3
+        Underline -> 4
+        FgRed -> 31
+        FgGreen -> 32
+        FgYellow -> 33
+        FgBlue -> 34
+        BgRed -> 41
+        BgGreen -> 42
+        BgYellow -> 43
+        BgBlue -> 44
+
+## format input string with ansi styles
+ansiStr : Str, List AnsiStyle -> Str
+ansiStr = \str, styles ->
+    joinStyles = styles |> List.map ansiStyleToInt |> List.map Num.toStr |> Str.joinWith ";"
+    "$(csi)$(joinStyles)m$(str)$(csiReset)"
+
+#########
+## Log ##
+#########
+
+Level : [
+    Debug,
+    Info,
+    Warn,
+    Error,
+]
+
+## convert `Level` to `Int`
+levelToInt : Level -> I8
+levelToInt = \lv ->
+    when lv is
+        Debug -> 0
+        Info -> 10
+        Warn -> 20
+        Error -> 30
+
+## convert plain `Str` to `Level`
+levelFromStr : Str -> Result Level [LevelFromStrErr Str]
+levelFromStr = \s ->
+    when s is
+        "DBG" -> Ok Debug
+        "INF" -> Ok Info
+        "WAR" -> Ok Warn
+        "ERR" -> Ok Error
+        _ -> Err (LevelFromStrErr s)
+
+## convert `Level` to plain `Str`
+levelToStr : Level -> Str
+levelToStr = \lv ->
+    when lv is
+        Debug -> "DBG"
+        Info -> "INF"
+        Warn -> "WAR"
+        Error -> "ERR"
+
+## get `AnsiStyle`s of given `Level`
+levelToAnsiStyles : Level -> List AnsiStyle
+levelToAnsiStyles = \lv ->
+    when lv is
+        Debug -> [Bold, FgBlue]
+        Info -> [Bold, FgGreen]
+        Warn -> [Bold, FgYellow]
+        Error -> [Bold, FgRed]
+
+## convert `Level` to ansi `Str`
+levelToAnsiStr : Level -> Str
+levelToAnsiStr = \lv -> ansiStr (levelToStr lv) (levelToAnsiStyles lv)
+
+## read `Level` from environment variable `ROC_LOG_LEVEL`
+levelFromEnv : {} -> Task Level _
+levelFromEnv = \_ ->
+    Env.var "ROC_LOG_LEVEL"
+        |> Task.await \s -> (levelFromStr s |> Task.fromResult)
+        |> Task.onErr! \_ -> Task.ok Info
+
+LogRecord : {
+    time : Utc.Utc,
+    level : Level,
+    msg : Str,
+}
+
+## convert `LogRecord` to `Str`
+logRecordToStr : LogRecord -> Str
+logRecordToStr = \r -> "$(r.time |> utcToRFC3339) $(levelToAnsiStr r.level) - $(r.msg)"
+
+## check if can log with given `LogRecord`
+canLog : LogRecord -> Task Bool _
+canLog = \r ->
+    minLv = levelFromEnv! {}
+    Task.ok ((levelToInt minLv) <= (levelToInt r.level))
+
+## do log with the given `LogRecord`
+logRecord : LogRecord -> Task {} _
+logRecord = \r ->
+    if canLog! r then
+        Stdout.line! (logRecordToStr r)
+    else
+        Task.ok {}
+
+## do log with the given level and message
+log : Level, Str -> Task {} _
+log = \lv, msg ->
+    now = Utc.now! {}
+    logRecord { time: now, level: lv, msg: msg }
+
+## log debug message
+debug : Str -> Task {} _
+debug = \msg -> log Debug msg
+
+## log info message
+info : Str -> Task {} _
+info = \msg -> log Info msg
+
+## log warn message
+warn : Str -> Task {} _
+warn = \msg -> log Warn msg
+
+## log error message
+error : Str -> Task {} _
+error = \msg -> log Error msg
 
 ##########
 ## Main ##
