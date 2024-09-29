@@ -1,20 +1,114 @@
 
-# Roc Lang Learning
+# [ Roc ](https://www.roc-lang.org/) Lang Learning
 
 ## Resources
 
 ## Summary
 
-PROS:
-- Friendly compilation error report
-- Fast compilation speed
-- Great type inference
-- Rust for Compiler, Zig for Stdlib
-- [ Pattern Matching ](https://www.roc-lang.org/tutorial#pattern-matching)
-- Easy-to-use [ Tags ](https://www.roc-lang.org/tutorial#tags) and [ Tag Union ](https://www.roc-lang.org/tutorial#tag-union-types)
-- Auto download missing deps when run/build application
-
-CONS:
-- no partial-applicaion function
-- cannot create new record by appending new fields to the old
-- [ cannot redefine or mutate variables  ](https://www.roc-lang.org/tutorial#defs)
+- Paradigm
+    - [ ] Procedural Programming
+    - [x] Functional Programming
+    - [ ] Object Oriented Programming
+- Types
+    - [x] Static Type
+    - [x] Type auto inference
+    - [x] Value Types
+    - [ ] Reference Types
+    - [x] Pointer Types
+    - [x] Sum Types
+    - [ ] Range Type
+    - [ ] Slice Type
+    - [ ] Matrix Type
+    - [ ] BitSet Type
+    - [ ] BitField Type
+    - [ ] BitArray Type
+    - [x] Record Type
+    - [ ] Arbitrary bit-width Integers
+    - [ ] Endian Specific Number Type
+    - [ ] Memory Layout Control
+- String
+    - [x] Raw String
+    - [x] Multiline String
+        - [ ] Absolute Indentation
+        - [x] Relative Indentation
+    - [x] String interpolation
+    - [ ] Null-Terminated String (cstring)
+    - [x] Length-Based String
+    - [x] Immutable String
+    - [ ] Dynamic Length String
+- Variables 
+    - [ ] Static Local Variables
+- Assignment
+    - [ ] Redefine same name variables
+    - [ ] Mutate variables
+    - [x] Assign by-copy
+    - [ ] Assign by-move
+    - [ ] Assign by-ref
+    - [ ] Assign by-auto
+    - [ ] Multiple values assignment
+    - [x] Tuple unpacking
+    - [ ] Struct unpacking
+    - [x] Record unpacking
+- Functions
+    - [ ] UFCS (Uniform Function Call Style)
+    - [x] Varargs
+    - [x] Named arguments
+    - [ ] Alias parameters
+    - [ ] Parameters default value
+    - [ ] Multiple return values
+    - [ ] Named return values
+    - [ ] Partial Application
+- Operators
+    - [ ] Operators Overloading
+    - [ ] Wrapping Operators
+    - [ ] Saturating Operators
+    - [x] Pipe Operator
+    - [ ] Range Operator
+- [x] Control Flow Expressions
+- [ ] Closures
+- Null Handles
+    - [ ] null/nil value
+    - [ ] Optional/Maybe Types
+    - [ ] Nil Union Types
+- Error Handles
+    - [ ] try-catch throw/raise
+    - [x] Result Type
+    - [ ] Multiple return values
+- [x] Pattern Matching
+- [x] Generic Types (Parametric Polymorphism)
+- [x] SubType Polymorphism
+- [ ] Usingnamespace
+- [ ] Meta Programming
+    - [ ] Macros
+    - [ ] Comptime
+- [ ] Custom Memory Allocators
+    - [ ] Global
+    - [ ] Contextual
+- Memory Managements
+    - [ ] Manual 
+    - [ ] Single Ownership & Destructor
+    - [ ] ReferenceCount
+    - [ ] TracingGC
+    - [x] Depends on Application Platform
+- FFI
+    - [ ] C
+    - [ ] C++
+    - [ ] Embed C code
+    - [ ] Embed C++ code
+    - [ ] Embed ASM code
+- [ ] Conditional Compilation
+- Compilation Backends
+    - [ ] C
+    - [ ] C++
+    - [ ] Javascript
+    - [ ] WASM
+    - [x] LLVM
+    - [ ] JVM
+    - [ ] BEAM
+- [ ] IO Abstraction
+- [ ] LibSSL or OpenSSL required
+- [ ] Multithreading
+- [ ] Coroutines
+    - [ ] Stackful
+    - [ ] Stackless
+    - [ ] Preemptive
