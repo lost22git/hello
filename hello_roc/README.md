@@ -106,7 +106,7 @@
     - [ ] JVM
     - [ ] BEAM
 - [ ] IO Abstraction
-- [ ] LibSSL or OpenSSL required
+- [ ] Without LibSSL or OpenSSL required
 - [ ] Multithreading
 - [ ] Coroutines
     - [ ] Stackful

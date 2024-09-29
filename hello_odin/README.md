@@ -157,7 +157,7 @@ CONS:
     - [ ] JVM
     - [ ] BEAM
 - [x] IO Abstraction
-- [ ] LibSSL or OpenSSL required
+- [ ] Without LibSSL or OpenSSL required
 - [x] Multithreading
 - [ ] Coroutines
     - [ ] Stackful

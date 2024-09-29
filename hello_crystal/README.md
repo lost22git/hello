@@ -371,7 +371,6 @@ PROS:
     - [varargs](https://crystal-lang.org/reference/1.13/syntax_and_semantics/splats_and_tuples.html)
 -  Elegant and efficient [inlined block](https://crystal-lang.org/reference/1.13/syntax_and_semantics/blocks_and_procs.html)
 - Concise and powerful [operators](https://crystal-lang.org/reference/1.13/syntax_and_semantics/operators.html)
-- [Pattern Matching](https://crystal-lang.org/reference/1.13/syntax_and_semantics/case.html)
 - [ Full OOP (everything is an object) ](https://crystal-lang.org/reference/1.13/syntax_and_semantics/everything_is_an_object.html)
 - [ Type: value type, reference type ](https://crystal-lang.org/reference/1.13/syntax_and_semantics/structs.html)
 - Polymorphisms: 
@@ -391,3 +390,114 @@ CONS:
 - Fiber need more optimizations (memory overhead)
 - [ Too many required C-libs used by the compiler and stdlib](https://crystal-lang.org/reference/1.13/man/required_libraries.html)
 - Need more optimizations on Windows (binary size, memory overhead)
+
+
+### Checklist
+
+- Paradigm
+    - [ ] Procedural Programming
+    - [ ] Functional Programming
+    - [x] Object Oriented Programming
+- Types
+    - [x] Static Type
+    - [x] Type auto inference
+    - [x] Value Types
+    - [x] Reference Types
+    - [x] Pointer Types
+    - [x] Sum Types
+    - [x] Range Type
+    - [x] Slice Type
+    - [ ] Matrix Type
+    - [ ] BitSet Type
+    - [ ] BitField Type
+    - [x] BitArray Type
+    - [x] Record Type
+    - [ ] Arbitrary bit-width Integers
+    - [ ] Endian Specific Number Type
+    - [x] Memory Layout Control
+- String
+    - [x] Raw String
+    - [x] Multiline String
+        - [ ] Absolute Indentation 
+        - [x] Relative Indentation 
+    - [x] String interpolation
+    - [x] Null-Terminated String (cstring)
+    - [x] Length-Based String
+    - [x] Immutable String
+    - [ ] Dynamic Length String
+- Variables 
+    - [ ] Static Local Variables
+- Assignment
+    - [x] Redefine same name variables
+    - [x] Mutate variables
+    - [x] Assign by-copy
+    - [ ] Assign by-move
+    - [ ] Assign by-ref
+    - [x] Assign by-auto
+    - [x] Multiple values assignment
+    - [x] Tuple unpacking
+    - [ ] Struct unpacking
+    - [ ] Record unpacking
+- Functions
+    - [ ] UFCS (Uniform Function Call Style)
+    - [x] Varargs
+    - [x] Named arguments
+    - [x] Alias parameters
+    - [x] Parameters default value
+    - [ ] Multiple return values
+    - [ ] Named return values
+    - [ ] Partial Application
+- Operators
+    - [x] Operators Overloading
+    - [x] Wrapping Operators
+    - [ ] Saturating Operators
+    - [ ] Pipe Operator
+    - [x] Range Operator
+- [x] Control Flow Expressions
+- [x] Closures
+- Null Handles
+    - [x] null/nil value
+    - [ ] Optional/Maybe Types
+    - [x] Nil Union Types
+- Error Handles
+    - [x] try-catch throw/raise
+    - [ ] Result Type
+    - [ ] Multiple return values
+- [ ] Pattern Matching
+- [x] Generic Types (Parametric Polymorphism)
+- [x] SubType Polymorphism
+- [ ] Usingnamespace
+- [x] Meta Programming
+    - [x] Macros
+    - [ ] Comptime
+- [ ] Custom Memory Allocators
+    - [ ] Global
+    - [ ] Contextual
+- Memory Managements
+    - [ ] Manual 
+    - [ ] Single Ownership & Destructor
+    - [ ] ReferenceCount
+    - [x] TracingGC
+    - [ ] Depends on Application Platform
+- FFI
+    - [x] C
+    - [ ] C++
+    - [ ] Embed C code
+    - [ ] Embed C++ code
+    - [ ] Embed ASM code
+- [ ] Conditional Compilation
+- Compilation Backends
+    - [ ] C
+    - [ ] C++
+    - [ ] Javascript
+    - [ ] WASM
+    - [x] LLVM
+    - [ ] JVM
+    - [ ] BEAM
+- [x] IO Abstraction
+- [ ] Without LibSSL or OpenSSL required
+- [ ] Multithreading
+- [x] Coroutines
+    - [x] Stackful
+    - [ ] Stackless
+    - [ ] Preemptive
