@@ -59,7 +59,7 @@ CONS:
 - Paradigm
     - [x] Procedural Programming
     - [ ] Functional Programming
-    - [ ] Object Oriented Programming
+    - [x] Object Oriented Programming
 - Types
     - [x] Static Type
     - [x] Type auto inference
