@@ -199,16 +199,16 @@ LogRecord : {
 logRecordToStr : LogRecord -> Str
 logRecordToStr = \r -> "$(r.time |> utcToRFC3339) $(levelToAnsiStr r.level) - $(r.msg)"
 
-## check if can log with given `LogRecord`
-canLog : LogRecord -> Task Bool _
-canLog = \r ->
+## log filter for the given `LogRecord`
+logFilter : LogRecord -> Task Bool _
+logFilter = \r ->
     minLv = levelFromEnv! {}
     Task.ok ((levelToInt minLv) <= (levelToInt r.level))
 
 ## do log with the given `LogRecord`
 logRecord : LogRecord -> Task {} _
 logRecord = \r ->
-    if canLog! r then
+    if logFilter! r then
         Stdout.line! (logRecordToStr r)
     else
         Task.ok {}
