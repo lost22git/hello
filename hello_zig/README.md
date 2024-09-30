@@ -68,7 +68,7 @@ zig fmt
     - [ ] Assign by-ref
     - [x] Assign by-auto
     - [ ] Multiple values assignment
-    - [ ] Tuple unpacking
+    - [x] Tuple unpacking
     - [ ] Struct unpacking
     - [ ] Record unpacking
 - Functions
