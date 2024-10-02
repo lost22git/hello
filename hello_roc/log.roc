@@ -8,10 +8,6 @@ import Lazy
 import Time
 import Ansi
 
-#########
-## Log ##
-#########
-
 Level : [
     Debug,
     Info,
@@ -67,29 +63,29 @@ levelFromEnv = \_ ->
         |> Task.await \s -> (levelFromStr s |> Task.fromResult)
         |> Task.onErr! \_ -> Task.ok Info
 
-LogRecord : {
+Record : {
     time : Utc.Utc,
     level : Level,
     msg : Lazy.Lazy Str,
 }
 
-## convert `LogRecord` to `Str`
-logRecordToStr : LogRecord -> Str
-logRecordToStr = \r ->
+## convert `Record` to `Str`
+recordToStr : Record -> Str
+recordToStr = \r ->
     msg = r.msg |> Lazy.tryInit |> Lazy.get |> Result.withDefault ""
     "$(r.time |> Time.utcToRFC3339) $(levelToAnsiStr r.level) - $(msg)"
 
-## log filter for the given `LogRecord`
-logFilter : LogRecord -> Task Bool _
+## log filter for the given `Record`
+logFilter : Record -> Task Bool _
 logFilter = \r ->
-    minLv = levelFromEnv! {}
-    Task.ok ((levelToInt minLv) <= (levelToInt r.level))
+    minLevel = levelFromEnv! {}
+    Task.ok ((levelToInt minLevel) <= (levelToInt r.level))
 
-## do log with the given `LogRecord`
-logRecord : LogRecord -> Task {} _
+## do log with the given `Record`
+logRecord : Record -> Task {} _
 logRecord = \r ->
     if logFilter! r then
-        Stdout.line! (logRecordToStr r)
+        Stdout.line! (recordToStr r)
     else
         Task.ok {}
 
