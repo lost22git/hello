@@ -6,6 +6,24 @@ import pf.Utc
 import pf.Env
 
 ###############
+## Lazy Type ##
+###############
+
+Lazy a : [UnInited ({} -> a), Inited a]
+
+lazyTryInit : Lazy a -> Lazy a
+lazyTryInit = \lz ->
+    when lz is
+        UnInited fn -> Inited (fn {})
+        Inited _ -> lz
+
+lazyGet : Lazy a -> Result a [LazyUnInitedErr (Lazy a)]
+lazyGet = \lz ->
+    when lz is
+        UnInited _ -> Err (LazyUnInitedErr lz)
+        Inited v -> Ok v
+
+###############
 ## Date Time ##
 ###############
 
@@ -192,12 +210,14 @@ levelFromEnv = \_ ->
 LogRecord : {
     time : Utc.Utc,
     level : Level,
-    msg : Str,
+    msg : Lazy Str,
 }
 
 ## convert `LogRecord` to `Str`
 logRecordToStr : LogRecord -> Str
-logRecordToStr = \r -> "$(r.time |> utcToRFC3339) $(levelToAnsiStr r.level) - $(r.msg)"
+logRecordToStr = \r ->
+    msg = r.msg |> lazyTryInit |> lazyGet |> Result.withDefault ""
+    "$(r.time |> utcToRFC3339) $(levelToAnsiStr r.level) - $(msg)"
 
 ## log filter for the given `LogRecord`
 logFilter : LogRecord -> Task Bool _
@@ -214,26 +234,42 @@ logRecord = \r ->
         Task.ok {}
 
 ## do log with the given level and message
-log : Level, Str -> Task {} _
+log : Level, Lazy Str -> Task {} _
 log = \lv, msg ->
     now = Utc.now! {}
     logRecord { time: now, level: lv, msg: msg }
 
 ## log debug message
 debug : Str -> Task {} _
-debug = \msg -> log Debug msg
+debug = \msg -> log Debug (Inited msg)
 
 ## log info message
 info : Str -> Task {} _
-info = \msg -> log Info msg
+info = \msg -> log Info (Inited msg)
 
 ## log warn message
 warn : Str -> Task {} _
-warn = \msg -> log Warn msg
+warn = \msg -> log Warn (Inited msg)
 
 ## log error message
 error : Str -> Task {} _
-error = \msg -> log Error msg
+error = \msg -> log Error (Inited msg)
+
+## log debug message (lazy version)
+debugz : ({} -> Str) -> Task {} _
+debugz = \msg -> log Debug (UnInited msg)
+
+## log info message (lazy version)
+infoz : ({} -> Str) -> Task {} _
+infoz = \msg -> log Info (UnInited msg)
+
+## log warn message (lazy version)
+warnz : ({} -> Str) -> Task {} _
+warnz = \msg -> log Warn (UnInited msg)
+
+## log error message (lazy version)
+errorz : ({} -> Str) -> Task {} _
+errorz = \msg -> log Error (UnInited msg)
 
 ##########
 ## Main ##
@@ -243,6 +279,11 @@ main =
     info! "this is a msg"
     warn! "this is a msg"
     error! "this is a msg"
+
+    debugz! \_ -> "this is a lazy msg"
+    infoz! \_ -> "this is a lazy msg"
+    warnz! \_ -> "this is a lazy msg"
+    errorz! \_ -> "this is a lazy msg"
 
 ##########
 ## Test ##
