@@ -14,7 +14,7 @@
     - [x] Type auto inference
     - [x] Value Types
     - [ ] Reference Types
-    - [x] Pointer Types
+    - [ ] Pointer Types
     - [x] Sum Types
     - [ ] Range Type
     - [ ] Slice Type
