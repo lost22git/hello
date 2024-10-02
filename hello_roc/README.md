@@ -51,8 +51,8 @@
     - [x] Record unpacking
 - Functions
     - [ ] UFCS (Uniform Function Call Style)
-    - [x] Varargs
-    - [x] Named arguments
+    - [ ] Varargs
+    - [ ] Named arguments
     - [ ] Alias parameters
     - [ ] Parameters default value
     - [ ] Multiple return values
