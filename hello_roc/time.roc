@@ -75,7 +75,7 @@ unixToDays = \unixS -> unixS // sPerDay
 ## convert unix timestamp (seconds) to seconds of day
 unixToDaySeconds = \unixS -> unixS % sPerDay
 
-## convert utc to RFC3339 format string
+## convert [Utc] to RFC3339 format [Str]
 utcToRFC3339 : Utc.Utc -> Str
 utcToRFC3339 = \utc ->
     unixS = utc |> Utc.toMillisSinceEpoch |> \x -> x // msPerS

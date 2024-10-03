@@ -21,7 +21,7 @@ Style : [
     BgBlue,
 ]
 
-## convert ansi style to int
+## convert ansi [Style] to [U8]
 styleToInt : Style -> U8
 styleToInt = \style ->
     when style is
@@ -38,7 +38,7 @@ styleToInt = \style ->
         BgYellow -> 43
         BgBlue -> 44
 
-## format input string with ansi styles
+## format input [Str] with ansi [Style]s
 ansiStr : Str, List Style -> Str
 ansiStr = \str, styles ->
     joinStyles = styles |> List.map styleToInt |> List.map Num.toStr |> Str.joinWith ";"
