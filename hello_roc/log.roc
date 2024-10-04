@@ -15,7 +15,7 @@ Level : [
     Error,
 ]
 
-## convert `Level` to `Int`
+## convert [Level] to [I8]
 levelToInt : Level -> I8
 levelToInt = \lv ->
     when lv is
@@ -24,7 +24,7 @@ levelToInt = \lv ->
         Warn -> 20
         Error -> 30
 
-## convert plain `Str` to `Level`
+## convert plain [Str] to [Level]
 levelFromStr : Str -> Result Level [LevelFromStrErr Str]
 levelFromStr = \s ->
     when s is
@@ -34,7 +34,7 @@ levelFromStr = \s ->
         "ERR" -> Ok Error
         _ -> Err (LevelFromStrErr s)
 
-## convert `Level` to plain `Str`
+## convert [Level] to plain [Str]
 levelToStr : Level -> Str
 levelToStr = \lv ->
     when lv is
@@ -43,7 +43,7 @@ levelToStr = \lv ->
         Warn -> "WAR"
         Error -> "ERR"
 
-## get `AnsiStyle`s of given `Level`
+## get [Ansi.Style]s of given [Level]
 levelToAnsiStyles : Level -> List Ansi.Style
 levelToAnsiStyles = \lv ->
     when lv is
@@ -52,11 +52,11 @@ levelToAnsiStyles = \lv ->
         Warn -> [Bold, FgYellow]
         Error -> [Bold, FgRed]
 
-## convert `Level` to ansi `Str`
+## convert [Level] to ansi [Str]
 levelToAnsiStr : Level -> Str
 levelToAnsiStr = \lv -> Ansi.ansiStr (levelToStr lv) (levelToAnsiStyles lv)
 
-## read `Level` from environment variable `ROC_LOG_LEVEL`
+## read [Level] from environment variable `ROC_LOG_LEVEL`
 levelFromEnv : {} -> Task Level _
 levelFromEnv = \_ ->
     Env.var "ROC_LOG_LEVEL"
@@ -168,6 +168,6 @@ run = \{} ->
     defaultLogger |> errorz! \_ -> "this is a lazy msg"
 
 # TODO:
-# 1. how to use default logger when not given logger? (roc funcation not support default value of parameters)
+# 1. how to use default logger when not given logger? (roc functions don't support default value of parameters)
 # 2. how to solute the compilation error of error union?
 # 3. add attributes (contextual or given by arguments) to log
