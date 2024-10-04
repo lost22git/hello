@@ -66,78 +66,108 @@ levelFromEnv = \_ ->
 Record : {
     time : Utc.Utc,
     level : Level,
+    logger : Str,
     msg : Lazy.Lazy Str,
 }
 
-## convert `Record` to `Str`
-recordToStr : Record -> Str
-recordToStr = \r ->
-    msg = r.msg |> Lazy.tryInit |> Lazy.get |> Result.withDefault ""
-    "$(r.time |> Time.utcToRFC3339) $(levelToAnsiStr r.level) - $(msg)"
+Err : [
+    FilterErr Str,
+    FormatterErr Str,
+    WriterErr Str,
+]
 
-## log filter for the given `Record`
-logFilter : Record -> Task Bool _
-logFilter = \r ->
-    minLevel = levelFromEnv! {}
-    Task.ok ((levelToInt minLevel) <= (levelToInt r.level))
+Logger : {
+    name : Str,
+    filter : Filter,
+    writer : Writer,
+    formatter : Formatter,
+}
+
+defaultLogger : Logger
+defaultLogger = { name: "default", filter: defaultFilter, writer: defaultWriter, formatter: defaultFormatter }
+
+Filter : Record -> Task Bool [FilterErr Str]
+Writer : Str -> Task {} [WriterErr Str]
+Formatter : Writer, Record -> Task {} [WriterErr Str, FormatterErr Str]
+
+defaultFilter : Filter
+defaultFilter = \record ->
+    minLevel = levelFromEnv {} |> Task.mapErr! \e -> FilterErr "Failed to filter log record"
+    Task.ok ((levelToInt minLevel) <= (levelToInt record.level))
+
+defaultWriter : Writer
+defaultWriter = \str -> Stdout.line str |> Task.mapErr \e -> WriterErr "Failed to write log record"
+
+defaultFormatter : Formatter
+defaultFormatter = \writer, record ->
+    msg = record.msg |> Lazy.tryInit |> Lazy.get |> Result.withDefault ""
+    writer "$(record.time |> Time.utcToRFC3339) $(levelToAnsiStr record.level) [$(record.logger)] - $(msg)"
 
 ## do log with the given `Record`
-logRecord : Record -> Task {} _
-logRecord = \r ->
-    if logFilter! r then
-        Stdout.line! (recordToStr r)
+logRecord : Logger, Record -> Task {} [LogErr Err]
+logRecord = \logger, record ->
+    canLog = logger.filter record |> Task.mapErr! \e -> LogErr e
+    if canLog then
+        logger.writer |> logger.formatter record |> Task.mapErr \e -> LogErr e
     else
         Task.ok {}
 
 ## do log with the given level and message
-log : Level, Lazy.Lazy Str -> Task {} _
-log = \lv, msg ->
+log : Logger, Level, Lazy.Lazy Str -> Task {} _
+log = \logger, level, msg ->
     now = Utc.now! {}
-    logRecord { time: now, level: lv, msg: msg }
+    logger |> logRecord { time: now, level: level, msg: msg, logger: logger.name }
 
 ## log debug message
-debug : Str -> Task {} _
-debug = \msg -> log Debug (Inited msg)
+debug : Logger, Str -> Task {} _
+debug = \logger, msg -> logger |> log Debug (Inited msg)
 
 ## log info message
-info : Str -> Task {} _
-info = \msg -> log Info (Inited msg)
+info : Logger, Str -> Task {} _
+info = \logger, msg -> logger |> log Info (Inited msg)
 
 ## log warn message
-warn : Str -> Task {} _
-warn = \msg -> log Warn (Inited msg)
+warn : Logger, Str -> Task {} _
+warn = \logger, msg -> logger |> log Warn (Inited msg)
 
 ## log error message
-error : Str -> Task {} _
-error = \msg -> log Error (Inited msg)
+error : Logger, Str -> Task {} _
+error = \logger, msg -> logger |> log Error (Inited msg)
 
 ## log debug message (lazy version)
-debugz : ({} -> Str) -> Task {} _
-debugz = \msg -> log Debug (UnInited msg)
+debugz : Logger, ({} -> Str) -> Task {} _
+debugz = \logger, msg -> logger |> log Debug (UnInited msg)
 
 ## log info message (lazy version)
-infoz : ({} -> Str) -> Task {} _
-infoz = \msg -> log Info (UnInited msg)
+infoz : Logger, ({} -> Str) -> Task {} _
+infoz = \logger, msg -> logger |> log Info (UnInited msg)
 
 ## log warn message (lazy version)
-warnz : ({} -> Str) -> Task {} _
-warnz = \msg -> log Warn (UnInited msg)
+warnz : Logger, ({} -> Str) -> Task {} _
+warnz = \logger, msg -> logger |> log Warn (UnInited msg)
 
 ## log error message (lazy version)
-errorz : ({} -> Str) -> Task {} _
-errorz = \msg -> log Error (UnInited msg)
+errorz : Logger, ({} -> Str) -> Task {} _
+errorz = \logger, msg -> logger |> log Error (UnInited msg)
 
 ##########
 ## Main ##
 ##########
 main =
-    debug! "this is a msg"
-    info! "this is a msg"
-    warn! "this is a msg"
-    error! "this is a msg"
+    run {} |> Task.onErr \e -> Stdout.line "error: $(Inspect.toStr e)"
 
-    debugz! \_ -> "this is a lazy msg"
-    infoz! \_ -> "this is a lazy msg"
-    warnz! \_ -> "this is a lazy msg"
-    errorz! \_ -> "this is a lazy msg"
+run = \{} ->
+    defaultLogger |> debug! "this is a msg"
+    defaultLogger |> info! "this is a msg"
+    defaultLogger |> warn! "this is a msg"
+    defaultLogger |> error! "this is a msg"
 
+    defaultLogger |> debugz! \_ -> "this is a lazy msg"
+    defaultLogger |> infoz! \_ -> "this is a lazy msg"
+    defaultLogger |> warnz! \_ -> "this is a lazy msg"
+    defaultLogger |> errorz! \_ -> "this is a lazy msg"
+
+# TODO:
+# 1. how to use default logger when not given logger? (roc funcation not support default value of parameters)
+# 2. how to solute the compilation error of error union?
+# 3. add attributes (contextual or given by arguments) to log
