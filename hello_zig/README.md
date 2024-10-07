@@ -33,6 +33,7 @@ zig fmt
     - [ ] Object Oriented Programming
 - Types
     - [x] Static Type
+    - [ ] Structural Type
     - [x] Type auto inference
     - [x] Value Types
     - [ ] Reference Types

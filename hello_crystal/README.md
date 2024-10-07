@@ -400,6 +400,7 @@ CONS:
     - [x] Object Oriented Programming
 - Types
     - [x] Static Type
+    - [x] Structural Type
     - [x] Type auto inference
     - [x] Value Types
     - [x] Reference Types
