@@ -79,7 +79,7 @@ let () = book_to_str ocaml_book2 |> print_endline
 let () = print_title "mutable"
 let book_mutable = ref ocaml_book
 
-(* `!` defer *)
+(* `!` deref *)
 (* `<-` set mutable fields *)
 let () = !book_mutable.tags <- [ "ocaml" ]
 let () = !book_mutable |> book_to_str |> print_endline
