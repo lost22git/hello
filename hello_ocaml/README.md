@@ -42,7 +42,7 @@ opam install ocaml-lsp-server odoc ocamlformat
     - [x] Reference Types
     - [ ] Pointer Types
     - [x] Sum Types
-    - [x] Range Type
+    - [ ] Range Type
     - [ ] Slice Type
     - [ ] Matrix Type
     - [ ] BitSet Type
