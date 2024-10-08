@@ -97,7 +97,7 @@ opam install ocaml-lsp-server odoc ocamlformat
     - [x] Optional/Maybe Types
     - [ ] Nil Union Types
 - Error Handles
-    - [ ] try-catch throw/raise
+    - [x] try-catch throw/raise
     - [x] Result Type
     - [ ] Multiple return values
     - [ ] Error Union Types
