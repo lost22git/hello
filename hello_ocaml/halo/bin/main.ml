@@ -1,94 +1,58 @@
+(* usingnamespace *)
+open Printf
+open Book
+
+let print_title title = print_endline ("<><><><> " ^ title)
+
 (* in: scope local variable *)
 let result =
   let i = 6 in
   let j = 7 in
-  let () = Printf.printf "%d * %d\n" i j in
+  let () = printf "%d * %d\n" i j in
   i * j
 
-let () = Printf.printf "result: %d\n" result
+let () = printf "result: %d\n" result
 
 (* function *)
-let () = print_endline "---- function"
+let () = print_title "function"
 
 (* mul = fun x -> fun y -> x * y *)
 let mul x y =
-  let () = Printf.printf "x * y = %d * %d\n" x y in
+  let () = printf "x * y = %d * %d\n" x y in
   x * y
 
 let result = mul 6 7
-let () = Printf.printf "result: %d\n" result
+let () = printf "result: %d\n" result
 
 (* partial application *)
-let () = print_endline "---- partial application"
+let () = print_title "partial application"
 let mul_6 = mul 6
 let result = mul_6 7
-let () = Printf.printf "result: %d\n" result
+let () = printf "result: %d\n" result
 let mul_7 x = mul x 7
 let result = mul_7 6
-let () = Printf.printf "result: %d\n" result
+let () = printf "result: %d\n" result
 
 (* pipeline operator *)
-let () = print_endline "--- pipeline operator"
+let () = print_title "pipeline operator"
 let result = 7 |> mul 6 (* (mul 6) 7 *)
-let () = Printf.printf "result: %d\n" result
+let () = printf "result: %d\n" result
 
+(* sub module *)
 (* divmod *)
-let () = print_endline "---- divmod"
+let () = print_title "submodule divmod"
 
-let divmod x y =
-  let () = Printf.printf "%d divmod %d\n" x y in
-  (x / y, x mod y)
+module DivMod = struct
+  let divmod x y =
+    let () = printf "%d divmod %d\n" x y in
+    (x / y, x mod y)
+end
 
-let _div, _mod = divmod (-11) 3
-let () = Printf.printf "div: %d,  mod: %d\n" _div _mod
+let _div, _mod = DivMod.divmod (-11) 3
+let () = printf "div: %d,  mod: %d\n" _div _mod
 
 (* enum *)
-let () = print_endline "---- enum & enum union & record"
-
-type ebook_format =
-  | Pdf [@warning "-unused-constructor"]
-  | Epub [@warning "-unused-constructor"]
-  | Mobi [@warning "-unused-constructor"]
-
-(*
-
-function is sugar of `match x with`
-
-  let ebook_format_to_str format = match format with
-    | Pdf -> "PDF"
-    | Epub -> "EPUB"
-    | Mobi -> "MOBI"
-*)
-
-let ebook_format_to_str = function
-  | Pdf -> "PDF"
-  | Epub -> "EPUB"
-  | Mobi -> "MOBI"
-
-(* enum union *)
-type book_media_type =
-  | Ebook of ebook_format [@warning "-unused-constructor"]
-  | Paperbook of float * float [@warning "-unused-constructor"]
-
-let book_media_type_to_str = function
-  | Ebook format -> Printf.sprintf "Ebook(%s)" (ebook_format_to_str format)
-  | Paperbook (width, height) ->
-      Printf.sprintf "Paperbook(%.2f x %.2f)" width height
-
-(* custom record type *)
-type book = {
-  id : int;
-  name : string;
-  mutable tags : string list;
-  media_type : book_media_type;
-}
-
-let book_to_str { id; name; tags; media_type } =
-  Printf.sprintf "Book{id=%d; name=\"%s\"; tags=%s; media_type=%s}" id name
-    ("["
-    ^ (tags |> List.map (Printf.sprintf "\"%s\"") |> String.concat "; ")
-    ^ "]")
-    (book_media_type_to_str media_type)
+let () = print_title "enum & enum union & record"
 
 let ocaml_book =
   {
@@ -112,10 +76,24 @@ let ocaml_book2 =
 let () = book_to_str ocaml_book2 |> print_endline
 
 (* mutable *)
-let () = print_endline "---- mutable"
+let () = print_title "mutable"
 let book_mutable = ref ocaml_book
 
 (* `!` defer *)
 (* `<-` set mutable fields *)
 let () = !book_mutable.tags <- [ "ocaml" ]
 let () = !book_mutable |> book_to_str |> print_endline
+
+(* multiline string *)
+let () = print_title "multiline string"
+
+let poem = {|
+《 梅 花 》
+
+墙 角 数 枝 梅
+凌 寒 独 自 开
+遥 知 不 是 雪
+为 有 暗 香 来
+|}
+
+let () = print_endline poem
