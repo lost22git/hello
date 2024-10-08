@@ -1,0 +1,4 @@
+(executable
+ (public_name halo)
+ (name main)
+ (libraries halo))
