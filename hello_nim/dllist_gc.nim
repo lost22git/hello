@@ -1,3 +1,7 @@
+#[
+  Doubly Linked List (mm: gc)
+]#
+
 import std/options
 
 type Node[T] = ref object
@@ -5,7 +9,7 @@ type Node[T] = ref object
   next, prev: Node[T]
 
 type DLList[T] = object
-  head, tail: Node[T] = nil
+  head, tail: Node[T]
   len*: int = 0
 
 proc `=copy`[T](
