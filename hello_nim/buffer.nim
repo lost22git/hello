@@ -18,6 +18,9 @@ type Buffer*[T] = object
 
 proc `=destroy`[T](buf: Buffer[T]) =
   if buf.p != nil:
+    for i in (buf.rc ..< buf.wc):
+      let rrc = i mod buf.cap
+      `=destroy`(buf.p.data[rrc])
     dealloc(buf.p)
 
 proc `=copy`[T](
