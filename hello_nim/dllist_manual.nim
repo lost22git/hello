@@ -4,9 +4,9 @@
 
 import std/options
 
-proc create[T](value: sink T): ptr T {.inline.} =
+proc create[T](value: sink T): ptr T {.inline, nodestroy.} =
   result = create(T)
-  copyMem(result, value.addr, sizeof(T))
+  result[] = value
 
 type Node[T] = object
   inner: T
@@ -19,7 +19,8 @@ type DLList[T] = object
 proc `=destroy`[T](list: DLList[T]) =
   var cc = list.head
   while cc != nil:
-    let next = cc.next
+    let next = cc[].next
+    `=destroy`(cc[].inner)
     dealloc(cc)
     cc = next
 
