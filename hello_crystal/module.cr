@@ -8,3 +8,19 @@ class MyModule::Channel
     ch = ::Channel(Nil) # 编译通过
   end
 end
+
+# extends methods for built-in String class via include modules
+
+module StringExt
+  def name_and_ext
+    self.split "."
+  end
+end
+
+class String
+  include StringExt
+end
+
+name, ext = "hello.cr".name_and_ext
+p! name
+p! ext
