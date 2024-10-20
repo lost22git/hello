@@ -1,42 +1,23 @@
 import std/options
 
-type BufferPayload[T] = object
-  cap: int
-  data: UncheckedArray[T]
-
-# Note:
-# current implementaion is based on the assumpation: align = 8B
-proc sizeOfBufferPayload[T](cap: int): int =
-  result = sizeof(int) + cap * sizeof(T)
-  let align = alignof(int)
-  let `mod` = result mod align
-  if `mod` > 0:
-    result = result + (align - `mod`)
-
 type Buffer*[T] = object
-  p: ptr BufferPayload[T]
+  data: ptr UncheckedArray[T]
+  cap, len: int
   head, tail: int
-  len: int
 
 proc `=destroy`[T](buf: Buffer[T]) =
-  if buf.p != nil:
+  if buf.data != nil:
     for i in (buf.head ..< buf.tail):
-      `=destroy`(buf.p.data[i])
-    dealloc(buf.p)
+      `=destroy`(buf.data[i])
+    dealloc(buf.data)
 
 proc `=copy`[T](
   dst: var Buffer[T], src: Buffer[T]
 ) {.error: "Buffer[T] cannot be copied".}
 
-proc createBufferPayload[T](cap: int): ptr BufferPayload[T] {.inline.} =
-  result = cast[ptr BufferPayload[T]](alloc0(sizeOfBufferPayload[T](cap)))
-  result.cap = cap
-
 proc initBuffer*[T](cap: int): Buffer[T] {.inline.} =
-  result.p = createBufferPayload[T](cap)
-
-proc cap*[T](buf: Buffer[T]): int {.inline.} =
-  buf.p.cap
+  result.cap = cap
+  result.data = cast[ptr UncheckedArray[T]](alloc0(cap * sizeof(T)))
 
 proc isEmpty*[T](buf: Buffer[T]): bool {.inline.} =
   buf.len == 0
@@ -44,11 +25,14 @@ proc isEmpty*[T](buf: Buffer[T]): bool {.inline.} =
 proc isFull*[T](buf: Buffer[T]): bool {.inline.} =
   buf.len == buf.cap
 
+proc remToAdd*[T](buf: Buffer[T]): int {.inline.} =
+  buf.cap - buf.len
+
 proc delHead*[T](buf: var Buffer[T]): Option[T] =
   if buf.isEmpty:
     return none(T)
   let head = buf.head
-  result = some(buf.p.data[head])
+  result = some(buf.data[head])
   buf.head = (head + 1) mod buf.cap
   dec buf.len
 
@@ -56,7 +40,7 @@ proc addHead*[T](buf: var Buffer[T], value: sink T) =
   if buf.isFull:
     raise newException(ValueError, "addHead: buffer is full")
   let head = (buf.head + buf.cap - 1) mod buf.cap
-  buf.p.data[head] = value
+  buf.data[head] = value
   buf.head = head
   inc buf.len
 
@@ -64,7 +48,7 @@ proc delTail*[T](buf: var Buffer[T]): Option[T] =
   if buf.isEmpty:
     return none(T)
   let tail = (buf.tail + buf.cap - 1) mod buf.cap
-  result = some(buf.p.data[tail])
+  result = some(buf.data[tail])
   buf.tail = tail
   dec buf.len
 
@@ -72,7 +56,7 @@ proc addTail*[T](buf: var Buffer[T], value: sink T) =
   if buf.isFull:
     raise newException(ValueError, "addTail: buffer is full")
   let tail = buf.tail
-  buf.p.data[tail] = value
+  buf.data[tail] = value
   buf.tail = (tail + 1) mod buf.cap
   inc buf.len
 
@@ -102,8 +86,6 @@ proc `>>`*[T](value: sink T, list: var Buffer[T]) {.inline.} =
 #############
 ## testing ##
 #############
-
-doAssert sizeOfBufferPayload[string](3) == (8 + 3 * 16)
 
 var buf = initBuffer[string](cap = 3)
 doAssert buf.len == 0
