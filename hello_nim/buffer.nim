@@ -3,7 +3,7 @@ import std/options
 type Buffer*[T] = object
   data: ptr UncheckedArray[T]
   cap, len: int
-  head, tail: int
+  head: int
 
 proc `=destroy`[T](buf: Buffer[T]) =
   if buf.data != nil:
@@ -28,6 +28,9 @@ proc isFull*[T](buf: Buffer[T]): bool {.inline.} =
 proc remToAdd*[T](buf: Buffer[T]): int {.inline.} =
   buf.cap - buf.len
 
+proc tail[T](buf: Buffer[T]): int {.inline.} =
+  buf.head + buf.len
+
 proc delHead*[T](buf: var Buffer[T]): Option[T] =
   if buf.isEmpty:
     return none(T)
@@ -49,15 +52,13 @@ proc delTail*[T](buf: var Buffer[T]): Option[T] =
     return none(T)
   let tail = (buf.tail + buf.cap - 1) mod buf.cap
   result = some(buf.data[tail])
-  buf.tail = tail
   dec buf.len
 
 proc addTail*[T](buf: var Buffer[T], value: sink T) =
   if buf.isFull:
     raise newException(ValueError, "addTail: buffer is full")
-  let tail = buf.tail
+  let tail = buf.tail mod buf.cap
   buf.data[tail] = value
-  buf.tail = (tail + 1) mod buf.cap
   inc buf.len
 
 ################
@@ -116,3 +117,4 @@ doAssert buf.delTail == "bar".some
 doAssert buf.delHead == "foo".some
 doAssert buf.delTail == "halo".some
 doAssert buf.delTail == none(string)
+doAssert buf.len == 0
