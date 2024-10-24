@@ -12,23 +12,27 @@ import (
 func setupLogger() {
 	logLevel := &slog.LevelVar{}
 	logLevel.Set(slog.LevelDebug)
-	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{AddSource: false, Level: logLevel})
+	handler := slog.NewTextHandler(
+		os.Stdout,
+		&slog.HandlerOptions{AddSource: false, Level: logLevel},
+	)
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 }
 
 func main() {
 	setupLogger()
-	StartServer()
+	startServer()
 }
 
-func StartServer() {
+func startServer() {
 	proxyHandler := new(ProxyHandler)
 	proxyHandler.Client = &http.Client{
 		Transport: &http.Transport{Proxy: http.ProxyFromEnvironment},
 		Timeout:   10 * time.Second,
 	}
 	http.Handle("GET /", proxyHandler)
+	http.Handle("POST /", proxyHandler)
 	slog.Info("Proxy server is running on :8000")
 	if err := http.ListenAndServe(":8000", nil); err != nil {
 		panic(err)
@@ -48,23 +52,23 @@ func headerCopyFrom(dst http.Header, src http.Header) {
 }
 
 func (h *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if target := r.URL.Query().Get("target"); target != "" {
-		if targetReq, err := http.NewRequest(r.Method, target, r.Body); err == nil {
-			slog.Info("Fetching", "method", targetReq.Method, "target", targetReq.URL)
-			if targetRes, err := h.Client.Do(targetReq); err == nil {
-        defer targetRes.Body.Close()
-				headerCopyFrom(w.Header(), targetRes.Header)
-				w.WriteHeader(targetRes.StatusCode)
-				if _, err := io.Copy(w, targetRes.Body); err != nil {
-					panic(err)
-				}
-			} else {
-				panic(err)
-			}
-		} else {
-			panic(err)
-		}
-	} else {
+	target := r.URL.Query().Get("target")
+	if target == "" {
 		panic(errors.New("Param not found: target"))
+	}
+	targetReq, err := http.NewRequest(r.Method, target, r.Body)
+	if err != nil {
+		panic(err)
+	}
+	slog.Info("Fetching", "method", targetReq.Method, "target", targetReq.URL)
+	targetRes, err := h.Client.Do(targetReq)
+	if err != nil {
+		panic(err)
+	}
+	defer targetRes.Body.Close()
+	headerCopyFrom(w.Header(), targetRes.Header)
+	w.WriteHeader(targetRes.StatusCode)
+	if _, err := io.Copy(w, targetRes.Body); err != nil {
+		panic(err)
 	}
 }
