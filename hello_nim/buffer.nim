@@ -8,7 +8,7 @@ type Buffer*[T] = object
 proc `=destroy`[T](buf: Buffer[T]) =
   if buf.data != nil:
     for i in (buf.head ..< buf.tail):
-      `=destroy`(buf.data[i])
+      `=destroy`(buf.data[(i mod buf.cap)])
     dealloc(buf.data)
 
 proc `=copy`[T](

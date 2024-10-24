@@ -1,13 +1,13 @@
+proc printf(fmt: cstring): cint {.importc, varargs, discardable.}
+printf("printf: hello %s\n", "c")
+
 {.
   emit:
     """
-#include <stdio.h>
-static void hello_c() {
-  printf("Hello C\n");
+static int add(int a, int b) {
+  return a + b;
 }
 """
 .}
-
-proc hello_c() {.importc: "hello_c".}
-
-hello_c()
+proc add(a, b: cint): cint {.importc.}
+echo "add(1,2) => ", add(1, 2)
