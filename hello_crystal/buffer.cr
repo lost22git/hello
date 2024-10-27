@@ -54,30 +54,46 @@ struct Buffer(T)
   end
 
   def add_head(value : T)
-    raise "addHead: Buffer is full" if full?
+    add_head(value) { raise "addHead: Buffer is full" }
+  end
+
+  def del_head : T?
+    del_head { return nil }
+  end
+
+  def add_tail(value : T)
+    add_tail(value) { raise "addTail: Buffer is full" }
+  end
+
+  def del_tail : T?
+    del_tail { return nil }
+  end
+
+  def add_head(value : T, &)
+    yield if full?
     @head = head = mask2(dec(@head))
     # puts "[add_head] #{self}"
     @data[mask(head)] = value
   end
 
-  def del_head : T?
-    return nil if empty?
+  def del_head(&)
+    yield if empty?
     head = @head
     @head = mask2(inc(head))
     # puts "[del_head] #{self}"
     @data[mask(head)]
   end
 
-  def add_tail(value : T)
-    raise "addTail: Buffer is full" if full?
+  def add_tail(value : T, &)
+    yield if full?
     tail = @tail
     @tail = mask2(inc(tail))
     # puts "[add_tail] #{self}"
     @data[mask(tail)] = value
   end
 
-  def del_tail : T?
-    return nil if empty?
+  def del_tail(&)
+    yield if empty?
     @tail = tail = mask2(dec(@tail))
     # puts "[del_tail] #{self}"
     @data[mask(tail)]
