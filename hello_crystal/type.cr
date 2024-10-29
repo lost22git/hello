@@ -24,8 +24,9 @@ describe "Test" do
     sizeof(Char).should eq 4 # UTF-8 4
     alignof(Char).should eq 4
 
-    sizeof(Int).should eq 24
-    alignof(Int).should eq 8
+    # Int = (Int8 | Int16 | Int32 | Int64 | Int128)
+    sizeof(Int).should eq 32 # tag(1) + padding(15) + IntXxx(16)
+    alignof(Int).should eq 16
 
     sizeof(Int32).should eq 4
     alignof(Int32).should eq 4
@@ -48,9 +49,9 @@ describe "Test" do
     alignof(UInt64).should eq 8
 
     sizeof(Int128).should eq 16
-    alignof(Int128).should eq 8
+    alignof(Int128).should eq 16
     sizeof(UInt128).should eq 16
-    alignof(UInt128).should eq 8
+    alignof(UInt128).should eq 16
 
     sizeof(Float).should eq 16
     alignof(Float).should eq 8
@@ -235,5 +236,18 @@ describe "Test Pointer" do
     offsetof(Slice(String), @size).should eq 0
     offsetof(Slice(String), @read_only).should eq 4
     offsetof(Slice(String), @pointer).should eq 8
+  end
+end
+
+describe "Test tuple types" do
+  it "types" do
+    tuple_types = Tuple(Int32, String, Bool).types
+    tuple_types[0].should eq Int32
+    tuple_types[1].should eq String
+    tuple_types[2].should eq Bool
+
+    Tuple(Int32, String, Bool)[0].should eq Int32
+    Tuple(Int32, String, Bool)[1].should eq String
+    Tuple(Int32, String, Bool)[2].should eq Bool
   end
 end

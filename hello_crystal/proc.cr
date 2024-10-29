@@ -98,3 +98,16 @@ def fetch(uri : String | URI)
 end
 
 fetch "https://github.com"
+
+__ "partial application"
+
+def add(a, b)
+  a + b
+end
+
+add_clourse = ->add(Int32, Int32)
+pp! add_clourse
+pp! add_clourse.arity
+pp! add_clourse.partial(1)
+add_one = add_clourse.partial(1)
+pp! add_one.call(2)
