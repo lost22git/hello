@@ -343,14 +343,11 @@ If the `Fiber` is not bound to a `Thread`, the `Fiber` will be assigned to a `Th
 
 (if `-Dpreview_mt` round-robin else current) and bound to it, finally enqueue it's `Scheduler`.
 
-
-| Method        | Source Fiber                              | Target Fiber       |
-| ------------- | ----------------------------------------- | ------------------ |
-| Fiber#resume  | current suspend forever                   | given by user      | 
-| Fiber.suspend | current suspend forever                   | given by scheduler |
-| Fiber.yield   | current push into scheduler               | given by scheduler |
-| sleep         | current push into scheduler after timeout | given by scheduler |
-| Fiber.timeout | current push into scheduler after timeout | given by scheduler |
+- Fiber#resume
+- Fiber.suspend
+- Fiber.yield 
+- sleep
+- Fiber.timeout
 
 ### Workers
 
