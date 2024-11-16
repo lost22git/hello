@@ -1,3 +1,5 @@
+#!/usr/bin/env -S clj -M
+
 ;  ; def variables
 ; (def m 1)
 ; (def n 2)
