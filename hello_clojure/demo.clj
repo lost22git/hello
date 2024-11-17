@@ -21,61 +21,76 @@
 
 ; def functions
 ; ver1
-(defn myhash 
+(defn myhash
   [data] (.hashCode data))
 ; ver2
 (def myhash (fn [data] (.hashCode data)))
 ; ver3
 (def myhash #(.hashCode %))
-(assert (== (.hashCode "haha") (myhash "haha")))
+(assert (= (.hashCode "haha") (myhash "haha")))
 
 ; singly-linked-list '()
 (def mylist '("alex" "bob"))
 (def mylist (conj mylist "cindy")) ; cnoj: prepend
-(assert (== (count mylist) 3))
-(assert (.equals (first mylist) "cindy"))
-(assert (.contains (rest mylist) "alex")) 
-(assert (.contains (rest mylist) "bob"))
-(assert (.equals (last mylist) "bob"))
+(assert (= (count mylist) 3))
+(assert (= (first mylist) "cindy"))
+(assert (= (rest mylist) '("alex" "bob")))
+(assert (= (last mylist) "bob"))
 
 ; set
 (def myset #{"alex" "bob"})
 (def myset (conj myset "cindy")) ; conj: add
-(assert (== (count myset) 3))
+(assert (= (count myset) 3))
 (assert (contains? myset "cindy"))
 (def myset (disj myset "cindy")) ; disj: del
-(assert (== (count myset) 2))
+(assert (= (count myset) 2))
 (assert (not (contains? myset "cindy")))
 (def myset (into myset '("cindy"))) ; into: A + B
-(assert (== (count myset) 3))
+(assert (= (count myset) 3))
 (assert (contains? myset "cindy"))
 
 ; map
 (def mymap {"alex" 22, "bob" 33}) ; ',' can be omitted
 (def mymap (assoc mymap "cindy" 44)) ; assoc: add
-(assert (== (count mymap) 3))
+(assert (= (count mymap) 3))
 (assert (contains? mymap "cindy"))
-(assert (== (get mymap "cindy") 44)) ; get
-(assert (== (mymap "cindy") 44)) ; get
+(assert (= (get mymap "cindy") 44)) ; get
+(assert (= (mymap "cindy") 44)) ; get
 (assert (nil? (mymap "douglas"))) ; get not exists
-(assert (== (mymap "douglas" 0) 0)) ; get not exists with default
+(assert (= (mymap "douglas" 0) 0)) ; get not exists with default
 (def mymap (zipmap (keys mymap) (vals mymap))) ; zipmap keys vals
-(assert (== (count mymap) 3))
-(assert (== (count mymap) 3))
+(assert (= (count mymap) 3))
 (def mymap (dissoc mymap "cindy")) ; dissoc: del
-(assert (== (count mymap) 2))
+(assert (= (count mymap) 2))
 (assert (nil? (mymap "cindy")))
 (def mymap (merge mymap {"cindy" 44 "douglas" 55})) ; merge
-(assert (== (count mymap) 4))
-(assert (== (mymap "cindy") 44))
-(assert (== (mymap "douglas") 55))
+(assert (= (count mymap) 4))
+(assert (= (mymap "cindy") 44))
+(assert (= (mymap "douglas") 55))
 (def mymap (merge-with + mymap {"douglas" 11})) ; merge-with
-(assert (== (count mymap) 4))
-(assert (== (mymap "douglas") (+ 55 11)))
+(assert (= (count mymap) 4))
+(assert (= (mymap "douglas") (+ 55 11)))
 
 ; record
 (defrecord Book [name pages])
 (def book (->Book "The Clojure Book" 111))
-(assert (.equals (:name book) "The Clojure Book"))
-(assert (== (:pages book) 111))
+(assert (= (:name book) "The Clojure Book"))
+(assert (= (:pages book) 111))
+
+; let destructing 
+(let [[a b] [1 2]]
+  (assert (= (+ a b) 3)))
+
+(let [{:keys [first last]} {:first "foo" :last "bar"}]
+  (assert (= first "foo"))
+  (assert (= last "bar")))
+
+; function params destructing
+(def add
+  (fn [{:keys [x y]}]
+    (+ x y)))
+(assert (= (add {:x 1 :y 2 :z 0}) 3))
+(defrecord Point [x y z])
+(assert (= (add (->Point 1 2 0)) 3))
+
 
