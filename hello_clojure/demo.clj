@@ -93,14 +93,14 @@
 (defrecord Point [x y z])
 (assert (= (add (->Point 1 2 0)) 3))
 
-; pipe 
-; ->
+; pipe (aka. Threading Macros)
+; -> (prev result as next first param)
 (assert (= "HALO_CLOJURE"
            (-> "halo"
                (str "_")
                (str "clojure")
                clojure.string/upper-case)))
-; ->>
+; ->> (prev result as next last param)
 (assert (= "CLOJURE_HALO"
            (->> "halo"
                 (str "_")
@@ -111,6 +111,15 @@
            (->> ["halo" "clojure"]
                 (map clojure.string/capitalize)
                 (reduce str ""))))
+; as-> (prev result as next nth param)
+(assert (= "_clojure_"
+           (as-> "clojure" r
+             (str r "_")
+             (str "_" r))))
+; some->
+; some->>
+; cond->
+; cond->>
 
 ; binding: rebind dynamic variables in scope
 (def ^:dynamic lang "Java")

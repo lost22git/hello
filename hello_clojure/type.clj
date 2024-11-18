@@ -33,18 +33,18 @@
 ; equality
 (assert (= 1 1))
 (assert (= 1 (int 1)))
-(assert (not (= 1 1.0)))
+(assert (not= 1 1.0))
 (assert (= 1.0 1.0))
 (assert (= 1.0 (float 1.0)))
 ; vector eq list
 (assert (= [1 2] '(1 2)))
 ; seq eq requires order
-(assert (not (= [1 2] '(2 1))))
+(assert (not= [1 2] '(2 1)))
 ; set eq not requires order
 (assert (= #{1 2} #{2 1}))
 ; map eq not requires order
 (assert (= {1 1 2 2} {2 2 1 1}))
 (assert (= {1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9} {9 9 2 2 3 3 4 4 5 5 6 6 7 7 8 8 1 1}))
 ; record != map
-(assert (not (= (->Book "the clojure book" ["programming"]) {:name "the clojure book" :tags ["programming"]})))
+(assert (not= (->Book "the clojure book" ["programming"]) {:name "the clojure book" :tags ["programming"]}))
 
