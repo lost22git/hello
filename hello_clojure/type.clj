@@ -28,8 +28,7 @@
 (defrecord Book [name tags])
 (assert (= (type (->Book "the clojure book" ["programming"])) user.Book))
 ; function
-(assert (= (type +) clojure.core$_PLUS_))
-
+; (assert (= (type +) clojure.core$_PLUS_))
 
 ; equality
 (assert (= 1 1))
@@ -45,6 +44,7 @@
 (assert (= #{1 2} #{2 1}))
 ; map eq not requires order
 (assert (= {1 1 2 2} {2 2 1 1}))
-(assert (= {1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9} {9 9 2 2 3 3 4 4 5 5 6 6 7 7 8 8 1 1} ))
+(assert (= {1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9} {9 9 2 2 3 3 4 4 5 5 6 6 7 7 8 8 1 1}))
 ; record != map
 (assert (not (= (->Book "the clojure book" ["programming"]) {:name "the clojure book" :tags ["programming"]})))
+

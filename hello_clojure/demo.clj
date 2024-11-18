@@ -93,4 +93,29 @@
 (defrecord Point [x y z])
 (assert (= (add (->Point 1 2 0)) 3))
 
+; pipe 
+; ->
+(assert (= "HALO_CLOJURE"
+           (-> "halo"
+               (str "_")
+               (str "clojure")
+               clojure.string/upper-case)))
+; ->>
+(assert (= "CLOJURE_HALO"
+           (->> "halo"
+                (str "_")
+                (str "clojure")
+                clojure.string/upper-case)))
+ ; ->>
+(assert (= "HaloClojure"
+           (->> ["halo" "clojure"]
+                (map clojure.string/capitalize)
+                (reduce str ""))))
+
+; binding: rebind dynamic variables in scope
+(def ^:dynamic lang "Java")
+(assert ((meta #'lang) :dynamic))
+(binding [lang "Clojure"]
+  (assert (= lang "Clojure")))
+(assert (= lang "Java"))
 
