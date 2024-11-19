@@ -128,3 +128,18 @@
   (assert (= lang "Clojure")))
 (assert (= lang "Java"))
 
+; transient
+
+; slow
+(time
+ (loop [current 1000000 state []]
+   (if (zero? current)
+     state
+     (recur (dec current) (conj state current)))))
+
+; fast
+(time
+ (loop [current 1000000 state (transient [])]
+   (if (zero? current)
+     (persistent! state)
+     (recur (dec current) (conj! state current)))))
