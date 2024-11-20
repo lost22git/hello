@@ -24,7 +24,9 @@
 ; call java methods
 (assert (= 0 (.size list)))
 ; call java static methods
-(assert (= 11 (.parseInt java.lang.Integer "11")))
+; just like java, java.lang is preluded
+(assert (= 11 (.parseInt Integer "11")))
+(assert (= 11 (Integer/parseInt "11")))
 
 ;
 ; def functions
