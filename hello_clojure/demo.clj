@@ -1,24 +1,32 @@
 #!/usr/bin/env -S clj -M
 
-;  ; def variables
-; (def m 1)
-; (def n 2)
-; ; cal function
-; (print (+ m n))
+ ; def variables
+(def m 1)
+(def n 2)
+; cal function
+(assert (= 3 (+ m n)))
 
-; ; let binding
-; ; scope variables
-; (let [m 1]
-;   (let [n 2]
-;     (print (+ m n))))
+; let binding
+; scope variables
+(let [m 1]
+  (let [n 2]
+    (assert (= 3 (+ m n)))))
 
-; ; call methods
-; (println (.length "haha"))
-; (println (.substring "haha" 0 3))
-; (println (.getClass (.split "ha:ha" ":")))
-; (println (.getClass '("haha")))
-; (println (.getClass ["haha"]))
+; binding: rebind dynamic variables in scope
+(def ^:dynamic lang "Java")
+(assert ((meta #'lang) :dynamic))
+(binding [lang "Clojure"]
+  (assert (= lang "Clojure")))
+(assert (= lang "Java"))
 
+; ; call java constructor
+(def list (java.util.ArrayList.))
+; call java methods
+(assert (= 0 (.size list)))
+; call java static methods
+(assert (= 11 (.parseInt java.lang.Integer "11")))
+
+;
 ; def functions
 ; ver1
 (defn myhash
@@ -120,13 +128,6 @@
 ; some->>
 ; cond->
 ; cond->>
-
-; binding: rebind dynamic variables in scope
-(def ^:dynamic lang "Java")
-(assert ((meta #'lang) :dynamic))
-(binding [lang "Clojure"]
-  (assert (= lang "Clojure")))
-(assert (= lang "Java"))
 
 ; transient
 
