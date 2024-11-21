@@ -46,4 +46,3 @@
   (clojure.string/upper-case x))
 (time (doall (map long-time-uppercase ["concurrent" "clojure" "lisp"])))
 (time (doall (pmap long-time-uppercase ["concurrent" "clojure" "lisp"])))
-
