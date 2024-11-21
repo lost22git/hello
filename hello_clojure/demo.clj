@@ -103,6 +103,11 @@
 (defrecord Point [x y z])
 (assert (= (add (->Point 1 2 0)) 3))
 
+; doto
+(let [list (java.util.ArrayList.)]
+  (doto list (.add 10) (.add 100) (.add 1000))
+  (assert (= list [10 100 1000])))
+
 ; pipe (aka. Threading Macros)
 ; -> (prev result as next first param)
 (assert (= "HALO_CLOJURE"
