@@ -39,3 +39,11 @@
             (.add list i))))
 (Thread/sleep 500)
 (assert (= (.size list) 1000))
+
+; pmap vs map
+(defn long-time-uppercase [x]
+  (Thread/sleep 1000)
+  (clojure.string/upper-case x))
+(time (doall (map long-time-uppercase ["concurrent" "clojure" "lisp"])))
+(time (doall (pmap long-time-uppercase ["concurrent" "clojure" "lisp"])))
+
