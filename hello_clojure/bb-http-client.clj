@@ -1,5 +1,4 @@
 #!/usr/bin/env bb
-(require '[clojure.pprint :as pp :refer [pprint]])
 (require '[babashka.http-client :as http])
 (require '[cheshire.core :as json])
 
