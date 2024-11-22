@@ -9,7 +9,10 @@
 ; <!: receive nonblocking (used in go block)
 
 (defn current-thread-name []
-  (str "[" (.getName (Thread/currentThread)) "]"))
+  (let [t (Thread/currentThread)
+        id (.getId t)
+        name (.getName t)]
+    (str "[" id "-" name "]")))
 
 (println ";;;;;;;;;;;;")
 (println ";; thread ;;")
