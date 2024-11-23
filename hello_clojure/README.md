@@ -7,6 +7,7 @@ https://clojure.org/guides/install_clojure
 ### Tools 
 
 - [babashka](https://github.com/babashka/babashka#installation)
+- [leiningen](https://leiningen.org)
 
 
 ## Resources
