@@ -1,19 +1,24 @@
 #!/usr/bin/env -S bb -Djdk.httpclient.HttpClient.log=request,headers,content -Djdk.httpclient.allowRestrictedHeaders=connection
 
 (comment
-  "https://github.com/ring-clojure/ring/wiki"
-  "https://github.com/http-kit/http-kit/wiki"
-  "https://github.com/babashka/http-client"
-  "https://github.com/babashka/http-client/blob/main/API.md"
+  :ref
+  {:babashka "https://book.babashka.org/#usage"
+   :match "https://github.com/clojure/core.match"
+   :logging "https://github.com/clojure/tools.logging"
+   :json "https://github.com/dakrone/cheshire"
+   :ring "https://github.com/ring-clojure/ring/wiki"
+   :http-kit "https://github.com/http-kit/http-kit/wiki"
+   :http-client ["https://github.com/babashka/http-client"
+                 "https://github.com/babashka/http-client/blob/main/API.md"]}
   :test {:halo "curl -X GET http://localhost:8000/halo?name=clojure"
          :proxy ["curl -X GET http://localhost:8000/proxy?target=https://httpbin.org/ip"
-                 "curl -X POST http://localhost:8000/proxy?target=https://httpbin.org/post -d '{\"foo\":\"bar\"}'"]})
+                 "curl -X POST http://localhost:8000/proxy?target=https://httpbin.org/post -d '{\"foo\":\"bar\"}' -H 'content-type application/json'"]})
 
 (require '[babashka.deps :as deps])
 (deps/add-deps '{:deps {ring/ring-core {:mvn/version "1.13.0"}}})
 
-(use 'clojure.core.match)
 (use 'clojure.pprint)
+(use 'clojure.core.match)
 (require '[cheshire.core :as json])
 (require '[babashka.http-client :as http])
 (use 'clojure.tools.logging)
