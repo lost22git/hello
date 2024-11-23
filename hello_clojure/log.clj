@@ -1,6 +1,6 @@
 #!/usr/bin/env bb
 
-(require '[clojure.tools.logging :as log])
+(use 'clojure.tools.logging)
 
-(log/info "halo" "clojure")
-(log/infof "%s %s" "halo" "clojure")
+(info "halo" "clojure")
+(infof "%s %s" "halo" "clojure")

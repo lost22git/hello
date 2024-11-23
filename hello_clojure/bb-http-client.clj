@@ -2,6 +2,9 @@
 (require '[babashka.http-client :as http])
 (require '[cheshire.core :as json])
 
+(comment
+  "https://github.com/babashka/http-client")
+
 ; get
 (assert
  (= 888
