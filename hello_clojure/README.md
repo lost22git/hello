@@ -16,14 +16,14 @@ https://clojure.org/guides/install_clojure
 
 ### REPL
 
-fuzzy search functions by pattern
+- fuzzy search functions by pattern
 `(apropos "search pattern")`
 ```repl
 user=> (apropos "future")
 (clojure.core/future clojure.core/future-call clojure.core/future-cancel clojure.core/future-cancelled? clojure.core/future-done? clojure.core/future?)
 ```
 
-view document of the function
+- view document of the function
 `(doc function-name)`
 ```repl
 user=> (doc future)
@@ -38,7 +38,7 @@ Macro
   deref with timeout is used. See also - realized?.
 ```
 
-view source code of the function
+- view source code of the function
 `(source function-name)`
 ```repl
 user=> (source future)
@@ -52,7 +52,7 @@ user=> (source future)
   [& body] `(future-call (^{:once true} fn* [] ~@body)))
 ```
 
-fuzzy search docs by pattern
+- fuzzy search docs by pattern
 `(find-doc "search pattern")`
 ```repl
 user=> (find-doc "future")
@@ -108,7 +108,7 @@ clojure.core/realized?
   Returns true if a value has been produced for a promise, delay, future or lazy sequence.
 ```
 
-list functions of the namespace
+- list functions of the namespace
 `(dir namespace-name)`
 ```repl
 user=> (dir clojure.string)                                                    blank?
