@@ -36,3 +36,7 @@
 
 (each [k v (pairs {:foo "halo" :bar "fennel"})]
   (print k v))
+
+; tables not= forever
+(assert (not= [1 2] [1 2]))
+(assert (not= {:a 1 :b 2} {:a 1 :b 2}))
