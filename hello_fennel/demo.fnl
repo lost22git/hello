@@ -25,3 +25,14 @@
 (case (mydiv 1 0)
   (nil err-msg) (print "Got error: " err-msg)
   r (print "Got value:" r))
+
+; for 
+(for [i 1 10 2]
+  (print i))
+
+; each
+(each [i v (ipairs ["halo" "fennel"])]
+  (print i v))
+
+(each [k v (pairs {:foo "halo" :bar "fennel"})]
+  (print k v))
