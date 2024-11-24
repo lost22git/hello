@@ -48,3 +48,7 @@
 ; record != map
 (assert (not= (->Book "the clojure book" ["programming"]) {:name "the clojure book" :tags ["programming"]}))
 
+; 
+(assert (= "clojure.lang.Atom" (type (atom 0))))
+(assert (= "clojure.lang.Ref" (type (ref 0))))
+(assert (= "clojure.lang.Agent" (type (agent 0))))

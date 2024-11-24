@@ -1,4 +1,4 @@
-#!/usr/bin/env clj -M
+#!/usr/bin/env -S clj -M
 
 ; delay: lazy value
 (def a (delay (println "[delay] only execute me at the first time") (random-uuid)))
@@ -12,5 +12,3 @@
 (assert (= (marea 3 4) (marea 3 4)))
 (assert (not= (marea 3 4) (marea 4 3)))
 (assert (= (marea 4 3) (marea 4 3)))
-
-
