@@ -40,3 +40,20 @@
 ; tables not= forever
 (assert (not= [1 2] [1 2]))
 (assert (not= {:a 1 :b 2} {:a 1 :b 2}))
+
+; doto
+(let [t {}]
+  (doto t (tset :a "halo")
+    (tset :b "fennel"))
+  (assert (= "halo" (. t :a)))
+  (assert (= "fennel" (. t :b))))
+
+; pipe (aka. Threading macros)
+; ->
+(assert (= "halofennel" (-> "halo" (.. "fennel"))))
+; ->>
+(assert (= "fennelhalo" (->> "halo" (.. "fennel"))))
+; -?>
+(assert (= "HALO" (-?> {:a "halo"} (. :a) (string.upper))))
+(assert (= nil (-?> {:a "halo"} (. :b) (string.upper))))
+; -?>>
