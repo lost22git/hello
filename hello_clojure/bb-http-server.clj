@@ -31,6 +31,9 @@
    :body (-> {:msg (str "Halo " (get-in req [:query-params "name"]))}
              json/encode)})
 
+(defonce client 
+  (delay (info "initializing http client") (http/client {:follow-redirects :always})))
+
 (defn proxy [req]
   (let [method (name (:request-method req))
         target-uri  (get-in req [:query-params "target"])]
@@ -39,7 +42,8 @@
     (http/request {:method method
                    :uri target-uri
                    :headers (dissoc (:headers req) "host" "content-length")
-                   :body (:body req)})))
+                   :body (:body req)
+                   :client @client})))
 
 (defn router [req]
   (match [(:request-method req) (:uri req)]

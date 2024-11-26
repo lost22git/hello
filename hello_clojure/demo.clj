@@ -46,6 +46,8 @@
 (assert (= (first mylist) "cindy"))
 (assert (= (rest mylist) '("alex" "bob")))
 (assert (= (last mylist) "bob"))
+(assert (= ["fred" "douglas" "cindy" "alex" "bob"]
+           (into  mylist ["douglas" "fred"])))   ; into: union
 
 ; set
 (def myset #{"alex" "bob"})
@@ -60,7 +62,7 @@
 (assert (contains? myset "cindy"))
 
 ; map
-(def mymap {"alex" 22, "bob" 33}) ; ',' can be omitted
+(def mymap {"alex" 22 "bob" 33})
 (def mymap (assoc mymap "cindy" 44)) ; assoc: add
 (assert (= (count mymap) 3))
 (assert (contains? mymap "cindy"))
@@ -151,3 +153,12 @@
    (if (zero? current)
      (persistent! state)
      (recur (dec current) (conj! state current)))))
+
+; transduce = transform + reduce
+(def xf (comp
+         (filter #(.startsWith % "b"))
+         (map clojure.string/upper-case)))
+(-> (transduce xf conj ["foo" "bar"])
+    (= ["BAR"])
+    assert)
+
