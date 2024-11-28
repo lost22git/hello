@@ -19,15 +19,6 @@
   (assert (= lang "Clojure")))
 (assert (= lang "Java"))
 
-; ; call java constructor
-(def list (java.util.ArrayList.))
-; call java methods
-(assert (= 0 (.size list)))
-; call java static methods
-; just like java, java.lang is preluded
-(assert (= 11 (.parseInt Integer "11")))
-(assert (= 11 (Integer/parseInt "11")))
-
 ;
 ; def functions
 ; ver1
