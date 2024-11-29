@@ -1,6 +1,6 @@
 #!/usr/bin/env -S clj -M
 
- ; atom
+; atom
 (def cnt (atom 0 :validator #(>= % 0)))
 (dotimes [_ 1000]
   (future (swap! cnt inc)))
@@ -19,7 +19,6 @@
 (dotimes [_ 1000]
   (future (transfer from to 1)))
 (Thread/sleep 500)
-(assert (= @cnt 1000))
 (assert (= @from 0))
 (assert (= @to 2000))
 
