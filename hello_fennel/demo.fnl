@@ -22,8 +22,14 @@
       (values nil "cannot div 0")
       (values (/ x y) nil)))
 
+; case
 (case (mydiv 1 0)
   (nil err-msg) (print "Got error: " err-msg)
+  r (print "Got value:" r))
+
+; match 
+(match (mydiv 1 0)
+  ((nil err-msg) ? (not= "" err-msg)) (print "Got error: " err-msg)
   r (print "Got value:" r))
 
 ; for 
@@ -56,4 +62,4 @@
 ; -?>
 (assert (= "HALO" (-?> {:a "halo"} (. :a) (string.upper))))
 (assert (= nil (-?> {:a "halo"} (. :b) (string.upper))))
-; -?>>
+; -?>> 
