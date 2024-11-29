@@ -1,6 +1,6 @@
 #!/usr/bin/env -S clj -M
 
-; atom
+ ; atom
 (def cnt (atom 0 :validator #(>= % 0)))
 (dotimes [_ 1000]
   (future (swap! cnt inc)))

@@ -31,7 +31,7 @@
    :body (-> {:msg (str "Halo " (get-in req [:query-params "name"]))}
              json/encode)})
 
-(defonce client 
+(defonce client
   (delay (info "initializing http client") (http/client {:follow-redirects :always})))
 
 (defn proxy [req]

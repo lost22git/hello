@@ -52,4 +52,3 @@
     (let [[v c] (a/alts!! [receiver sender1 sender2])]
       (println
        (str (current-thread-name) " channel: " (hash c) " done with " v)))))
-

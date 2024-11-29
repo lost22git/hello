@@ -12,14 +12,12 @@
 
 ; post json and decode json resp body
 (-> (http/post "https://httpbin.org/post"
-                          {:header {:content-type "application/json"}
-                           :body (json/encode {:foo "bar"})})
+               {:header {:content-type "application/json"}
+                :body (json/encode {:foo "bar"})})
     :body
     (json/parse-string true)
     :data
     (json/parse-string true)
     :foo
     (= "bar")
-    assert
- )
-
+    assert)

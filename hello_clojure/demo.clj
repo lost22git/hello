@@ -139,17 +139,14 @@
      (recur (dec current) (conj state current)))))
 
 ; fast
-(time
- (loop [current 1000000 state (transient [])]
-   (if (zero? current)
-     (persistent! state)
-     (recur (dec current) (conj! state current)))))
+(time (loop [current 1000000 state (transient [])]
+        (if (zero? current)
+          (persistent! state)
+          (recur (dec current) (conj! state current)))))
 
 ; transduce = transform + reduce
-(def xf (comp
-         (filter #(.startsWith % "b"))
-         (map clojure.string/upper-case)))
+(def xf (comp (filter #(.startsWith % "b"))
+              (map clojure.string/upper-case)))
 (-> (transduce xf conj ["foo" "bar"])
     (= ["BAR"])
     assert)
-

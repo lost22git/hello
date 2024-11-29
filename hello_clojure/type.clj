@@ -1,5 +1,5 @@
 #!/usr/bin/env -S clj -M
-; nil
+ ; nil
 (assert (= (type nil) nil))
 ; keyword
 (assert (= (type :halo) clojure.lang.Keyword))

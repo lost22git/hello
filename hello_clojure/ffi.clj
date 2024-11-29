@@ -1,6 +1,6 @@
-#!/usr/bin/env -S clj -M 
+#!/usr/bin/env -S clj -M
 
-; invoke java constructor
+ ; invoke java constructor
 (def mylist (java.util.ArrayList.))
 
 ; invoke java methods
@@ -24,12 +24,12 @@
 
 (set! *warn-on-reflection* true)
 
-; use java reflection
-(defn my-upcase [s] (.toUpperCase s))
-(->  (str "ha" "lo")
-     my-upcase
-     (= "HALO")
-     assert)
+;; use java reflection
+; (defn my-upcase [s] (.toUpperCase s))
+; (->  (str "ha" "lo")
+;      my-upcase
+;      (= "HALO")
+;      assert)
 
 ; invoke virtual java/lang/String#toUpperCase
 (defn my-upcase ^String [^String s] (.toUpperCase s))
