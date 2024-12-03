@@ -10,12 +10,16 @@
 
 ; validate function arguments and return value
 (s/def :int/pos (s/and int? pos?))
-(defn inc
-  ([x] (inc x 1))
+(defn my-inc
+  ([x] (my-inc x 1))
   ([x y]
    {:pre [(s/valid? :int/pos x) (s/valid? :int/pos y)]
     :post [(s/valid? :int/pos %)]}
    (+ x y)))
+
+; (my-inc -2)
+; (my-inc 2 -2)
+(my-inc 2)
 
 ; validate record
 (defrecord Book [^UUID id ^String name])
