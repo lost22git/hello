@@ -1,10 +1,16 @@
 #!/usr/bin/env -S clj -M
  ; nil
 (assert (= (type nil) nil))
+
+; symbol
+(assert (= (type 'sdfsdfsdf) clojure.lang.Symbol))
+
 ; keyword
 (assert (= (type :halo) clojure.lang.Keyword))
+
 ; bool
 (assert (= (type true) java.lang.Boolean))
+
 ; number
 (assert (= (type 1) java.lang.Long))
 (assert (= (type (int 1)) java.lang.Integer))
@@ -15,22 +21,89 @@
 (assert (= (type 1N) clojure.lang.BigInt))
 (assert (= (type 1M) java.math.BigDecimal))
 (assert (= (type 1/3) clojure.lang.Ratio))
+
 ; char
 (assert (= (type \c) java.lang.Character))
 (assert (= (type "halo") java.lang.String))
+
 ; collection
-(assert (= (type [1 2]) clojure.lang.PersistentVector))
-(assert (= (type '(1 2)) clojure.lang.PersistentList))
-(assert (= (type #{1 2}) clojure.lang.PersistentHashSet))
-(assert (= (type {1 2}) clojure.lang.PersistentArrayMap)) ; entries <= 8 -> liner search
-(assert (= (type {1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9}) clojure.lang.PersistentHashMap)) ; entries > 8 -> hash search
+; vector
+(assert (= (type [1 2])
+           clojure.lang.PersistentVector))
+; list
+(assert (= (type '(1 2))
+           clojure.lang.PersistentList))
+; set
+(assert (= (type #{1 2})
+           clojure.lang.PersistentHashSet))
+
+; array map: entries <= 8 -> linear search
+(assert (= (type {1 2})
+           clojure.lang.PersistentArrayMap))
+
+; hash map: entries > 8 -> hash search
+(assert (= (type {1 1 2 2 3 3 4 4 5 5 6 6 7 7 8 8 9 9})
+           clojure.lang.PersistentHashMap))
+
+; seq
+(assert (= (type (seq [1 2]))
+           clojure.lang.PersistentVector$ChunkedSeq))
+(assert (= (type (seq '(1 2)))
+           clojure.lang.PersistentList))
+(assert (= (type (seq #{1 2}))
+           clojure.lang.APersistentMap$KeySeq))
+(assert (= (type (seq {:a 1 :b 2}))
+           clojure.lang.PersistentArrayMap$Seq))
+
+; lazy-seq
+(assert (= (type (lazy-seq [1 2]))
+           clojure.lang.LazySeq))
+
 ; record
 (defrecord Book [name tags])
-(assert (= (type (->Book "the clojure book" ["programming"])) user.Book))
-; function
-; (assert (= (type +) clojure.core$_PLUS_))
+(assert (= (type (->Book "the clojure book" ["programming"]))
+           user.Book))
 
-; equality
+; function
+(assert (= (type str) clojure.core$str))
+
+; regex
+(assert (= (type #"\d+")
+           java.util.regex.Pattern))
+
+; uuid
+(assert (= (type #uuid "790d1277-c125-4bf7-afee-0111b07e6ece")
+           java.util.UUID))
+
+; date
+(assert (= (type #inst "2022-09-09T02:20:30Z")
+           java.util.Date))
+
+; concurrent types
+; future
+(assert (contains? (supers (type (future 1)))
+                   java.util.concurrent.Future))
+
+; ; promise
+; (supers (type (promise)))
+
+; atom
+(assert (= (type (atom 0))
+           clojure.lang.Atom))
+; ref
+(assert (= (type (ref 0))
+           clojure.lang.Ref))
+; agent
+(assert (= (type (agent 0))
+           clojure.lang.Agent))
+
+; supers: find type of super class and interfaces
+; (println (supers (type str)))
+
+;;;;;;;;;;;;;;
+;; equality ;;
+;;;;;;;;;;;;;;
+
 (assert (= 1 1))
 (assert (= 1 (int 1)))
 (assert (not= 1 1.0))
@@ -48,7 +121,3 @@
 ; record != map
 (assert (not= (->Book "the clojure book" ["programming"]) {:name "the clojure book" :tags ["programming"]}))
 
-; 
-(assert (= "clojure.lang.Atom" (type (atom 0))))
-(assert (= "clojure.lang.Ref" (type (ref 0))))
-(assert (= "clojure.lang.Agent" (type (agent 0))))

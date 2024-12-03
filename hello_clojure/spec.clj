@@ -3,8 +3,6 @@
 (comment
   "https://clojure.org/guides/spec")
 
-(require '[babashka.deps :as deps])
-(deps/add-deps '{:deps {org.clojure/spec.alpha {:mvn/version "0.5.238"}}})
 (require '[clojure.spec.alpha :as s])
 (require '[clojure.pprint :as p])
 
