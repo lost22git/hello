@@ -1,6 +1,6 @@
 #!/usr/bin/env -S clj -M
 
- ; def variables
+; def variables
 (def m 1)
 (def n 2)
 ; cal function
@@ -77,6 +77,7 @@
 ; record
 (defrecord Book [name pages])
 (def book (->Book "The Clojure Book" 111))
+; (def book (map->Book {:name "The Clojure Book" :pages 111}))
 (assert (= (:name book) "The Clojure Book"))
 (assert (= (:pages book) 111))
 
@@ -130,7 +131,6 @@
 ; cond->>
 
 ; transient
-
 ; slow
 (time
  (loop [current 1000000 state []]
@@ -150,3 +150,16 @@
 (-> (transduce xf conj ["foo" "bar"])
     (= ["BAR"])
     assert)
+
+; more seq ops
+(assert (= (take 4 (repeat "ha"))
+           (take 4 (repeatedly (fn [] "ha")))
+           ["ha" "ha" "ha" "ha"]))
+
+; lazy-seq
+(defn cons-lazy-seq
+  ([] (cons-lazy-seq 0))
+  ([n] (cons n (lazy-seq (cons-lazy-seq (+ n 2))))))
+
+(assert (= (take 4 (cons-lazy-seq))
+           [0 2 4 6]))

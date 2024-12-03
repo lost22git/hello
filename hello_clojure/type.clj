@@ -33,6 +33,11 @@
 ; list
 (assert (= (type '(1 2))
            clojure.lang.PersistentList))
+
+; cons
+(assert (= (type (cons 1 '(2 3)))
+           clojure.lang.Cons))
+
 ; set
 (assert (= (type #{1 2})
            clojure.lang.PersistentHashSet))
