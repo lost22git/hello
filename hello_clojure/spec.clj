@@ -28,12 +28,11 @@
 (s/def :book/book (s/keys :req-un [:book/id :book/name]))
 
 (->> (->Book 1 1)
-     (s/valid? :book/book)
+     ((fn [x]
+        (s/explain :book/book x)
+        (s/valid? :book/book x)))
      not
      assert)
-
-; (->> (->Book 1 1)
-;      (s/explain :book/book))
 
 (->> (->Book 1 1)
      (s/explain-data :book/book)
@@ -46,12 +45,11 @@
 
 ; validate map
 (->> {:id 1 :name 1}
-     (s/valid? :book/book)
+     ((fn [x]
+        (s/explain :book/book x)
+        (s/valid? :book/book x)))
      not
      assert)
-
-; (->> {:id 1 :name 1}
-;      (s/explain :book/book))
 
 (->> {:id 1 :name 1}
      (s/explain-data :book/book)
