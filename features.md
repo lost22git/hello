@@ -1,7 +1,7 @@
 - Paradigm
-    - [ ] Procedural
-    - [ ] Functional
-    - [ ] Object Oriented
+    - [ ] procedural
+    - [ ] functional
+    - [ ] object oriented
 - Type
     - [ ] memory layout control
     - inference
@@ -53,7 +53,7 @@
         - [ ]  by-move
         - [ ]  by-ref
         - [ ]  by-auto
-    - [ ] multiple-values
+    - [ ] multi-values
     - destructing
         - [ ] array/list
         - [ ] map
@@ -86,7 +86,7 @@
     - [ ] null type union
 - Error
     - [ ] try-catch
-    - [ ] multi return values
+    - [ ] multi returns
     - [ ] result type
     - [ ] error type union
 - Polymorphism
