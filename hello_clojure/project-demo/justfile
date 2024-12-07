@@ -1,9 +1,19 @@
-
 _default:
  @just --list --unsorted
 
+# run main-fn with babashka
 bb *args: 
   bb -m demo.core {{args}}
 
+# run main-fn with clj
 clj *args:
   clj -M -m demo.core {{args}}
+
+# gen-class
+gen-class:
+  -mkdir classes
+  clj -M -e "(compile 'demo.core)"
+
+# run main-fn with java
+java *args:
+  java -cp $(clj -Spath) demo.core {{args}}

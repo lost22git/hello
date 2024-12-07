@@ -1,5 +1,6 @@
 (ns demo.core
-  (:use clojure.tools.logging))
+  (:use clojure.tools.logging)
+  (:gen-class))
 
 (defn add [^long a ^long b]
   (info "calling [add] with" a b)
