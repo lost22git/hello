@@ -1,0 +1,9 @@
+
+_default:
+ @just --list --unsorted
+
+bb *args: 
+  bb -m demo.core {{args}}
+
+clj *args:
+  clj -M -m demo.core {{args}}
