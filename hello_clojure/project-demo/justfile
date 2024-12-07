@@ -1,19 +1,39 @@
 _default:
- @just --list --unsorted
+    @just --list --unsorted
+
+# get alias list
+alias-list:
+    clj -X:deps aliases
+
+# get dep version
+deps-version lib_name:
+    clj -X:deps find-versions :lib {{ lib_name }}
+
+# get deps list
+deps-list:
+    clj -X:deps list
+
+# get deps tree
+deps-tree:
+    clj -X:deps tree
 
 # run main-fn with babashka
-bb *args: 
-  bb -m demo.core {{args}}
-
-# run main-fn with clj
-clj *args:
-  clj -M -m demo.core {{args}}
+bb *args:
+    bb -m demo.core {{ args }}
 
 # gen-class
 gen-class:
-  -mkdir classes
-  clj -M -e "(compile 'demo.core)"
+    -mkdir classes
+    clj -M -e "(compile 'demo.core)"
+
+# run main-fn with clj
+dev *args:
+    clj -M:dev {{ args }}
 
 # run main-fn with java
 java *args:
-  java -cp $(clj -Spath) demo.core {{args}}
+    java -cp $(clj -Spath) demo.core {{ args }}
+
+# run tests
+test:
+    clj -X:test
