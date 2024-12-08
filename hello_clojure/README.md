@@ -7,7 +7,6 @@ https://clojure.org/guides/install_clojure
 ### Tools 
 
 - [babashka](https://github.com/babashka/babashka#installation)
-- [leiningen](https://leiningen.org)
 
 
 ## Resources
@@ -134,5 +133,110 @@ triml
 trimr
 upper-case
 ```
+
+## New Project
+
+### deps-new (based clj tools)
+
+#### add deps-new to tools as `new`
+
+`clj -Ttools install-latest :lib <lib-name> :as <tool-name>`
+
+```shell
+clj -Ttools install-latest :lib io.github.seancorfield/deps-new :as new
+```
+
+#### list all tools
+
+```shell
+clj -Ttools list
+```
+
+#### show tool info
+
+`clj -Ttools show :tool <tool-name>`
+
+```shell
+clj -Ttools show :tool new
+```
+
+#### view deps-new help doc
+
+```shell
+clj -A:deps -Tnew help/doc
+```
+
+#### new project
+
+`clj -Tnew <template-name> :name <project-ns-name>/<project-name>`
+
+
+```shell
+clj -Tnew app :name io.github.lost/deps-new-demo
+```
+
+then create project structure:
+
+```
+.
+├── .cpcache
+│  ├── 2397443233.basis
+│  └── 2397443233.cp
+├── doc
+│  └── intro.md
+├── resources
+│  └── .keep
+├── src
+│  └── lost
+│     └── deps_new_demo.clj
+├── test
+│  └── lost
+│     └── deps_new_demo_test.clj
+├── .gitignore
+├── build.clj
+├── CHANGELOG.md
+├── deps.edn
+├── LICENSE
+└── README.md
+```
+
+and build uberjar
+
+```shell
+clj -T:build ci
+```
+then create build target
+
+```
+target
+├── classes
+│  ├── lost
+│  │  ├── deps_new_demo$_main.class
+│  │  ├── deps_new_demo$fn__140.class
+│  │  ├── deps_new_demo$greet.class
+│  │  ├── deps_new_demo$loading__6812__auto____138.class
+│  │  ├── deps_new_demo.class
+│  │  ├── deps_new_demo.clj
+│  │  └── deps_new_demo__init.class
+│  └── .keep
+└── io.github.lost
+   └── deps-new-demo-0.1.0-SNAPSHOT.jar
+```
+
+```shell
+unzip -p ./target/io.github.lost/deps-new-demo-0.1.0-SNAPSHOT.jar META-INF/MANIFEST.MF
+```
+
+```
+Manifest-Version: 1.0
+Created-By: org.clojure/tools.build
+Build-Jdk-Spec: 21
+Main-Class: lost.deps_new_demo
+```
+
+### neil (based babashka)
+
+
+### leiningen
 
 ## Summary
