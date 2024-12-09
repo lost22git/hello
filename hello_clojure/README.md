@@ -8,9 +8,12 @@ https://clojure.org/guides/install_clojure
 
 - [babashka](https://github.com/babashka/babashka#installation)
 
-
 ## Resources
 
+- [getting_started](https://clojure.org/guides/getting_started)
+- [reader](https://clojure.org/reference/reader)
+- [contrib_libs](https://clojure.org/dev/contrib_libs)
+- [news](https://clojure.org/news/news)
 
 ## Tips
 
@@ -235,7 +238,6 @@ Main-Class: lost.deps_new_demo
 ```
 
 ### neil (based babashka)
-
 
 ### leiningen
 
