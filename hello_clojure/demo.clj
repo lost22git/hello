@@ -130,20 +130,6 @@
 ; cond->
 ; cond->>
 
-; transient
-; slow
-(time
- (loop [current 1000000 state []]
-   (if (zero? current)
-     state
-     (recur (dec current) (conj state current)))))
-
-; fast
-(time (loop [current 1000000 state (transient [])]
-        (if (zero? current)
-          (persistent! state)
-          (recur (dec current) (conj! state current)))))
-
 ; transduce = transform + reduce
 (def xf (comp (filter #(.startsWith % "b"))
               (map clojure.string/upper-case)))
@@ -163,3 +149,10 @@
 
 (assert (= (take 4 (cons-lazy-seq))
            [0 2 4 6]))
+
+(run! (comp println #(str "user-" %) clojure.string/upper-case)
+      "JOse")
+
+(->> ((juxt #(.toUpperCase %) #(.toLowerCase %)) "cLoJuRe")
+     (= ["CLOJURE" "clojure"])
+     assert)

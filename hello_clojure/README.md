@@ -139,7 +139,7 @@ upper-case
 
 ## New Project
 
-### deps-new (based clj tools)
+### deps-new (a clj tool)
 
 #### add deps-new to tools as `new`
 
@@ -237,7 +237,13 @@ Build-Jdk-Spec: 21
 Main-Class: lost.deps_new_demo
 ```
 
-### neil (based babashka)
+### neil (a babashka script to wrap deps-new)
+
+`neil new app io.github.lost/neil-demo`
+
+[more details](https://github.com/babashka/neil)
+
+project structure almost same as `deps-new`
 
 ### leiningen
 
