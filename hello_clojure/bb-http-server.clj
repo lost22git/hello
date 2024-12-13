@@ -18,7 +18,6 @@
 
 ; add deps
 (deps/add-deps '{:deps {ring/ring-core {:mvn/version "1.13.0"}}})
-; (deps/add-deps '{:deps {compojure/compojure {:mvn/version "1.7.1"}}})
 
 (use 'clojure.pprint)
 (use 'clojure.core.match)
@@ -27,10 +26,6 @@
 (use 'clojure.tools.logging)
 (use 'ring.middleware.params)
 (use 'org.httpkit.server)
-
-; ; require compojure
-; (require '[compojure.core :refer :all])
-; (require '[compojure.route :as route])
 
 ; halo handler
 (defn handle-halo [req]
@@ -61,13 +56,6 @@
     [:get "/halo"] (handle-halo req)
     [_ "/proxy"] (handle-proxy req)
     :else {:status 404 :body (str "NOT FOUND " (:uri req))}))
-
-; routing (compojure)
-(comment
-  (defroutes router
-    (GET "/halo" [req] (handle-halo req))
-    (ANY "/proxy" [req] (handle-proxy req))
-    (route/not-found "<h1>Page not found</h1>")))
 
 ; wrapping middlewares
 (def app
