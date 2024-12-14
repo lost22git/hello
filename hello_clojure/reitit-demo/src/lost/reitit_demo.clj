@@ -5,10 +5,10 @@
    [reitit.dev.pretty :as pretty]
    [reitit.ring :as ring]
    [reitit.ring.middleware.exception :as exception]
-   ; content negotiation
+   ;; content negotiation
    [reitit.ring.middleware.muuntaja :as muuntaja]
    [muuntaja.core :as m]
-   ; coercion and spec
+   ;; coercion and spec
    [reitit.ring.coercion :as coercion]
    [reitit.coercion.spec :as spec]))
 
@@ -16,7 +16,7 @@
   {:status 200 :body "halo!"})
 
 (defn bug [_req]
-  (throw (Exception. "bug!")))
+  (throw (ex-info "bug!" {:time (java.time.Instant/now)})))
 
 (defonce id (atom 0))
 (defn gen-id ^long []
@@ -99,40 +99,45 @@
 (comment
   (edit-book-by-id {:parameters {:path {:id 2} :body {:title "Clojure in Action"}}}))
 
+;;--------;;
+;; routes ;;
+;;--------;;
+(def route-data
+  [["/halo" {:get halo}]
+   ["/bug" {:get bug}]
+   ["/book"
+    ["" {:get {:summary "get book list"
+               :handler get-book-list}
+         :post {:summary "add a new book"
+                :parameters {:body {:title string?}}
+                :handler add-book}}]
+    ["/:id" {:get {:summary "get book by id"
+                   :parameters {:path {:id int?}}
+                   :handler get-book-by-id}
+             :delete {:summary "delete book by id"
+                      :parameters {:path {:id int?}}
+                      :handler delete-book-by-id}
+             :put {:summary "edit book by id"
+                   :parameters {:path {:id int?} :body {:title string?}}
+                   :handler edit-book-by-id}}]]])
+
+(def route-options
+  {:exception pretty/exception
+   :data {:muuntaja m/instance
+          :coercion spec/coercion
+            ;; middleware order: IO -> APP
+          :middleware [muuntaja/format-middleware
+                       exception/exception-middleware
+                       coercion/coerce-exceptions-middleware
+                       coercion/coerce-request-middleware
+                       coercion/coerce-response-middleware]}})
+
 ;;---------;;
 ;; handler ;;
 ;;---------;;
 (def handler
   (ring/ring-handler
-    ;; router handler
-   (ring/router
-    [["/halo" {:get halo}]
-     ["/bug" {:get bug}]
-     ["/book"
-      ["" {:get {:summary "get book list"
-                 :handler get-book-list}
-           :post {:summary "add a new book"
-                  :parameters {:body {:title string?}}
-                  :handler add-book}}]
-      ["/:id" {:get {:summary "get book by id"
-                     :parameters {:path {:id int?}}
-                     :handler get-book-by-id}
-               :delete {:summary "delete book by id"
-                        :parameters {:path {:id int?}}
-                        :handler delete-book-by-id}
-               :put {:summary "edit book by id"
-                     :parameters {:path {:id int?} :body {:title string?}}
-                     :handler edit-book-by-id}}]]]
-
-    {:exception pretty/exception
-     :data {:muuntaja m/instance
-            :coercion spec/coercion
-            ;; middleware order: IO -> APP
-            :middleware [muuntaja/format-middleware
-                         exception/exception-middleware
-                         coercion/coerce-exceptions-middleware
-                         coercion/coerce-request-middleware
-                         coercion/coerce-response-middleware]}})
+   (ring/router route-data route-options)
    ;; redirect slash handler: /halo/ -> 302 Location: /halo
    (ring/redirect-trailing-slash-handler)
    ;; default handler
