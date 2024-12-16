@@ -55,9 +55,17 @@ jsonpath "$.id" == 2
 jsonpath "$.title" == "Clojure in Action"
 jsonpath "$.update-at" != null
 
-## bug
+## bug error
 ## curl -sSL -X GET http://localhost:8000/bug
 GET http://localhost:8000/bug
+HTTP 500
+[Asserts]
+header "Content-Type" contains "json"
+jsonpath "$.time" != null
+
+## coercion error
+## curl -ssL -X GET http://localhost:8000/book/sss
+GET http://localhost:8000/book/sss
 HTTP 500
 [Asserts]
 header "Content-Type" contains "json"

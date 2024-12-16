@@ -31,7 +31,7 @@
 ;; error handler ;;
 ;;---------------;;
 
-(defn handle-error [tag err req]
+(defn handle-error [err req]
   (t/error! err)
   {:status 500
    :body {:err.msg (ex-message err)
@@ -40,11 +40,20 @@
           :req.method (:request-method req)
           :req.uri (:uri req)}})
 
+(defn handle-coercion-error [err req]
+  {:status 500
+   :body {:err.msg "coercion error"
+          :err.data (:body ((exception/create-coercion-handler 500) err req))
+          :time (java.time.Instant/now)
+          :req.method (:request-method req)
+          :req.uri (:uri req)}})
+
 (def error-middleware
   (exception/create-exception-middleware
    (merge
     exception/default-handlers
-    {::exception/default (partial handle-error :default)})))
+    {:reitit.coercion/request-coercion handle-coercion-error
+     ::exception/default handle-error})))
 
 ;;--------;;
 ;; routes ;;
@@ -62,7 +71,6 @@
             ;; middleware order: IO -> APP
           :middleware [muuntaja/format-middleware
                        error-middleware
-                       coercion/coerce-exceptions-middleware
                        coercion/coerce-request-middleware
                        coercion/coerce-response-middleware]}})
 
