@@ -1,4 +1,4 @@
-# Clojure Lang Learning
+# [Clojure](https://clojure.org) Lang Learning
 
 ## Installation
 
@@ -247,4 +247,8 @@ project structure almost same as `deps-new`
 
 ### leiningen
 
-## Summary
+
+# [ClojureScript](https://clojurescript.org) Lang Learning
+
+# [ClojureDart](https://github.com/Tensegritics/ClojureDart) Lang Learning
+
