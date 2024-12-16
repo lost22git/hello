@@ -2,6 +2,7 @@
   (:gen-class)
   (:require
    [lost.reitit-demo.book-api :as book-api]
+   [taoensso.telemere :as t]
    [org.httpkit.server :as hk]
    [reitit.dev.pretty :as pretty]
    [reitit.ring :as ring]
@@ -19,11 +20,19 @@
 (defn bug [_req]
   (throw (ex-info "bug!" {:foo "bar"})))
 
+;;---------;;
+;; logging ;;
+;;---------;;
+
+(defn start-logging []
+  (t/set-min-level! :info))
+
 ;;---------------;;
 ;; error handler ;;
 ;;---------------;;
 
 (defn handle-error [tag err req]
+  (t/error! err)
   {:status 500
    :body {:err.msg (ex-message err)
           :err.data (ex-data err)
@@ -35,10 +44,7 @@
   (exception/create-exception-middleware
    (merge
     exception/default-handlers
-    {::exception/default (partial handle-error :default)
-     ::exception/wrap (fn [error-handler err req]
-                        (println "ERROR" (pr-str (:uri req)))
-                        (error-handler err req))})))
+    {::exception/default (partial handle-error :default)})))
 
 ;;--------;;
 ;; routes ;;
@@ -91,14 +97,16 @@
       ; :worker-pool (java.util.concurrent.Executors/newVirtualThreadPerTaskExecutor)
                       })]
     (reset! server s)
-    (println "Server is listening on :" (hk/server-port s))))
+    (t/log! :info (str "Server is listening on :" (hk/server-port s)))))
 
 (defn restart-server []
   (stop-server)
   (start-server))
 
 (comment
-  (restart-server))
+  (do
+    (start-logging)
+    (restart-server)))
 (comment
   (stop-server))
 
@@ -108,5 +116,6 @@
 
 (defn -main
   [& args]
+  (start-logging)
   (start-server)
   @(promise))

@@ -1,15 +1,15 @@
 #!/usr/bin/env hurl
 
-# get book list
-# curl -sSL -X GET http://localhost:8000/book
+## get book list
+## curl -sSL -X GET http://localhost:8000/book
 GET http://localhost:8000/book
 HTTP 200
 [Asserts]
 header "Content-Type" contains "json"
 jsonpath "$" count == 2
 
-# get book by id
-# curl -sSL -X GET http://localhost:8000/book/1
+## get book by id
+## curl -sSL -X GET http://localhost:8000/book/1
 GET http://localhost:8000/book/1
 HTTP 200
 [Asserts]
@@ -17,8 +17,8 @@ header "Content-Type" contains "json"
 jsonpath "$.id" == 1
 jsonpath "$.title" == "Programming Clojure"
 
-# add a new book
-# curl -sSL -X POST http://localhost:8000/book -H 'content-type:application/json' -d '{"title":"Getting Clojure"}'
+## add a new book
+## curl -sSL -X POST http://localhost:8000/book -H 'content-type:application/json' -d '{"title":"Getting Clojure"}'
 POST http://localhost:8000/book
 {
   "title": "Getting Clojure"
@@ -32,8 +32,8 @@ jsonpath "$.create-at" != null
 [Captures]
 new-book-id: jsonpath "$.id"
 
-# delete book by id
-# curl -sSL -X DELETE http://localhost:8000/book/{id}
+## delete book by id
+## curl -sSL -X DELETE http://localhost:8000/book/{id}
 DELETE http://localhost:8000/book/{{new-book-id}}
 HTTP 200
 [Asserts]
@@ -42,8 +42,8 @@ jsonpath "$.id" == {{new-book-id}}
 jsonpath "$.title" == "Getting Clojure"
 jsonpath "$.create-at" != null
 
-# edit book by id
-# curl -sSL -X PUT http://localhost:8000/book/2 -H 'content-type:application/json' -d '{"title":"Clojure in Action"}'
+## edit book by id
+## curl -sSL -X PUT http://localhost:8000/book/2 -H 'content-type:application/json' -d '{"title":"Clojure in Action"}'
 PUT http://localhost:8000/book/2
 {
   "title": "Clojure in Action"
@@ -55,3 +55,10 @@ jsonpath "$.id" == 2
 jsonpath "$.title" == "Clojure in Action"
 jsonpath "$.update-at" != null
 
+## bug
+## curl -sSL -X GET http://localhost:8000/bug
+GET http://localhost:8000/bug
+HTTP 500
+[Asserts]
+header "Content-Type" contains "json"
+jsonpath "$.time" != null
