@@ -21,18 +21,9 @@ deps-tree:
 bb *args:
     bb -m demo.core {{ args }}
 
-# gen-class
-gen-class:
-    -mkdir classes
-    clj -M -e "(compile 'demo.core)"
-
 # run main-fn with clj
-dev *args:
-    clj -M:dev {{ args }}
-
-# run main-fn with java
-java *args:
-    java -cp $(clj -Spath) demo.core {{ args }}
+run *args:
+    clj -M:run {{ args }}
 
 # run tests
 test:

@@ -19,7 +19,7 @@ https://clojure.org/guides/install_clojure
 
 ## New Project
 
-### deps-new (a clj tool)
+### [deps-new](https://github.com/seancorfield/deps-new) (a clj tool)
 
 #### add deps-new to tools as `new`
 

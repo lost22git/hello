@@ -1,7 +1,6 @@
 {:paths ["src"]
  :deps {org.clojure/tools.logging {:mvn/version "1.3.0"}}
- :aliases {:dev {:extra-paths ["classes"]
-                 :main-opts ["-m" "demo.core"]}
+ :aliases {:run {:main-opts ["-m" "demo.core"]}
            :test {:extra-paths ["test"]
                   :extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
                   :main-opts ["-m" "cognitect.test-runner"]
