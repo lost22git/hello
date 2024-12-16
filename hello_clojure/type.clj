@@ -126,3 +126,36 @@
 ; record != map
 (assert (not= (->Book "the clojure book" ["programming"]) {:name "the clojure book" :tags ["programming"]}))
 
+;; check types
+
+(assert (nil? nil))
+(assert (some? 1))
+(assert (symbol? 'sdf))
+(assert (keyword? :s))
+(assert (number? 1))
+(assert (int? 1))
+(assert (float? 1.1))
+(assert (ratio? 1/2))
+(assert (decimal? 1M))
+(assert (char? \newline))
+(assert (string? "abc"))
+(assert (vector? [1  2]))
+(assert (list? '(1 2)))
+(assert (map? {:a 1}))
+(assert (set? #{1 2}))
+(assert (seq?  (seq [1 2])))
+(assert (record? (->Book "abc" [])))
+(assert (fn? even?))
+(assert (ifn? even?))
+(assert (ifn? [1 2])) ; so we can call this: ([1 2] 1) => 2
+(assert (ifn? {:a 1})) ; so we can call this: ({:a 1} :a) => 1
+(assert (ifn? #{1 2})) ; so we can call this: (#{1 2} 1) => 1
+(assert (uuid? (java.util.UUID/randomUUID)))
+
+(comment
+  (require '[clojure.repl :refer [apropos]])
+  (defn see-more-check-fn
+    "see more checking fn"
+    []
+    (filter #(clojure.string/starts-with? % "clojure.core") (apropos "?"))))
+(comment (see-more-check-fn))

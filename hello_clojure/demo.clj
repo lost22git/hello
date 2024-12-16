@@ -30,7 +30,7 @@
 (def myhash #(.hashCode %))
 (assert (= (.hashCode "haha") (myhash "haha")))
 
-; singly-linked-list '()
+;; singly-linked-list '()
 (def mylist '("alex" "bob"))
 (def mylist (conj mylist "cindy")) ; cnoj: prepend
 (assert (= (count mylist) 3))
@@ -40,7 +40,7 @@
 (assert (= ["fred" "douglas" "cindy" "alex" "bob"]
            (into  mylist ["douglas" "fred"])))   ; into: union
 
-; set
+;; set
 (def myset #{"alex" "bob"})
 (def myset (conj myset "cindy")) ; conj: add
 (assert (= (count myset) 3))
@@ -52,7 +52,7 @@
 (assert (= (count myset) 3))
 (assert (contains? myset "cindy"))
 
-; map
+;; map
 (def mymap {"alex" 22 "bob" 33})
 (def mymap (assoc mymap "cindy" 44)) ; assoc: add
 (assert (= (count mymap) 3))
@@ -74,14 +74,14 @@
 (assert (= (count mymap) 4))
 (assert (= (mymap "douglas") (+ 55 11)))
 
-; record
+;; record
 (defrecord Book [name pages])
 (def book (->Book "The Clojure Book" 111))
 ; (def book (map->Book {:name "The Clojure Book" :pages 111}))
 (assert (= (:name book) "The Clojure Book"))
 (assert (= (:pages book) 111))
 
-; let destructing 
+;; let destructing 
 (let [[a b] [1 2]]
   (assert (= (+ a b) 3)))
 
@@ -89,7 +89,7 @@
   (assert (= first "foo"))
   (assert (= last "bar")))
 
-; function params destructing
+;; function params destructing
 (def add
   (fn [{:keys [x y]}]
     (+ x y)))
@@ -97,12 +97,12 @@
 (defrecord Point [x y z])
 (assert (= (add (->Point 1 2 0)) 3))
 
-; doto
+;; doto
 (let [list (java.util.ArrayList.)]
   (doto list (.add 10) (.add 100) (.add 1000))
   (assert (= list [10 100 1000])))
 
-; pipe (aka. Threading Macros)
+;; pipe (aka. Threading Macros)
 ; -> (prev result as next first param)
 (assert (= "HALO_CLOJURE"
            (-> "halo"
@@ -130,19 +130,19 @@
 ; cond->
 ; cond->>
 
-; transduce = transform + reduce
+;; transduce = transform + reduce
 (def xf (comp (filter #(.startsWith % "b"))
               (map clojure.string/upper-case)))
 (-> (transduce xf conj ["foo" "bar"])
     (= ["BAR"])
     assert)
 
-; more seq ops
+;; more seq ops
 (assert (= (take 4 (repeat "ha"))
            (take 4 (repeatedly (fn [] "ha")))
            ["ha" "ha" "ha" "ha"]))
 
-; lazy-seq
+;; lazy-seq
 (defn cons-lazy-seq
   ([] (cons-lazy-seq 0))
   ([n] (cons n (lazy-seq (cons-lazy-seq (+ n 2))))))
@@ -150,9 +150,20 @@
 (assert (= (take 4 (cons-lazy-seq))
            [0 2 4 6]))
 
+;; run!
 (run! (comp println #(str "user-" %) clojure.string/upper-case)
       "JOse")
 
+;; juxt
 (->> ((juxt #(.toUpperCase %) #(.toLowerCase %)) "cLoJuRe")
      (= ["CLOJURE" "clojure"])
      assert)
+(->> [1 2 3 4 5]
+     ((juxt filter remove) even?)
+     (= [[2 4] [1 3 5]])
+     (assert))
+
+;; complement
+(assert (= [2 4] (filter even? [1 2 3 4 5])))
+(assert (= [1 3 5] (filter (complement even?) [1 2 3 4 5])))
+
