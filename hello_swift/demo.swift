@@ -9,13 +9,13 @@ let a = 1
 let b = 2
 print("\(a) + \(b) = \(a + b)")
 
-
 // multi lines string
 
-print("""
-> Mama, just killed a man
-> Put a gun against his head, pulled my trigger, now he's dead...
-""")
+print(
+  """
+  > Mama, just killed a man
+  > Put a gun against his head, pulled my trigger, now he's dead...
+  """)
 
 // raw string
 print(#">> the song name is "\#(song_name)""#)
@@ -32,18 +32,18 @@ assert(list.capacity == 2)
 
 // map
 
-var map: [String:Int] = [:]
+var map: [String: Int] = [:]
 map["foo"] = 1
 map["bar"] = 2
-assert(map == ["foo":1, "bar":2])
+assert(map == ["foo": 1, "bar": 2])
 assert(map.count == 2)
 assert(map.capacity == 3)
-for (k,v) in map {
-    switch k {
-        case "foo": assert(v == 1)
-        case "bar": assert(v == 2)
-    default: assert(false)
-    }
+for (k, v) in map {
+  switch k {
+  case "foo": assert(v == 1)
+  case "bar": assert(v == 2)
+  default: assert(false)
+  }
 }
 
 // tuple
@@ -59,58 +59,101 @@ assert(1 == t1)
 
 var sum = 0
 for i in 1...3 {
-    sum += i
+  sum += i
 }
 
-assert(sum == (1+2+3))
+assert(sum == (1 + 2 + 3))
 
 sum = 0
 for i in 1..<3 {
-    sum += i
+  sum += i
 }
 
-assert(sum == (1+2))
+assert(sum == (1 + 2))
 
 // Optional
 
 var maybe: String? = nil
-assert("foo" == maybe ?? "foo") // ?? default_value
+// ?? default_value
+assert("foo" == maybe ?? "foo")
 maybe = "bar"
 assert("bar" == maybe ?? "foo")
-assert(3 == maybe?.count ?? 0) // ?. map
-if let v = maybe {  // if-let: if not-nil and unwrap 
-    assert(3 == (v.count))
+// ?. map
+assert(3 == maybe?.count ?? 0)
+if let v = maybe {  // if-let: if not-nil and unwrap
+  assert(3 == (v.count))
 }
-
 
 // function
 
-func tdivrem(a:Int, b:Int) -> (tdiv:Int, rem:Int) {
-    return (a/b, a%b)
+func tdivrem(a: Int, b: Int) -> (tdiv: Int, rem: Int) {
+  return (a / b, a % b)
 }
 
-let (tdiv, rem) = (tdivrem(a:-5, b:3))
+let (tdiv, rem) = (tdivrem(a: -5, b: 3))
 assert(tdiv == -1)
 assert(rem == -2)
+
+// closure & trailing lambda
+
+print([1,2].map{ (x)->Int in x + 1 })
+print([1,2].map{ x in x + 1 })
+print([1,2].map{ $0 + 1 })
+
+// adt & pattern-matching
+
+enum EbookFormat {
+  case pdf, epub, mobi
+}
+
+struct Ebook {
+  var pages: Int
+  var format: EbookFormat
+}
+
+enum BookFormat {
+  case paper(Int)  
+  case ebook(Ebook) 
+
+  var pages: Int {
+    return switch self {
+      case let .paper(pages): pages
+      case let .ebook(ebook): ebook.pages
+    }
+  } 
+}
 
 // class
 
 class Book: CustomStringConvertible {
-    let id: Int
-    let title: String
-    var price: Double?
+  let id: Int
+  let title: String
+  var price: Double?
+  var format: BookFormat
 
-    init(id:Int, title:String) {
-        self.id = id
-        self.title = title
-    }
- 
-    public var description: String {
-       return #"Book{id:\#(self.id), title:"\#(self.title)", price:\#(self.price?.description ?? "nil")}"#
-    }
+  init(id: Int, title: String, format: BookFormat) {
+    self.id = id
+    self.title = title
+    self.format = format
+  }
+  
+  // override CustomStringConvertible
+  public var description: String {
+    return
+      #"Book{id:\#(self.id), title:"\#(self.title)", price:\#(self.price?.description ?? "nil"),format:\#(self.format)}"#
+  }
+
+  // computed property
+  var pages: Int {
+    return self.format.pages
+  }
 }
-var book = Book(id:1,title:"a book")
+var book = Book(id: 1, title: "a book", format: BookFormat.paper(99))
 print(book)
 book.price = 11.99
 print(book)
+book.format = BookFormat.ebook(Ebook(pages: 120, format: EbookFormat.pdf))
+print(book)
+print("book pages:", book.pages)
+
 
