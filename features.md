@@ -63,7 +63,7 @@
     - args/params
         - [ ] varargs
         - [ ] named
-        - [ ] alias
+        - [ ] label
         - [ ] default value
         - [ ] destructing
     - return value
