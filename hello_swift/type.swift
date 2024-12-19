@@ -1,5 +1,8 @@
 #!/usr/bin/env swift
 
+// typeof
+// print(type(of: (1...10)))
+
 // bool
 assert(MemoryLayout<Bool>.size == 1)
 assert(MemoryLayout<Bool>.alignment == 1)
@@ -48,7 +51,6 @@ assert(MemoryLayout<ClosedRange<Int>>.alignment == 8)
 assert(MemoryLayout<Int?>.size == 9)
 assert(MemoryLayout<Int?>.alignment == 8)
 
-
 // struct
 struct Book {
     var id: UInt32
@@ -58,6 +60,9 @@ struct Book {
 
 assert(MemoryLayout<Book>.size == 4 + 4 + 16 + 4) // why size != n * alignment 
 assert(MemoryLayout<Book>.alignment == 8)
+assert(MemoryLayout.offset(of: \Book.id) == 0)
+assert(MemoryLayout.offset(of: \Book.name) == 8)
+assert(MemoryLayout.offset(of: \Book.price) == 24)
 
 struct Book2 {
     var id: UInt32
@@ -67,6 +72,9 @@ struct Book2 {
 
 assert(MemoryLayout<Book2>.size == 4 + 4 + 16)
 assert(MemoryLayout<Book2>.alignment == 8)
+assert(MemoryLayout.offset(of: \Book2.id) == 0)
+assert(MemoryLayout.offset(of: \Book2.price) == 4)
+assert(MemoryLayout.offset(of: \Book2.name) == 8)
 
 // class
 class BookClass {
@@ -87,3 +95,4 @@ assert(MemoryLayout<BookClass>.alignment == 8)
 // function
 assert(MemoryLayout<(Int)->Int>.size == 8 + 8) // data-ptr + func-ptr
 assert(MemoryLayout<(Int)->Int>.alignment == 8)
+
