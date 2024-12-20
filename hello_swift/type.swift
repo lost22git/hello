@@ -1,5 +1,7 @@
 #!/usr/bin/env swift
 
+/// https://developer.apple.com/documentation/swift/memorylayout
+
 // typeof
 // print(type(of: (1...10)))
 
@@ -48,7 +50,7 @@ assert(MemoryLayout<ClosedRange<Int>>.size == 16)
 assert(MemoryLayout<ClosedRange<Int>>.alignment == 8)
 
 // optional
-assert(MemoryLayout<Int?>.size == 9)
+assert(MemoryLayout<Int?>.size == 8+1) // int + tag
 assert(MemoryLayout<Int?>.alignment == 8)
 
 // struct
@@ -58,7 +60,9 @@ struct Book {
     var price: UInt32
 }
 
-assert(MemoryLayout<Book>.size == 4 + 4 + 16 + 4) // why size != n * alignment 
+
+assert(MemoryLayout<Book>.stride == 4 + 4 + 16 + 4 + 4) // with trailing paddings
+assert(MemoryLayout<Book>.size == 4 + 4 + 16 + 4) // without trailing paddings 
 assert(MemoryLayout<Book>.alignment == 8)
 assert(MemoryLayout.offset(of: \Book.id) == 0)
 assert(MemoryLayout.offset(of: \Book.name) == 8)
@@ -92,7 +96,35 @@ class BookClass {
 assert(MemoryLayout<BookClass>.size == 8)
 assert(MemoryLayout<BookClass>.alignment == 8)
 
+
 // function
 assert(MemoryLayout<(Int)->Int>.size == 8 + 8) // data-ptr + func-ptr
 assert(MemoryLayout<(Int)->Int>.alignment == 8)
 
+
+// error 
+enum IOError: Error {
+    case fileNotFound(fd: Int)
+    case eof
+}
+
+assert(MemoryLayout<IOError>.stride == 8 + 1 + 7) // int + tag + paddings
+assert(MemoryLayout<IOError>.size == 8 + 1) // int + tag
+assert(MemoryLayout<IOError>.alignment == 8)
+
+enum IOError2: Error {
+    case fileNotFound(file: String)
+    case eof
+}
+
+assert(MemoryLayout<IOError2>.size == 16) // just string size, without tag, regard 0 as eof
+assert(MemoryLayout<IOError2>.alignment == 8)
+
+enum IOError3: Error {
+    case fileNotFound(file: String)
+    case eof
+    case accessDenied
+}
+
+assert(MemoryLayout<IOError3>.size == 16) // TODO: why just string size?
+assert(MemoryLayout<IOError3>.alignment == 8)

@@ -18,6 +18,7 @@ print(
   """)
 
 // raw string
+
 print(#">> the song name is "\#(song_name)""#)
 
 // list
@@ -71,7 +72,7 @@ for i in 1..<3 {
 
 assert(sum == (1 + 2))
 
-// Optional
+// optional
 
 var maybe: String? = nil
 // ?? default_value
@@ -148,12 +149,79 @@ class Book: CustomStringConvertible {
     return self.format.pages
   }
 }
-var book = Book(id: 1, title: "a book", format: BookFormat.paper(99))
+var book = Book(id: 1, title: "a book", format: .paper(99))
 print(book)
 book.price = 11.99
 print(book)
-book.format = BookFormat.ebook(Ebook(pages: 120, format: EbookFormat.pdf))
+book.format = .ebook(Ebook(pages: 120, format: .pdf))
 print(book)
 print("book pages:", book.pages)
 
+// error handle
+
+enum PortError: Error {
+    case outOfRange
+    case alreadyBound
+}
+
+@discardableResult
+func testPort(port: Int) throws(PortError) -> Bool {
+    guard (1..<65535).contains(port) else {
+        throw PortError.outOfRange
+    }
+    throw PortError.alreadyBound
+}
+
+// error handle: try (propagate)
+
+func foo() throws {
+    try testPort(port: 8080)
+}
+
+// error handle: try-catch
+
+do {
+    try testPort(port: 8080) 
+    assert(false)
+} catch .outOfRange {
+    assert(false)
+} catch .alreadyBound {
+    assert(true) // only this branch is reachable
+} 
+
+do {
+    try testPort(port: -8080) 
+    assert(false)
+} catch .outOfRange {
+    assert(true) // only this branch is reachable
+} catch .alreadyBound {
+    assert(false)
+}
+
+do {
+    try testPort(port: 8080) 
+    assert(false)
+} catch {
+    switch error {
+    case .outOfRange: assert(false)
+    case .alreadyBound: assert(true) // only this branch is reachable
+    }
+}
+
+do {
+    try testPort(port: -8080) 
+    assert(false)
+} catch {
+    switch error {
+    case .outOfRange: assert(true) // only this branch is reachable
+    case .alreadyBound: assert(false)
+    }
+}
+
+// error handle: try? (convert to optional)
+
+assert(((try? testPort(port: 8080)) ?? true))
+
+// error handle: try! (panic)
+// try! testPort(port: 8080)
 
