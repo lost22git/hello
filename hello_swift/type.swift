@@ -125,6 +125,30 @@ enum IOError3: Error {
     case eof
     case accessDenied
 }
-
-assert(MemoryLayout<IOError3>.size == 16) // TODO: why just string size?
+// https://github.com/TannerJin/Swift-MemoryLayout/blob/master/SwiftCore/String.swift
+assert(MemoryLayout<IOError3>.size == 16)
 assert(MemoryLayout<IOError3>.alignment == 8)
+
+var value = IOError3.fileNotFound(file: "/tmp/tmp2/tmp3/tmp4/tmp5") 
+withUnsafeBytes(of: &value) { pointer in
+    print("fileNotFound:", [UInt8](pointer))
+}
+
+value = IOError3.eof
+withUnsafeBytes(of: &value) { pointer in
+    print("eof         :", [UInt8](pointer))
+}
+
+value = IOError3.accessDenied
+withUnsafeBytes(of: &value) { pointer in
+    print("accessDenied:", [UInt8](pointer))
+}
+
+
+enum IOError4: Error {
+    case fileNotFound(file: String)
+    case eof(file: String)
+}
+
+assert(MemoryLayout<IOError4>.size == 16 + 1)
+assert(MemoryLayout<IOError4>.alignment == 8)
