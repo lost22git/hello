@@ -43,6 +43,7 @@
     - [ ] length-based
     - [ ] immutable
     - [ ] dynamic length
+    - [ ] small string optimization (sso)
 - Variable Assignment/Binding
     - dynamic
         - [ ] scope
