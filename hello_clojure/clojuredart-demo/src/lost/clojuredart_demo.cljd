@@ -1,0 +1,11 @@
+(ns lost.clojuredart-demo)
+
+(defn format-prefix
+  (^String [^String prefix] (format-prefix prefix 8))
+  (^String [^String prefix ^int width] (.padRight prefix width)))
+
+(defn main []
+  (let [[a b] ((juxt filter remove) even? [1 2 3 4 5])]
+    (println (format-prefix "even") ":" a)
+    (println (format-prefix "odd") ":" b)))
+
