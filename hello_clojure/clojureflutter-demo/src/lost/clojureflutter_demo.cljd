@@ -1,0 +1,20 @@
+(ns lost.clojureflutter-demo
+  (:require ["package:flutter/material.dart" :as m]
+            [cljd.flutter :as f]))
+
+(defn main []
+  (f/run
+   (m/MaterialApp
+    .title "Welcome to Flutter"
+    .theme (m/ThemeData .primarySwatch m.Colors/pink))
+   .home
+   (m/Scaffold
+    .appBar (m/AppBar
+             .title (m/Text "ClojureDart Demo")))
+   .body
+   m/Center
+   (m/Text "Hello World"
+           .style (m/TextStyle
+                   .color m.Colors/green
+                   .fontSize 32.0))))
+

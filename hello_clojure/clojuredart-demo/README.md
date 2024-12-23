@@ -1,7 +1,8 @@
+# Step
 
 add deps.edn
 
-```edn
+```clj
 {:paths ["src"]
  :deps {org.clojure/clojure {:mvn/version "1.12.0"}
         tensegritics/clojuredart
@@ -54,3 +55,12 @@ build project
 ```sh
 dart compile exe -o demo ./bin/clojuredart_demo.dart
 ```
+
+# Tips
+
+check alias `cljd` more functions
+
+```sh
+clj -M:cljd help
+```
+

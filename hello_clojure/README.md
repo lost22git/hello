@@ -220,3 +220,12 @@ last-index-of
 
 - [doc](https://github.com/Tensegritics/ClojureDart/tree/main/doc)
 - [samples](https://github.com/Tensegritics/ClojureDart/tree/main/samples)
+
+## Tips 
+
+check alias `cljd` more functions
+
+```sh
+clj -M:cljd help
+```
+
