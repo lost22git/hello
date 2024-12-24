@@ -147,7 +147,7 @@ type book2 = struct {
 	assert(align((str|int)) == 8);
 };
 
-@test fn tes_pointer() void = {
+@test fn test_pointer() void = {
 	assert(size(*str) == 8);
 	assert(align(*str) == 8);
 

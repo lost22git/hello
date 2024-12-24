@@ -7,12 +7,10 @@ struct Buffer(T)
     @head = @tail = 0
   end
 
-  @[AlwaysInline]
   def unsafe_fetch(index : Int)
     @data[mask(@head + index)]
   end
 
-  @[AlwaysInline]
   def unsafe_put(index : Int, value : T)
     @data[mask(@head + index)] = value
   end
@@ -23,32 +21,26 @@ struct Buffer(T)
     result + @cap * 2
   end
 
-  @[AlwaysInline]
   def empty? : Bool
     size() == 0
   end
 
-  @[AlwaysInline]
   def full? : Bool
     size() == @cap
   end
 
-  @[AlwaysInline]
   private def mask(index : Int32) : Int32
     index % @cap
   end
 
-  @[AlwaysInline]
   private def mask2(index : Int32) : Int32
     index % (2 * @cap)
   end
 
-  @[AlwaysInline]
   private def dec(index : Int32, count : Int32 = 1) : Int32
     index + (2 * @cap) - count
   end
 
-  @[AlwaysInline]
   private def inc(index : Int32, count : Int32 = 1) : Int32
     index + count
   end

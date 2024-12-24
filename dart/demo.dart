@@ -1,5 +1,3 @@
-#!/usr/bin/env dart
-
 void main() {
   testClass();
   testIterable();

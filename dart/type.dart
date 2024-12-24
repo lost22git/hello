@@ -1,5 +1,3 @@
-#!/usr/bin/env -S dart --enable-asserts
-
 void main() {
   // Null
   assert(null.runtimeType == Null);

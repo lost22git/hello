@@ -144,7 +144,6 @@ withUnsafeBytes(of: &value) { pointer in
     print("accessDenied:", [UInt8](pointer))
 }
 
-
 enum IOError4: Error {
     case fileNotFound(file: String)
     case eof(file: String)
