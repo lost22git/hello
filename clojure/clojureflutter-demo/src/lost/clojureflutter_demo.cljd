@@ -1,20 +1,105 @@
 (ns lost.clojureflutter-demo
-  (:require ["package:flutter/material.dart" :as m]
+  (:require ["package:flutter/material.dart" :as m :refer [Key DismissDirection Theme Icons NavigationDestinationLabelBehavior Colors Alignment BorderRadius HitTestBehavior]]
+            ["package:fluttertoast/fluttertoast.dart" :as ft]
             [cljd.flutter :as f]))
+
+(defn get-primary-color
+  "Get primary color of theme"
+  [cx]
+  (-> (Theme.of cx) (.-colorScheme) (.-primary)))
+
+(defn vec-del
+  "Delete item of given index from Vec"
+  [col index]
+  (persistent!
+   (reduce conj! (subvec col 0 index) (subvec col (inc index) (count col)))))
+
+(defn toast
+  "Toast some messages"
+  [msg]
+  (ft/Fluttertoast.showToast .msg msg)
+  ())
+
+(def state-navibar (atom {:current-index 0}))
+(def state-podcast-listview
+  (atom
+   {:data
+    (->> (range) (take 40)
+         (map (fn [i]
+                {:image (str "image#" i)
+                 :title (str "title#" i)
+                 :subtitle (str "subtitle#" i)}))
+         (into []))}))
+
+(defn create-navigationbar
+  "Create navigation bar"
+  []
+  (f/widget
+   :watch [{:keys [current-index]} state-navibar]
+   (m/NavigationBar
+    .labelBehavior NavigationDestinationLabelBehavior.alwaysShow
+    .selectedIndex current-index
+    .onDestinationSelected (fn [i] (swap! state-navibar (fn [s] (assoc s :current-index i))))
+    .destinations [(m/NavigationDestination .icon (m/Icon Icons.audiotrack) .label "library")
+                   (m/NavigationDestination .icon (m/Icon Icons.explore) .label "explore")
+                   (m/NavigationDestination .icon (m/Icon Icons.download) .label "download")])))
+
+(defn create-podcast-avatar
+  "Craete an podcast avatar widget"
+  [{:keys [image]}]
+  (f/widget
+   :context cx
+   (m/GestureDetector
+    .behavior HitTestBehavior.translucent
+    .onTap (partial toast (str "avatar <" image "> tap!")))
+   (m/ClipRRect
+    .borderRadius (BorderRadius.circular 6.0))
+   (m/Container
+    .color (get-primary-color cx)
+    .height 80 .width 80
+    .alignment Alignment.center)
+   (m/Text image)))
+
+(defn create-podcast-listview
+  "Create podcast listview"
+  []
+  (f/widget
+   :watch [{:keys [data]} state-podcast-listview]
+   (m/ListView.builder
+    .itemCount (count data)
+    .itemBuilder
+    (fn [cx i]
+      (let [podcast (data i)]
+        (m/Dismissible
+         .key (Key (podcast :title))
+         .direction DismissDirection.endToStart
+         .onDismissed
+         (fn [_direction]
+           (swap! state-podcast-listview (fn [s] (assoc s :data (vec-del data i))))
+           ())
+         .background (m/Container .color (get-primary-color cx))
+         .child
+         (m/ListTile
+          .title (m/Text (podcast :title))
+          .subtitle (m/Text (podcast :subtitle))
+          .leading (create-podcast-avatar podcast)
+          .onTap (partial toast (str "tile #" i " tap!")))))))))
 
 (defn main []
   (f/run
    (m/MaterialApp
-    .title "Welcome to Flutter"
-    .theme (m/ThemeData .primarySwatch m.Colors/pink))
+    .title "ClojureDart Flutter Demo"
+    .theme (m/ThemeData .primarySwatch m/Colors.pink))
    .home
    (m/Scaffold
-    .appBar (m/AppBar
-             .title (m/Text "ClojureDart Demo")))
+    .appBar (m/AppBar .title (m/Text "ClojureDart Flutter Demo"))
+    .bottomNavigationBar (create-navigationbar)
+    .floatingActionButton
+    (m/FloatingActionButton
+     .tooltip  "refresh"
+     .onPressed (fn [])
+     .child (m/Icon Icons.refresh)))
    .body
    m/Center
-   (m/Text "Hello World"
-           .style (m/TextStyle
-                   .color m.Colors/green
-                   .fontSize 32.0))))
+   (create-podcast-listview)))
 
