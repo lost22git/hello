@@ -1,6 +1,7 @@
 (ns lost.clojureflutter-demo
-  (:require ["package:flutter/material.dart" :as m :refer [Key DismissDirection Theme Icons NavigationDestinationLabelBehavior Colors Alignment BorderRadius HitTestBehavior]]
+  (:require ["package:flutter/material.dart" :as m :refer [Key DismissDirection Theme ThemeData ThemeMode Icons NavigationDestinationLabelBehavior Colors Alignment BorderRadius HitTestBehavior]]
             ["package:fluttertoast/fluttertoast.dart" :as ft]
+            ["package:easy_refresh/easy_refresh.dart" :as er]
             [cljd.flutter :as f]))
 
 (defn get-primary-color
@@ -12,46 +13,91 @@
   "Delete item of given index from Vec"
   [col index]
   (persistent!
-   (reduce conj! (subvec col 0 index) (subvec col (inc index) (count col)))))
+   (reduce conj! (transient (vec (subvec col 0 index))) (subvec col (inc index) (count col)))))
 
 (defn toast
   "Toast some messages"
   [msg]
   (ft/Fluttertoast.showToast .msg msg)
-  ())
+  nil)
 
-(def state-navibar (atom {:current-index 0}))
-(def state-podcast-listview
-  (atom
-   {:data
-    (->> (range) (take 40)
-         (map (fn [i]
-                {:image (str "image#" i)
-                 :title (str "title#" i)
-                 :subtitle (str "subtitle#" i)}))
-         (into []))}))
+(defonce app-name "ClojureDart Flutter Demo")
 
-(defn create-navigationbar
-  "Create navigation bar"
+;;-------;;
+;; state ;;
+;;-------;;
+
+(defonce app-state (atom {:theme-mode ThemeMode.light}))
+(defonce navibar-state (atom {:current-index 0}))
+(defonce podcast-list-state (atom {:data []}))
+
+;;---------------;;
+;; state updater ;;
+;;---------------;;
+
+(defn compute-theme-mode
+  "Compute theme mode by given theme mode"
+  [mode]
+  (condp = mode
+    ThemeMode.dark ThemeMode.light
+    ThemeMode.light ThemeMode.dark))
+
+(defn switch-theme-mode
+  "Switch theme mode"
+  [current-mode]
+  (swap! app-state assoc :theme-mode (compute-theme-mode current-mode)))
+
+(defn navibar-switch-index
+  "Switch navibar by index"
+  [current-index]
+  (swap! navibar-state assoc  :current-index current-index))
+
+(defn podcast-list-del
+  "Delete podcast by index from data"
+  [data index]
+  (swap! podcast-list-state assoc :data (vec-del data index)))
+
+(defn podcast-list-fetch-data
+  "Fetching podcast list data"
+  []
+  (->> (range) (take 40)
+       (map (fn [i]
+              {:image (str "image#" i)
+               :title (str "title#" i)
+               :subtitle (str "subtitle#" i)}))
+       (into [])))
+
+(defn podcast-list-refresh-data
+  "Refresh podcast list data"
+  []
+  (let [data (podcast-list-fetch-data)]
+    (swap! podcast-list-state assoc :data data)))
+
+;;------;;
+;; view ;;
+;;------;;
+
+(defn navibar-view
+  "Create navigationbar view"
   []
   (f/widget
-   :watch [{:keys [current-index]} state-navibar]
+   :watch [{:keys [current-index]} navibar-state]
    (m/NavigationBar
     .labelBehavior NavigationDestinationLabelBehavior.alwaysShow
     .selectedIndex current-index
-    .onDestinationSelected (fn [i] (swap! state-navibar (fn [s] (assoc s :current-index i))))
+    .onDestinationSelected (partial navibar-switch-index)
     .destinations [(m/NavigationDestination .icon (m/Icon Icons.audiotrack) .label "library")
                    (m/NavigationDestination .icon (m/Icon Icons.explore) .label "explore")
                    (m/NavigationDestination .icon (m/Icon Icons.download) .label "download")])))
 
-(defn create-podcast-avatar
-  "Craete an podcast avatar widget"
+(defn podcast-avatar-view
+  "Craete podcast avatar view"
   [{:keys [image]}]
   (f/widget
    :context cx
    (m/GestureDetector
     .behavior HitTestBehavior.translucent
-    .onTap (partial toast (str "avatar <" image "> tap!")))
+    .onTap (partial toast (str "avatar [" image "] tap!")))
    (m/ClipRRect
     .borderRadius (BorderRadius.circular 6.0))
    (m/Container
@@ -60,46 +106,64 @@
     .alignment Alignment.center)
    (m/Text image)))
 
-(defn create-podcast-listview
-  "Create podcast listview"
+(defn podcast-list-view
+  "Create podcast list view"
   []
   (f/widget
-   :watch [{:keys [data]} state-podcast-listview]
+   :watch [{:keys [data]} podcast-list-state]
    (m/ListView.builder
     .itemCount (count data)
     .itemBuilder
     (fn [cx i]
-      (let [podcast (data i)]
-        (m/Dismissible
-         .key (Key (podcast :title))
-         .direction DismissDirection.endToStart
-         .onDismissed
-         (fn [_direction]
-           (swap! state-podcast-listview (fn [s] (assoc s :data (vec-del data i))))
-           ())
-         .background (m/Container .color (get-primary-color cx))
-         .child
-         (m/ListTile
-          .title (m/Text (podcast :title))
-          .subtitle (m/Text (podcast :subtitle))
-          .leading (create-podcast-avatar podcast)
-          .onTap (partial toast (str "tile #" i " tap!")))))))))
+      (f/widget
+       :let [podcast (data i)]
+       (m/Dismissible
+        .key (Key (podcast :title))
+        .direction DismissDirection.endToStart
+         ; .background (m/Container .color (get-primary-color cx))
+        .onDismissed (fn [_direction] (podcast-list-del data i) nil))
+       (m/ListTile
+        .title (m/Text (podcast :title))
+        .subtitle (m/Text (podcast :subtitle))
+        .leading (podcast-avatar-view podcast)
+        .onTap (partial toast (str "tile #" i " tap!"))))))))
+
+(defn podcast-list-easy-refresh-view
+  "Create podcast list easy_refresh view"
+  []
+  (f/widget
+   :managed [_controller (er/EasyRefreshController)]
+   (er/EasyRefresh
+    .controller _controller
+    .header (er/ClassicHeader)
+    .footer (er/ClassicFooter)
+    .refreshOnStart true
+    .onRefresh podcast-list-refresh-data
+    .child (podcast-list-view))))
+
+;;------;;
+;; main ;;
+;;------;;
 
 (defn main []
   (f/run
+   :watch [{:keys [theme-mode]} app-state]
    (m/MaterialApp
-    .title "ClojureDart Flutter Demo"
-    .theme (m/ThemeData .primarySwatch m/Colors.pink))
-   .home
-   (m/Scaffold
-    .appBar (m/AppBar .title (m/Text "ClojureDart Flutter Demo"))
-    .bottomNavigationBar (create-navigationbar)
-    .floatingActionButton
-    (m/FloatingActionButton
-     .tooltip  "refresh"
-     .onPressed (fn [])
-     .child (m/Icon Icons.refresh)))
-   .body
-   m/Center
-   (create-podcast-listview)))
+    .title app-name
+    .theme (ThemeData.light)
+    .darkTheme (ThemeData.dark)
+    .themeMode theme-mode
+    .home
+    (m/Scaffold
+     .appBar (m/AppBar .title (m/Text app-name))
+     .bottomNavigationBar (navibar-view)
+     .floatingActionButton
+     (m/FloatingActionButton
+      .tooltip  "refresh"
+      .onPressed (partial switch-theme-mode theme-mode)
+      .child (m/Icon Icons.refresh))
+     .body
+     (m/Center
+      .child
+      (podcast-list-easy-refresh-view))))))
 
