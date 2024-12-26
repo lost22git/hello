@@ -1,7 +1,8 @@
 (ns lost.clojureflutter-demo
   (:require ["package:flutter/material.dart" :as m :refer [Key DismissDirection Theme ThemeData ThemeMode Icons NavigationDestinationLabelBehavior Colors Alignment BorderRadius HitTestBehavior]]
-            ["package:fluttertoast/fluttertoast.dart" :as ft]
+            ["package:fluttertoast/fluttertoast.dart" :as t]
             ["package:easy_refresh/easy_refresh.dart" :as er]
+            ["package:go_router/go_router.dart" :refer [GoRouter GoRoute]]
             [cljd.flutter :as f]))
 
 (defn get-primary-color
@@ -18,18 +19,23 @@
 (defn toast
   "Toast some messages"
   [msg]
-  (ft/Fluttertoast.showToast .msg msg)
+  (t/Fluttertoast.showToast .msg msg)
   nil)
 
 (defonce app-name "ClojureDart Flutter Demo")
+
+(defonce ^:private router
+  (GoRouter
+   .routes
+   [(GoRoute .path "/" .builder (fn [cx state] (home-page)))]))
 
 ;;-------;;
 ;; state ;;
 ;;-------;;
 
-(defonce app-state (atom {:theme-mode ThemeMode.light}))
-(defonce navibar-state (atom {:current-index 0}))
-(defonce podcast-list-state (atom {:data []}))
+(defonce ^:private app-state (atom {:theme-mode ThemeMode.light}))
+(defonce ^:private navibar-state (atom {:current-index 0}))
+(defonce ^:private podcast-list-state (atom {:data []}))
 
 ;;---------------;;
 ;; state updater ;;
@@ -77,6 +83,17 @@
 ;; view ;;
 ;;------;;
 
+(defn theme-mode-switch-view
+  "Create theme mode switch view"
+  []
+  (f/widget
+   :watch [{:keys [theme-mode]} app-state]
+   (m/IconButton
+    .onPressed (partial switch-theme-mode theme-mode)
+    .icon (condp = theme-mode
+            ThemeMode.dark (m/Icon Icons.dark_mode)
+            ThemeMode.light (m/Icon Icons.light_mode)))))
+
 (defn navibar-view
   "Create navigationbar view"
   []
@@ -95,9 +112,6 @@
   [{:keys [image]}]
   (f/widget
    :context cx
-   (m/GestureDetector
-    .behavior HitTestBehavior.translucent
-    .onTap (partial toast (str "avatar [" image "] tap!")))
    (m/ClipRRect
     .borderRadius (BorderRadius.circular 6.0))
    (m/Container
@@ -132,9 +146,9 @@
   "Create podcast list easy_refresh view"
   []
   (f/widget
-   :managed [_controller (er/EasyRefreshController)]
+   :managed [controller (er/EasyRefreshController)]
    (er/EasyRefresh
-    .controller _controller
+    .controller controller
     .header (er/ClassicHeader)
     .footer (er/ClassicFooter)
     .refreshOnStart true
@@ -142,28 +156,33 @@
     .child (podcast-list-view))))
 
 ;;------;;
+;; page ;;
+;;------;;
+
+(defn home-page
+  "Create home page"
+  []
+  (m/Scaffold
+   .appBar
+   (m/AppBar
+    .title (m/Text app-name)
+    .actions [(theme-mode-switch-view)])
+   .bottomNavigationBar (navibar-view)
+   .body (m/Center .child (podcast-list-easy-refresh-view))))
+
+;;------;;
 ;; main ;;
 ;;------;;
 
-(defn main []
+(defn main
+  "Main: program entrypoint"
+  []
   (f/run
    :watch [{:keys [theme-mode]} app-state]
-   (m/MaterialApp
+   (m/MaterialApp.router
     .title app-name
+    .debugShowCheckedModeBanner false
     .theme (ThemeData.light)
     .darkTheme (ThemeData.dark)
     .themeMode theme-mode
-    .home
-    (m/Scaffold
-     .appBar (m/AppBar .title (m/Text app-name))
-     .bottomNavigationBar (navibar-view)
-     .floatingActionButton
-     (m/FloatingActionButton
-      .tooltip  "refresh"
-      .onPressed (partial switch-theme-mode theme-mode)
-      .child (m/Icon Icons.refresh))
-     .body
-     (m/Center
-      .child
-      (podcast-list-easy-refresh-view))))))
-
+    .routerConfig router)))
