@@ -1,0 +1,35 @@
+(ns lost.util
+  (:require ["package:flutter/material.dart" :as m]
+            ["package:fluttertoast/fluttertoast.dart" :as t]
+            ["package:go_router/go_router.dart" :refer [GoRouter GoRoute]]))
+
+(defn vec-del
+  "Delete item of given index from Vec"
+  [col index]
+  (persistent!
+   (reduce conj! (transient (vec (subvec col 0 index))) (subvec col (inc index) (count col)))))
+
+(defn get-primary-color
+  "Get primary color of theme"
+  [cx]
+  (-> (m/Theme.of cx) (.-colorScheme) (.-primary)))
+
+(defn toast
+  "Toast some messages"
+  [msg]
+  (t/Fluttertoast.showToast .msg msg)
+  nil)
+
+(defn goto
+  "Go to destination path page (with extra data)"
+  ([cx path] (goto cx path nil))
+  ([cx path extra]
+   (-> (GoRouter.of cx)
+       (.go path .extra extra))))
+
+(defn pushto
+  "Push to destination path page (with extra data)"
+  ([cx path] (pushto cx path nil))
+  ([cx path extra]
+   (-> (GoRouter.of cx)
+       (.push path .extra extra))))

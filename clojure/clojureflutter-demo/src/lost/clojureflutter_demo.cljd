@@ -1,39 +1,33 @@
 (ns lost.clojureflutter-demo
-  (:require ["package:flutter/material.dart" :as m :refer [Key DismissDirection Theme ThemeData ThemeMode Icons NavigationDestinationLabelBehavior Colors Alignment BorderRadius HitTestBehavior]]
-            ["package:fluttertoast/fluttertoast.dart" :as t]
+  (:require ["package:flutter/material.dart" :as m]
+            ["package:flutter/foundation.dart" :refer [kDebugMode]]
             ["package:easy_refresh/easy_refresh.dart" :as er]
             ["package:go_router/go_router.dart" :refer [GoRouter GoRoute]]
-            [cljd.flutter :as f]))
-
-(defn get-primary-color
-  "Get primary color of theme"
-  [cx]
-  (-> (Theme.of cx) (.-colorScheme) (.-primary)))
-
-(defn vec-del
-  "Delete item of given index from Vec"
-  [col index]
-  (persistent!
-   (reduce conj! (transient (vec (subvec col 0 index))) (subvec col (inc index) (count col)))))
-
-(defn toast
-  "Toast some messages"
-  [msg]
-  (t/Fluttertoast.showToast .msg msg)
-  nil)
+            ["package:restart_app/restart_app.dart" :refer [Restart]]
+            [lost.test-text :as tt]
+            [lost.util :refer [get-primary-color vec-del toast goto pushto]]
+            [cljd.flutter :as f]
+            [cljd.core :refer [PersistentHashMap]]))
 
 (defonce app-name "ClojureDart Flutter Demo")
 
 (defonce ^:private router
   (GoRouter
+   .debugLogDiagnostics true
    .routes
-   [(GoRoute .path "/" .builder (fn [cx state] (home-page)))]))
+   [(GoRoute
+     .path "/"
+     .builder (fn [cx state] (home-page)))
+    (GoRoute
+     .path "/podcast/:title"
+     .builder
+     (fn [cx state] (podcast-detail-page)))]))
 
 ;;-------;;
 ;; state ;;
 ;;-------;;
 
-(defonce ^:private app-state (atom {:theme-mode ThemeMode.light}))
+(defonce ^:private app-state (atom {:theme-mode m/ThemeMode.light}))
 (defonce ^:private navibar-state (atom {:current-index 0}))
 (defonce ^:private podcast-list-state (atom {:data []}))
 
@@ -45,8 +39,8 @@
   "Compute theme mode by given theme mode"
   [mode]
   (condp = mode
-    ThemeMode.dark ThemeMode.light
-    ThemeMode.light ThemeMode.dark))
+    m/ThemeMode.dark m/ThemeMode.light
+    m/ThemeMode.light m/ThemeMode.dark))
 
 (defn switch-theme-mode
   "Switch theme mode"
@@ -68,9 +62,9 @@
   []
   (->> (range) (take 40)
        (map (fn [i]
-              {:image (str "image#" i)
-               :title (str "title#" i)
-               :subtitle (str "subtitle#" i)}))
+              {:image tt/image
+               :title "大内密谈"
+               :author "大内密谈"}))
        (into [])))
 
 (defn podcast-list-refresh-data
@@ -91,8 +85,8 @@
    (m/IconButton
     .onPressed (partial switch-theme-mode theme-mode)
     .icon (condp = theme-mode
-            ThemeMode.dark (m/Icon Icons.dark_mode)
-            ThemeMode.light (m/Icon Icons.light_mode)))))
+            m/ThemeMode.dark (m/Icon m/Icons.light_mode_outlined)
+            m/ThemeMode.light (m/Icon m/Icons.dark_mode_outlined)))))
 
 (defn navibar-view
   "Create navigationbar view"
@@ -100,47 +94,33 @@
   (f/widget
    :watch [{:keys [current-index]} navibar-state]
    (m/NavigationBar
-    .labelBehavior NavigationDestinationLabelBehavior.alwaysShow
+    .labelBehavior m/NavigationDestinationLabelBehavior.alwaysShow
     .selectedIndex current-index
     .onDestinationSelected (partial navibar-switch-index)
-    .destinations [(m/NavigationDestination .icon (m/Icon Icons.audiotrack) .label "library")
-                   (m/NavigationDestination .icon (m/Icon Icons.explore) .label "explore")
-                   (m/NavigationDestination .icon (m/Icon Icons.download) .label "download")])))
+    .destinations [(m/NavigationDestination .icon (m/Icon m/Icons.audiotrack) .label "library")
+                   (m/NavigationDestination .icon (m/Icon m/Icons.explore) .label "explore")
+                   (m/NavigationDestination .icon (m/Icon m/Icons.download) .label "download")])))
 
-(defn podcast-avatar-view
-  "Craete podcast avatar view"
-  [{:keys [image]}]
+(defn avatar-view
+  "Create avatar view"
+  [image]
   (f/widget
    :context cx
-   (m/ClipRRect
-    .borderRadius (BorderRadius.circular 6.0))
+   :width 80 :height 80
    (m/Container
-    .color (get-primary-color cx)
-    .height 80 .width 80
-    .alignment Alignment.center)
-   (m/Text image)))
+    .decoration
+    (m/BoxDecoration
+     .borderRadius  (m/BorderRadius.circular 10)
+     .image
+     (m/DecorationImage
+      .fit m/BoxFit.cover
+      .image
+      (m/NetworkImage tt/image))))))
 
-(defn podcast-list-view
-  "Create podcast list view"
-  []
-  (f/widget
-   :watch [{:keys [data]} podcast-list-state]
-   (m/ListView.builder
-    .itemCount (count data)
-    .itemBuilder
-    (fn [cx i]
-      (f/widget
-       :let [podcast (data i)]
-       (m/Dismissible
-        .key (Key (podcast :title))
-        .direction DismissDirection.endToStart
-         ; .background (m/Container .color (get-primary-color cx))
-        .onDismissed (fn [_direction] (podcast-list-del data i) nil))
-       (m/ListTile
-        .title (m/Text (podcast :title))
-        .subtitle (m/Text (podcast :subtitle))
-        .leading (podcast-avatar-view podcast)
-        .onTap (partial toast (str "tile #" i " tap!"))))))))
+(defn podcast-avatar-view
+  "Create podcast avatar view"
+  [image]
+  (avatar-view image))
 
 (defn podcast-list-easy-refresh-view
   "Create podcast list easy_refresh view"
@@ -155,6 +135,259 @@
     .onRefresh podcast-list-refresh-data
     .child (podcast-list-view))))
 
+(defn podcast-list-view
+  "Create podcast list view"
+  []
+  (f/widget
+   :watch [{:keys [data]} podcast-list-state]
+   (m/ListView.builder
+    .itemCount (count data)
+    .itemBuilder
+    (fn [cx i]
+      (podcast-list-item-view (data i))))))
+
+(defn podcast-list-item-view
+  "Create podcast list item view"
+  [{:keys [title author image]}]
+  (f/widget
+   :context cx
+   (m/ListTile
+    .leading (podcast-avatar-view image)
+    .title (m/Text title)
+    .subtitle (m/Text author)
+    .onTap #(pushto cx (str "/podcast/" title)))))
+
+(defn podcast-details-info-view
+  "Create podcast details info view"
+  [{:keys [title author description]}]
+  (m/SliverList.list
+   .children
+   [(m/ExpansionTile
+     .title (m/Text  title)
+     .subtitle (m/Text author)
+     .childrenPadding
+     (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
+     .children
+     [(m/Text tt/podcast-description)])]))
+
+(defn podcast-details-actions-view
+  "Create podcast details actions view"
+  []
+  (m/SliverList.list
+   .children
+   [(f/widget
+     :context cx
+     :padding (m/EdgeInsets.symmetric .horizontal 20)
+     (m/Row
+      .mainAxisAlignment m/MainAxisAlignment.start
+      .children
+      [(m/OutlinedButton.icon
+        .label (m/Text "Follow")
+        .icon (m/Icon m/Icons.add)
+        .onPressed (fn []))
+       (m/IconButton
+        .icon (m/Icon m/Icons.more_vert_outlined)
+        .onPressed (fn []))
+       (m/IconButton
+        .icon (m/Icon m/Icons.search)
+        .onPressed (fn []))
+       (m/IconButton
+        .icon (m/Icon m/Icons.sort)
+        .onPressed (partial show-podcast-episode-list-sort-bottomsheet cx))
+       (m/IconButton
+        .icon (m/Icon m/Icons.filter_alt_outlined)
+        .onPressed (partial show-podcast-episode-list-filter-bottomsheet cx))]))
+    (m/Divider)]))
+
+(defn bottomsheet-selection-view
+  [& {:keys [header items test-selected on-select]}]
+  (f/widget
+   :context cx
+   (m/Column
+    .children
+    [(m/Text header
+             .style
+             (-> (m/DefaultTextStyle.of cx)
+                 (.-style)
+                 (.apply .fontWeightDelta 2 .fontSizeFactor 2)))
+     (m/Column
+      .mainAxisSize m/MainAxisSize.min
+      .children
+      (->> items
+           (map (fn [i]
+                  (m/ListTile
+                   .leading
+                   (m/Text i
+                           .style
+                           (-> (m/DefaultTextStyle.of cx)
+                               (.-style)
+                               (.apply .fontWeightDelta 2 .fontSizeFactor 1)))
+                   .trailing (when (test-selected i) (m/Icon m/Icons.check))
+                   .onTap (partial on-select i))))
+           (into [])))])))
+
+(defn show-podcast-episode-list-sort-bottomsheet
+  [cx]
+  (m/showModalBottomSheet
+   .context cx
+   .showDragHandle true .isScrollControlled false
+   .builder
+   (fn [_cx]
+     (bottomsheet-selection-view
+      :header "Sort eposide"
+      :items ["Latest first"
+              "Earliest first"
+              "Alphabetical A-Z"
+              "Alphabetical Z-A"]
+      :test-selected (fn [i] true)
+      :on-select (fn [])))))
+
+(defn show-podcast-episode-list-filter-bottomsheet
+  [cx]
+  (m/showModalBottomSheet
+   .context cx
+   .showDragHandle true .isScrollControlled false
+   .builder
+   (fn [_cx]
+     (bottomsheet-selection-view
+      :header "Episode Filter"
+      :items ["None"
+              "Started"
+              "Played"
+              "Unplayed"]
+      :test-selected (fn [i] true)
+      :on-select (fn [])))))
+
+(defn podcast-episode-avatar-view
+  "Craete podcast episode avatar view"
+  [image]
+  (avatar-view image))
+
+(defn podcast-episode-list-view
+  "Create podcast episode list view"
+  []
+  (m/SliverList
+   .delegate
+   (m/SliverChildBuilderDelegate
+    (fn [cx i]
+      (podcast-episode-list-item-view {:title (str "ep" i) :pubDate "now" :duration "30min" :image "" :description tt/episode-description}))
+    .childCount 40)))
+
+(defn podcast-episode-list-item-view
+  "Create podcast episode list item view"
+  [{:keys [title pubDate duration image description] :as episode}]
+  (m/ExpansionTile
+   .leading (podcast-episode-avatar-view image)
+   .title (m/Text title)
+   .subtitle (m/Text (str pubDate " | " duration))
+   .trailing (podcast-episode-list-item-trailing-actions-view)
+   .childrenPadding (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
+   .children
+   [(m/Text description .maxLines 5 .overflow m/TextOverflow.ellipsis)
+    (podcast-episode-list-item-expansion-actions-view episode)]))
+
+(defn podcast-episode-list-item-trailing-actions-view
+  "Create podcast episode list item trailing actions view"
+  []
+  (f/widget
+   :context cx
+   (m/Row
+    .mainAxisAlignment m/MainAxisAlignment.spaceBetween
+    .mainAxisSize m/MainAxisSize.min
+    .children
+    [;; episode download action
+     (m/IconButton.outlined
+      .icon (m/Icon m/Icons.download .color (get-primary-color cx))
+      .onPressed (fn []))
+   ;; episode play/pause actions
+     (m/IconButton.outlined
+      .icon (m/Icon m/Icons.play_circle .color (get-primary-color cx))
+      .onPressed (fn []))])))
+
+(defn podcast-episode-list-item-expansion-actions-view
+  "Create podcast episode list item expansion actions view"
+  [episode]
+  (f/widget
+   :context cx
+   (m/Row
+    .mainAxisAlignment m/MainAxisAlignment.spaceBetween
+    .children
+    [;; episode delete action
+     (m/Flexible .fit m/FlexFit.tight
+                 .child
+                 (m/IconButton
+                  .icon
+                  (m/Column
+                   .mainAxisSize m/MainAxisSize.min
+                   .children
+                   [(m/Icon m/Icons.delete)
+                    (m/Text "Delete")])
+                  .onPressed (fn [])))
+    ;; episode add action
+     (m/Flexible .fit m/FlexFit.tight
+                 .child
+                 (m/IconButton
+                  .icon
+                  (m/Column
+                   .mainAxisSize m/MainAxisSize.min
+                   .children
+                   [(m/Icon m/Icons.add)
+                    (m/Text "Add")])
+                  .onPressed (fn [])))
+    ;; episode mark-played action
+     (m/Flexible .fit m/FlexFit.tight
+                 .child
+                 (m/IconButton
+                  .icon
+                  (m/Column
+                   .mainAxisSize m/MainAxisSize.min
+                   .children
+                   [(m/Icon m/Icons.check)
+                    (m/Text "Mark Played")])
+                  .onPressed (fn [])))
+    ;; episode details action
+     (m/Flexible .fit m/FlexFit.tight
+                 .child
+                 (m/IconButton
+                  .icon
+                  (m/Column
+                   .mainAxisSize m/MainAxisSize.min
+                   .children
+                   [(m/Icon m/Icons.expand)
+                    (m/Text "More")])
+                  .onPressed (partial show-podcast-episode-list-item-bottomsheet cx episode)))])))
+
+(defn show-podcast-episode-list-item-bottomsheet
+  "Show podcast episode list item bottomsheel"
+  [cx episode]
+  (m/showModalBottomSheet
+   .context cx
+   .showDragHandle true .isScrollControlled true
+   .builder (fn [_cx] (podcast-episode-list-item-bottomsheet-content-view episode))))
+
+(defn podcast-episode-list-item-bottomsheet-content-view
+  "Create podcast episode list item bottomsheel content view"
+  [{:keys [title description]}]
+  (f/widget
+   :context cx
+   :padding (m/EdgeInsets.symmetric .horizontal 20)
+   (m/DraggableScrollableSheet
+    .snap true .expand false
+    .builder (fn [cx scroll-controller]
+               (m/CustomScrollView
+                .controller scroll-controller
+                .physics (m/BouncingScrollPhysics)
+                .slivers
+                [(m/SliverList.list
+                  .children
+                  [(m/Text title
+                           .style
+                           (-> (m/DefaultTextStyle.of cx)
+                               (.-style)
+                               (.apply .fontWeightDelta 2 .fontSizeFactor 2)))])
+                 (m/SliverList.list
+                  .children [(m/Text description)])])))))
+
 ;;------;;
 ;; page ;;
 ;;------;;
@@ -166,9 +399,49 @@
    .appBar
    (m/AppBar
     .title (m/Text app-name)
-    .actions [(theme-mode-switch-view)])
+    .actions [(theme-mode-switch-view) (m/SizedBox .width 20)])
    .bottomNavigationBar (navibar-view)
-   .body (m/Center .child (podcast-list-easy-refresh-view))))
+   .body (m/Center .child (podcast-list-easy-refresh-view))
+   .floatingActionButton
+   (when kDebugMode
+     (m/FloatingActionButton.extended
+      .label (m/Text "restart")
+      .icon (m/Icon m/Icons.refresh)
+      .onPressed Restart.restartApp))))
+
+(defn podcast-detail-page
+  "Create podcast detail page"
+  []
+  (f/widget
+   :context cx
+   (m/Scaffold
+    .body
+    (m/CustomScrollView
+     .physics (m/BouncingScrollPhysics)
+     .slivers
+     [;; header
+      (m/SliverAppBar
+       .title (m/Text "my podcast")
+       .expandedHeight 300
+       .pinned true .snap false .floating false .stretch true
+       .flexibleSpace
+       (m/FlexibleSpaceBar
+        .stretchModes [m/StretchMode.zoomBackground
+                       m/StretchMode.blurBackground
+                       m/StretchMode.fadeTitle]
+        .background (m/Container
+                     .decoration
+                     (m/BoxDecoration
+                      .image
+                      (m/DecorationImage
+                       .fit m/BoxFit.cover
+                       .image (m/NetworkImage tt/image))))))
+      ;; details info
+      (podcast-details-info-view {:title "大内密谈" :author "大内密谈" :description tt/podcast-description})
+      ;; actions bar
+      (podcast-details-actions-view)
+      ;; episode list
+      (podcast-episode-list-view)]))))
 
 ;;------;;
 ;; main ;;
@@ -182,7 +455,7 @@
    (m/MaterialApp.router
     .title app-name
     .debugShowCheckedModeBanner false
-    .theme (ThemeData.light)
-    .darkTheme (ThemeData.dark)
+    .theme (m/ThemeData.light)
+    .darkTheme (m/ThemeData.dark)
     .themeMode theme-mode
     .routerConfig router)))
