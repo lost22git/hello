@@ -30,6 +30,7 @@
 (defonce ^:private app-state (atom {:theme-mode m/ThemeMode.light}))
 (defonce ^:private navibar-state (atom {:current-index 0}))
 (defonce ^:private podcast-list-state (atom {:data []}))
+(defonce ^:private podcast-episode-list-state (atom {:podcast {} :episode-list []}))
 
 ;;---------------;;
 ;; state updater ;;
@@ -57,22 +58,43 @@
   [data index]
   (swap! podcast-list-state assoc :data (vec-del data index)))
 
-(defn podcast-list-fetch-data
-  "Fetching podcast list data"
-  []
-  (->> (range) (take 40)
-       (map (fn [i]
-              {:image tt/image
-               :title "大内密谈"
-               :author "大内密谈"
-               :description tt/podcast-description}))
-       (into [])))
-
 (defn podcast-list-refresh-data
   "Refresh podcast list data"
   []
   (let [data (podcast-list-fetch-data)]
     (swap! podcast-list-state assoc :data data)))
+
+(defn podcast-list-fetch-data
+  "Fetching podcast list data"
+  []
+  (->> (range) (take 40)
+       (map (fn [i]
+              {:rss "http://rss.lizhi.fm/rss/14275.xml"
+               :image tt/image
+               :title "大内密谈"
+               :author "大内密谈"
+               :description tt/podcast-description}))
+       (into [])))
+
+(defn podcast-episode-list-refresh-data
+  "Refresh podcast episode list data"
+  [rss]
+  (log "[podcast-episode-list-refresh-data]" ":rss" rss)
+  (let [data (podcast-episode-list-fetch-data rss)]
+    ; (log ":data" data)
+    (swap! podcast-episode-list-state assoc :episode-list data)))
+
+(defn podcast-episode-list-fetch-data
+  [rss]
+  (log "[podcast-episode-list-fetch-data]" ":rss" rss)
+  (->> (range) (take 40)
+       (map (fn [i]
+              {:title (str "ep" i)
+               :pubDate "now"
+               :duration "30min"
+               :image tt/image
+               :description tt/episode-description}))
+       (into [])))
 
 ;;------;;
 ;; view ;;
@@ -139,13 +161,14 @@
 (defn podcast-list-view
   "Create podcast list view"
   []
+  (log "[podcast-list-view]")
   (f/widget
    :watch [{:keys [data]} podcast-list-state]
    (m/ListView.builder
-    .itemCount (count data)
     .itemBuilder
     (fn [cx i]
-      (podcast-list-item-view (data i))))))
+      (podcast-list-item-view (data i)))
+    .itemCount (count data))))
 
 (defn podcast-list-item-view
   "Create podcast list item view"
@@ -162,44 +185,39 @@
   "Create podcast details info view"
   [{:keys [title author description] :as podcast}]
   (log "[podcast-details-info-view]" ":podcast" podcast)
-  (m/SliverList.list
+  (m/ExpansionTile
+   .title (m/Text title)
+   .subtitle (m/Text author)
+   .childrenPadding
+   (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
    .children
-   [(m/ExpansionTile
-     .title (m/Text title)
-     .subtitle (m/Text author)
-     .childrenPadding
-     (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
-     .children
-     [(m/Text description)])]))
+   [(m/Text description)]))
 
 (defn podcast-details-actions-view
   "Create podcast details actions view"
   []
-  (m/SliverList.list
-   .children
-   [(f/widget
-     :context cx
-     :padding (m/EdgeInsets.symmetric .horizontal 20)
-     (m/Row
-      .mainAxisAlignment m/MainAxisAlignment.start
-      .children
-      [(m/OutlinedButton.icon
-        .label (m/Text "Follow")
-        .icon (m/Icon m/Icons.add)
-        .onPressed (fn []))
-       (m/IconButton
-        .icon (m/Icon m/Icons.more_vert_outlined)
-        .onPressed (fn []))
-       (m/IconButton
-        .icon (m/Icon m/Icons.search)
-        .onPressed (fn []))
-       (m/IconButton
-        .icon (m/Icon m/Icons.sort)
-        .onPressed (partial show-podcast-episode-list-sort-bottomsheet cx))
-       (m/IconButton
-        .icon (m/Icon m/Icons.filter_alt_outlined)
-        .onPressed (partial show-podcast-episode-list-filter-bottomsheet cx))]))
-    (m/Divider)]))
+  (f/widget
+   :context cx
+   :padding (m/EdgeInsets.symmetric .horizontal 20)
+   (m/Row
+    .mainAxisAlignment m/MainAxisAlignment.start
+    .children
+    [(m/OutlinedButton.icon
+      .label (m/Text "Follow")
+      .icon (m/Icon m/Icons.add)
+      .onPressed (fn []))
+     (m/IconButton
+      .icon (m/Icon m/Icons.more_vert_outlined)
+      .onPressed (fn []))
+     (m/IconButton
+      .icon (m/Icon m/Icons.search)
+      .onPressed (fn []))
+     (m/IconButton
+      .icon (m/Icon m/Icons.sort)
+      .onPressed (partial show-podcast-episode-list-sort-bottomsheet cx))
+     (m/IconButton
+      .icon (m/Icon m/Icons.filter_alt_outlined)
+      .onPressed (partial show-podcast-episode-list-filter-bottomsheet cx))])))
 
 (defn bottomsheet-selection-view
   [& {:keys [header items test-selected on-select]}]
@@ -267,13 +285,13 @@
 
 (defn podcast-episode-list-view
   "Create podcast episode list view"
-  []
-  (m/SliverList
-   .delegate
-   (m/SliverChildBuilderDelegate
-    (fn [cx i]
-      (podcast-episode-list-item-view {:title (str "ep" i) :pubDate "now" :duration "30min" :image tt/image :description tt/episode-description}))
-    .childCount 40)))
+  [podcast episode-list]
+  (log "[podcast-episode-list-view]" ":podcast" podcast ":episode-list" (count episode-list))
+  (m/SliverList.builder
+   .itemBuilder
+   (fn [cx i]
+     (podcast-episode-list-item-view (episode-list i)))
+   .itemCount (count episode-list)))
 
 (defn podcast-episode-list-item-view
   "Create podcast episode list item view"
@@ -397,6 +415,7 @@
 (defn home-page
   "Create home page"
   []
+  (log "[home-page]")
   (m/Scaffold
    .appBar
    (m/AppBar
@@ -413,38 +432,51 @@
 
 (defn podcast-detail-page
   "Create podcast detail page"
-  [{:keys [title image] :as podcast}]
+  [{:keys [rss title image] :as podcast}]
   (log "[podcast-detail-page]" ":podcast" podcast)
+  (swap! podcast-episode-list-state assoc :podcast podcast)
   (f/widget
    :context cx
+   :watch [{:keys [podcast episode-list]} podcast-episode-list-state]
+   :managed [controller (er/EasyRefreshController)]
    (m/Scaffold
     .body
-    (m/CustomScrollView
-     .physics (m/BouncingScrollPhysics)
-     .slivers
-     [;; header
-      (m/SliverAppBar
-       .title (m/Text title)
-       .expandedHeight 300
-       .pinned true .snap false .floating false .stretch true
-       .flexibleSpace
-       (m/FlexibleSpaceBar
-        .stretchModes [m/StretchMode.zoomBackground
-                       m/StretchMode.blurBackground
-                       m/StretchMode.fadeTitle]
-        .background (m/Container
-                     .decoration
-                     (m/BoxDecoration
-                      .image
-                      (m/DecorationImage
-                       .fit m/BoxFit.cover
-                       .image (m/NetworkImage image))))))
-      ;; details info
-      (podcast-details-info-view podcast)
-      ;; actions bar
-      (podcast-details-actions-view)
-      ;; episode list
-      (podcast-episode-list-view)]))))
+    (er/EasyRefresh
+     .controller controller
+     .header (er/ClassicHeader)
+     .footer (er/ClassicFooter)
+     .refreshOnStart true
+     .onRefresh (partial podcast-episode-list-refresh-data rss)
+     .child
+     (m/CustomScrollView
+      .slivers
+      [(m/SliverAppBar
+        .title (m/Text title)
+        .expandedHeight 300
+        .pinned true .stretch true
+        .flexibleSpace
+        (m/FlexibleSpaceBar
+         ; .title (m/Text title) ;; BUG: invisiable on appbar in light mode
+         .titlePadding (m/EdgeInsets.symmetric .horizontal 20)
+         .centerTitle false
+         .stretchModes
+         [m/StretchMode.zoomBackground
+          m/StretchMode.fadeTitle]
+         .background (m/Container
+                      .decoration
+                      (m/BoxDecoration
+                       .image
+                       (m/DecorationImage
+                        .fit m/BoxFit.cover
+                        .image (m/NetworkImage image))))))
+       (m/SliverToBoxAdapter
+        .child
+        (m/Column
+         .children
+         [(podcast-details-info-view podcast)
+          (podcast-details-actions-view)
+          (m/Divider)]))
+       (podcast-episode-list-view podcast episode-list)])))))
 
 ;;------;;
 ;; main ;;

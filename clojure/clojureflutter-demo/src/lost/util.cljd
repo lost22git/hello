@@ -10,6 +10,11 @@
   (persistent!
    (reduce conj! (transient (vec (subvec col 0 index))) (subvec col (inc index) (count col)))))
 
+(defn dark-mode?
+  "Check dark mode?"
+  [cx]
+  (-> (m/Theme.of cx) (.-brightness) (= m/Brightness.dark)))
+
 (defn get-primary-color
   "Get primary color of theme"
   [cx]
