@@ -2,12 +2,11 @@
   (:require ["package:flutter/material.dart" :as m]
             ["package:flutter/foundation.dart" :refer [kDebugMode]]
             ["package:easy_refresh/easy_refresh.dart" :as er]
-            ["package:go_router/go_router.dart" :refer [GoRouter GoRoute]]
+            ["package:go_router/go_router.dart" :refer [GoRouter GoRoute GoRouterState]]
             ["package:restart_app/restart_app.dart" :refer [Restart]]
             [lost.test-text :as tt]
-            [lost.util :refer [get-primary-color vec-del toast goto pushto]]
-            [cljd.flutter :as f]
-            [cljd.core :refer [PersistentHashMap]]))
+            [lost.util :refer [log get-primary-color vec-del goto pushto]]
+            [cljd.flutter :as f]))
 
 (defonce app-name "ClojureDart Flutter Demo")
 
@@ -21,7 +20,8 @@
     (GoRoute
      .path "/podcast/:title"
      .builder
-     (fn [cx state] (podcast-detail-page)))]))
+     (fn [cx ^GoRouterState state]
+       (podcast-detail-page (.-extra state))))]))
 
 ;;-------;;
 ;; state ;;
@@ -64,7 +64,8 @@
        (map (fn [i]
               {:image tt/image
                :title "大内密谈"
-               :author "大内密谈"}))
+               :author "大内密谈"
+               :description tt/podcast-description}))
        (into [])))
 
 (defn podcast-list-refresh-data
@@ -115,7 +116,7 @@
      (m/DecorationImage
       .fit m/BoxFit.cover
       .image
-      (m/NetworkImage tt/image))))))
+      (m/NetworkImage image))))))
 
 (defn podcast-avatar-view
   "Create podcast avatar view"
@@ -148,27 +149,28 @@
 
 (defn podcast-list-item-view
   "Create podcast list item view"
-  [{:keys [title author image]}]
+  [{:keys [title author image] :as podcast}]
   (f/widget
    :context cx
    (m/ListTile
     .leading (podcast-avatar-view image)
     .title (m/Text title)
     .subtitle (m/Text author)
-    .onTap #(pushto cx (str "/podcast/" title)))))
+    .onTap #(pushto cx (str "/podcast/" title) podcast))))
 
 (defn podcast-details-info-view
   "Create podcast details info view"
-  [{:keys [title author description]}]
+  [{:keys [title author description] :as podcast}]
+  (log "[podcast-details-info-view]" ":podcast" podcast)
   (m/SliverList.list
    .children
    [(m/ExpansionTile
-     .title (m/Text  title)
+     .title (m/Text title)
      .subtitle (m/Text author)
      .childrenPadding
      (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
      .children
-     [(m/Text tt/podcast-description)])]))
+     [(m/Text description)])]))
 
 (defn podcast-details-actions-view
   "Create podcast details actions view"
@@ -232,7 +234,7 @@
    .context cx
    .showDragHandle true .isScrollControlled false
    .builder
-   (fn [_cx]
+   (fn [cx]
      (bottomsheet-selection-view
       :header "Sort eposide"
       :items ["Latest first"
@@ -248,7 +250,7 @@
    .context cx
    .showDragHandle true .isScrollControlled false
    .builder
-   (fn [_cx]
+   (fn [cx]
      (bottomsheet-selection-view
       :header "Episode Filter"
       :items ["None"
@@ -270,7 +272,7 @@
    .delegate
    (m/SliverChildBuilderDelegate
     (fn [cx i]
-      (podcast-episode-list-item-view {:title (str "ep" i) :pubDate "now" :duration "30min" :image "" :description tt/episode-description}))
+      (podcast-episode-list-item-view {:title (str "ep" i) :pubDate "now" :duration "30min" :image tt/image :description tt/episode-description}))
     .childCount 40)))
 
 (defn podcast-episode-list-item-view
@@ -363,7 +365,7 @@
   (m/showModalBottomSheet
    .context cx
    .showDragHandle true .isScrollControlled true
-   .builder (fn [_cx] (podcast-episode-list-item-bottomsheet-content-view episode))))
+   .builder (fn [cx] (podcast-episode-list-item-bottomsheet-content-view episode))))
 
 (defn podcast-episode-list-item-bottomsheet-content-view
   "Create podcast episode list item bottomsheel content view"
@@ -411,7 +413,8 @@
 
 (defn podcast-detail-page
   "Create podcast detail page"
-  []
+  [{:keys [title image] :as podcast}]
+  (log "[podcast-detail-page]" ":podcast" podcast)
   (f/widget
    :context cx
    (m/Scaffold
@@ -421,7 +424,7 @@
      .slivers
      [;; header
       (m/SliverAppBar
-       .title (m/Text "my podcast")
+       .title (m/Text title)
        .expandedHeight 300
        .pinned true .snap false .floating false .stretch true
        .flexibleSpace
@@ -435,9 +438,9 @@
                       .image
                       (m/DecorationImage
                        .fit m/BoxFit.cover
-                       .image (m/NetworkImage tt/image))))))
+                       .image (m/NetworkImage image))))))
       ;; details info
-      (podcast-details-info-view {:title "大内密谈" :author "大内密谈" :description tt/podcast-description})
+      (podcast-details-info-view podcast)
       ;; actions bar
       (podcast-details-actions-view)
       ;; episode list
@@ -455,7 +458,7 @@
    (m/MaterialApp.router
     .title app-name
     .debugShowCheckedModeBanner false
-    .theme (m/ThemeData.light)
-    .darkTheme (m/ThemeData.dark)
+    .theme (m/ThemeData.light .useMaterial3 true)
+    .darkTheme (m/ThemeData.dark .useMaterial3 true)
     .themeMode theme-mode
     .routerConfig router)))
