@@ -5,7 +5,7 @@
             ["package:go_router/go_router.dart" :refer [GoRouter GoRoute GoRouterState]]
             ["package:restart_app/restart_app.dart" :refer [Restart]]
             [lost.test-text :as tt]
-            [lost.util :refer [log get-primary-color vec-del goto pushto]]
+            [lost.util :refer [log vec-del goto pushto]]
             [cljd.flutter :as f]))
 
 (defonce app-name "ClojureDart Flutter Demo")
@@ -130,15 +130,15 @@
   (f/widget
    :context cx
    :width 80 :height 80
-   (m/Container
-    .decoration
-    (m/BoxDecoration
-     .borderRadius  (m/BorderRadius.circular 10)
-     .image
-     (m/DecorationImage
-      .fit m/BoxFit.cover
-      .image
-      (m/NetworkImage image))))))
+   (m/Container)
+   .decoration
+   (m/BoxDecoration
+    .borderRadius  (m/BorderRadius.circular 10))
+   .image
+   (m/DecorationImage
+    .fit m/BoxFit.cover)
+   .image
+   (m/NetworkImage image)))
 
 (defn podcast-avatar-view
   "Create podcast avatar view"
@@ -155,8 +155,8 @@
     .header (er/ClassicHeader)
     .footer (er/ClassicFooter)
     .refreshOnStart true
-    .onRefresh podcast-list-refresh-data
-    .child (podcast-list-view))))
+    .onRefresh podcast-list-refresh-data)
+   (podcast-list-view)))
 
 (defn podcast-list-view
   "Create podcast list view"
@@ -181,17 +181,39 @@
     .subtitle (m/Text author)
     .onTap #(pushto cx (str "/podcast/" title) podcast))))
 
+(defn podcast-details-background-view
+  "Create podcast details background view"
+  [image]
+  (m/Container
+   .decoration
+   (m/BoxDecoration
+    .image
+    (m/DecorationImage
+     .fit m/BoxFit.cover
+     .image (m/NetworkImage image)))))
+
 (defn podcast-details-info-view
   "Create podcast details info view"
   [{:keys [title author description] :as podcast}]
   (log "[podcast-details-info-view]" ":podcast" podcast)
-  (m/ExpansionTile
-   .title (m/Text title)
-   .subtitle (m/Text author)
-   .childrenPadding
-   (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
+  (f/widget
+   :padding (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
+   (m/Column)
    .children
-   [(m/Text description)]))
+   [(m/ListTile
+     .title (m/Text title)
+     .subtitle (m/Text author))
+    (m/ShaderMask
+     .shaderCallback
+     (fn [bounds]
+       (->
+        (m/LinearGradient
+         .begin m/Alignment.topCenter
+         .end m/Alignment.bottomCenter
+         .colors [m/Colors.white (.withAlpha m/Colors.white 0)]
+         .stops [0.9 1])
+        (.createShader bounds)))
+     .child (m/Text description))]))
 
 (defn podcast-details-actions-view
   "Create podcast details actions view"
@@ -199,52 +221,78 @@
   (f/widget
    :context cx
    :padding (m/EdgeInsets.symmetric .horizontal 20)
-   (m/Row
-    .mainAxisAlignment m/MainAxisAlignment.start
-    .children
-    [(m/OutlinedButton.icon
-      .label (m/Text "Follow")
-      .icon (m/Icon m/Icons.add)
-      .onPressed (fn []))
-     (m/IconButton
-      .icon (m/Icon m/Icons.more_vert_outlined)
-      .onPressed (fn []))
-     (m/IconButton
-      .icon (m/Icon m/Icons.search)
-      .onPressed (fn []))
-     (m/IconButton
-      .icon (m/Icon m/Icons.sort)
-      .onPressed (partial show-podcast-episode-list-sort-bottomsheet cx))
-     (m/IconButton
-      .icon (m/Icon m/Icons.filter_alt_outlined)
-      .onPressed (partial show-podcast-episode-list-filter-bottomsheet cx))])))
+   :watch [search-bar-visible (atom false) :as search-bar-visible-state]
+   :managed [text-edit-controller (m/TextEditingController)]
+   (m/Column
+    .mainAxisSize m/MainAxisSize.min)
+   .children
+   [(m/Row
+     .mainAxisAlignment m/MainAxisAlignment.start
+     .children
+     [(m/OutlinedButton.icon
+       .label (m/Text "Follow")
+       .icon (m/Icon m/Icons.add)
+       .onPressed (fn []))
+      (m/IconButton
+       .icon (m/Icon m/Icons.more_vert_outlined)
+       .onPressed (fn []))
+      (m/IconButton
+       .icon (m/Icon m/Icons.search)
+       .onPressed (partial swap! search-bar-visible-state not))
+      (m/IconButton
+       .icon (m/Icon m/Icons.sort)
+       .onPressed (partial show-podcast-episode-list-sort-bottomsheet cx))
+      (m/IconButton
+       .icon (m/Icon m/Icons.filter_alt_outlined)
+       .onPressed (partial show-podcast-episode-list-filter-bottomsheet cx))])
+;; search bar
+    (m/Visibility
+     .visible search-bar-visible
+     .child
+     (m/TextField
+      .controller text-edit-controller
+      .autofocus true
+      .onChanged (fn [v] (log "[search-input]" v))
+      .decoration (m/InputDecoration
+                   .hintText "Search episode"
+                   .prefixIcon (m/Icon m/Icons.search)
+                   .suffixIcon (m/GestureDetector
+                                .onTap (fn [] (.-text! text-edit-controller "") nil)
+                                .child (m/Icon m/Icons.close))
+                   .filled true .isDense false
+                   .contentPadding (m/EdgeInsets.all 0)
+                   .border (m/OutlineInputBorder
+                            .borderRadius (m/BorderRadius.all (m/Radius.circular 8))
+                            .borderSide m/BorderSide.none
+                            .gapPadding 0.0))))]))
 
 (defn bottomsheet-selection-view
   [& {:keys [header items test-selected on-select]}]
   (f/widget
    :context cx
+   :get {{:flds [style]} m/DefaultTextStyle}
+   :let [header-text-style (.apply style
+                                   .fontWeightDelta 2
+                                   .fontSizeFactor 2)
+         text-style (.apply style
+                            .fontWeightDelta 1
+
+                            .fontSizeFactor 1)]
+   (m/SingleChildScrollView)
    (m/Column
-    .children
-    [(m/Text header
-             .style
-             (-> (m/DefaultTextStyle.of cx)
-                 (.-style)
-                 (.apply .fontWeightDelta 2 .fontSizeFactor 2)))
-     (m/Column
-      .mainAxisSize m/MainAxisSize.min
-      .children
-      (->> items
-           (map (fn [i]
-                  (m/ListTile
-                   .leading
-                   (m/Text i
-                           .style
-                           (-> (m/DefaultTextStyle.of cx)
-                               (.-style)
-                               (.apply .fontWeightDelta 2 .fontSizeFactor 1)))
-                   .trailing (when (test-selected i) (m/Icon m/Icons.check))
-                   .onTap (partial on-select i))))
-           (into [])))])))
+    .mainAxisSize m/MainAxisSize.min)
+   .children
+   [(m/Text
+     header
+     .style header-text-style)
+    (m/Column
+     .mainAxisSize m/MainAxisSize.min
+     .children
+     (for [{:keys [kw display-text]} items]
+       (m/ListTile
+        .onTap (partial on-select kw)
+        .leading (m/Text display-text .style text-style)
+        .trailing (when (test-selected kw) (m/Icon m/Icons.check)))))]))
 
 (defn show-podcast-episode-list-sort-bottomsheet
   [cx]
@@ -254,13 +302,13 @@
    .builder
    (fn [cx]
      (bottomsheet-selection-view
-      :header "Sort eposide"
-      :items ["Latest first"
-              "Earliest first"
-              "Alphabetical A-Z"
-              "Alphabetical Z-A"]
-      :test-selected (fn [i] true)
-      :on-select (fn [])))))
+      :header "Sort episode"
+      :items [{:kw :latest-first :display-text "Latest first"}
+              {:kw :earliest-frist :display-text "Earliest first"}
+              {:kw :alphabet-A-Z :display-text "Alphabetical A-Z"}
+              {:kw :alphabet-Z-A :display-text "Alphabetical Z-A"}]
+      :test-selected (fn [kw] true)
+      :on-select (fn [kw])))))
 
 (defn show-podcast-episode-list-filter-bottomsheet
   [cx]
@@ -271,12 +319,12 @@
    (fn [cx]
      (bottomsheet-selection-view
       :header "Episode Filter"
-      :items ["None"
-              "Started"
-              "Played"
-              "Unplayed"]
-      :test-selected (fn [i] true)
-      :on-select (fn [])))))
+      :items [{:kw :none :display-text "None"}
+              {:kw :started :display-text "Started"}
+              {:kw :played :display-text "Played"}
+              {:kw :unplayed :display-text "Unplayed"}]
+      :test-selected (fn [kw] true)
+      :on-select (fn [kw])))))
 
 (defn podcast-episode-avatar-view
   "Craete podcast episode avatar view"
@@ -311,18 +359,19 @@
   []
   (f/widget
    :context cx
+   :get {{:flds [primaryColor]} m/Theme}
    (m/Row
     .mainAxisAlignment m/MainAxisAlignment.spaceBetween
-    .mainAxisSize m/MainAxisSize.min
-    .children
-    [;; episode download action
-     (m/IconButton.outlined
-      .icon (m/Icon m/Icons.download .color (get-primary-color cx))
-      .onPressed (fn []))
+    .mainAxisSize m/MainAxisSize.min)
+   .children
+   [;; episode download action
+    (m/IconButton.outlined
+     .icon (m/Icon m/Icons.download .color primaryColor)
+     .onPressed (fn []))
    ;; episode play/pause actions
-     (m/IconButton.outlined
-      .icon (m/Icon m/Icons.play_circle .color (get-primary-color cx))
-      .onPressed (fn []))])))
+    (m/IconButton.outlined
+     .icon (m/Icon m/Icons.play_circle .color primaryColor)
+     .onPressed (fn []))]))
 
 (defn podcast-episode-list-item-expansion-actions-view
   "Create podcast episode list item expansion actions view"
@@ -330,52 +379,52 @@
   (f/widget
    :context cx
    (m/Row
-    .mainAxisAlignment m/MainAxisAlignment.spaceBetween
-    .children
-    [;; episode delete action
-     (m/Flexible .fit m/FlexFit.tight
-                 .child
-                 (m/IconButton
-                  .icon
-                  (m/Column
-                   .mainAxisSize m/MainAxisSize.min
-                   .children
-                   [(m/Icon m/Icons.delete)
-                    (m/Text "Delete")])
-                  .onPressed (fn [])))
+    .mainAxisAlignment m/MainAxisAlignment.spaceBetween)
+   .children
+   [;; episode delete action
+    (m/Flexible .fit m/FlexFit.tight
+                .child
+                (m/IconButton
+                 .icon
+                 (m/Column
+                  .mainAxisSize m/MainAxisSize.min
+                  .children
+                  [(m/Icon m/Icons.delete)
+                   (m/Text "Delete")])
+                 .onPressed (fn [])))
     ;; episode add action
-     (m/Flexible .fit m/FlexFit.tight
-                 .child
-                 (m/IconButton
-                  .icon
-                  (m/Column
-                   .mainAxisSize m/MainAxisSize.min
-                   .children
-                   [(m/Icon m/Icons.add)
-                    (m/Text "Add")])
-                  .onPressed (fn [])))
+    (m/Flexible .fit m/FlexFit.tight
+                .child
+                (m/IconButton
+                 .icon
+                 (m/Column
+                  .mainAxisSize m/MainAxisSize.min
+                  .children
+                  [(m/Icon m/Icons.add)
+                   (m/Text "Add")])
+                 .onPressed (fn [])))
     ;; episode mark-played action
-     (m/Flexible .fit m/FlexFit.tight
-                 .child
-                 (m/IconButton
-                  .icon
-                  (m/Column
-                   .mainAxisSize m/MainAxisSize.min
-                   .children
-                   [(m/Icon m/Icons.check)
-                    (m/Text "Mark Played")])
-                  .onPressed (fn [])))
+    (m/Flexible .fit m/FlexFit.tight
+                .child
+                (m/IconButton
+                 .icon
+                 (m/Column
+                  .mainAxisSize m/MainAxisSize.min
+                  .children
+                  [(m/Icon m/Icons.check)
+                   (m/Text "Mark Played")])
+                 .onPressed (fn [])))
     ;; episode details action
-     (m/Flexible .fit m/FlexFit.tight
-                 .child
-                 (m/IconButton
-                  .icon
-                  (m/Column
-                   .mainAxisSize m/MainAxisSize.min
-                   .children
-                   [(m/Icon m/Icons.expand)
-                    (m/Text "More")])
-                  .onPressed (partial show-podcast-episode-list-item-bottomsheet cx episode)))])))
+    (m/Flexible .fit m/FlexFit.tight
+                .child
+                (m/IconButton
+                 .icon
+                 (m/Column
+                  .mainAxisSize m/MainAxisSize.min
+                  .children
+                  [(m/Icon m/Icons.expand)
+                   (m/Text "More")])
+                 .onPressed (partial show-podcast-episode-list-item-bottomsheet cx episode)))]))
 
 (defn show-podcast-episode-list-item-bottomsheet
   "Show podcast episode list item bottomsheel"
@@ -390,23 +439,24 @@
   [{:keys [title description]}]
   (f/widget
    :context cx
+   :get {{:flds [style]} m/DefaultTextStyle}
    :padding (m/EdgeInsets.symmetric .horizontal 20)
+   :let [text-style (.apply style
+                            .fontWeightDelta 2
+                            .fontSizeFactor 2)]
    (m/DraggableScrollableSheet
-    .snap true .expand false
-    .builder (fn [cx scroll-controller]
-               (m/CustomScrollView
-                .controller scroll-controller
-                .physics (m/BouncingScrollPhysics)
-                .slivers
-                [(m/SliverList.list
-                  .children
-                  [(m/Text title
-                           .style
-                           (-> (m/DefaultTextStyle.of cx)
-                               (.-style)
-                               (.apply .fontWeightDelta 2 .fontSizeFactor 2)))])
-                 (m/SliverList.list
-                  .children [(m/Text description)])])))))
+    .initialChildSize 0.5
+    .expand false
+    .builder
+    (fn [cx scroll-controller]
+      (f/widget
+       (m/SingleChildScrollView
+        .controller scroll-controller)
+       (m/Column)
+       .children
+       [(m/Text title .style text-style)
+        (m/SizedBox .height 20)
+        (m/Text description)])))))
 
 ;;------;;
 ;; page ;;
@@ -439,44 +489,34 @@
    :context cx
    :watch [{:keys [podcast episode-list]} podcast-episode-list-state]
    :managed [controller (er/EasyRefreshController)]
-   (m/Scaffold
-    .body
-    (er/EasyRefresh
-     .controller controller
-     .header (er/ClassicHeader)
-     .footer (er/ClassicFooter)
-     .refreshOnStart true
-     .onRefresh (partial podcast-episode-list-refresh-data rss)
+   (m/Scaffold)
+   .body
+   (er/EasyRefresh
+    .controller controller
+    .header (er/ClassicHeader)
+    .footer (er/ClassicFooter)
+    .refreshOnStart true
+    .onRefresh (partial podcast-episode-list-refresh-data rss))
+   (m/CustomScrollView)
+   .slivers
+   [(m/SliverAppBar
+     .title (m/Text title)
+     .expandedHeight 300
+     .pinned true .stretch true
+     .flexibleSpace
+     (m/FlexibleSpaceBar
+      .stretchModes
+      [m/StretchMode.zoomBackground
+       m/StretchMode.fadeTitle]
+      .background (podcast-details-background-view image)))
+    (m/SliverToBoxAdapter
      .child
-     (m/CustomScrollView
-      .slivers
-      [(m/SliverAppBar
-        .title (m/Text title)
-        .expandedHeight 300
-        .pinned true .stretch true
-        .flexibleSpace
-        (m/FlexibleSpaceBar
-         ; .title (m/Text title) ;; BUG: invisiable on appbar in light mode
-         .titlePadding (m/EdgeInsets.symmetric .horizontal 20)
-         .centerTitle false
-         .stretchModes
-         [m/StretchMode.zoomBackground
-          m/StretchMode.fadeTitle]
-         .background (m/Container
-                      .decoration
-                      (m/BoxDecoration
-                       .image
-                       (m/DecorationImage
-                        .fit m/BoxFit.cover
-                        .image (m/NetworkImage image))))))
-       (m/SliverToBoxAdapter
-        .child
-        (m/Column
-         .children
-         [(podcast-details-info-view podcast)
-          (podcast-details-actions-view)
-          (m/Divider)]))
-       (podcast-episode-list-view podcast episode-list)])))))
+     (m/Column
+      .children
+      [(podcast-details-info-view podcast)
+       (podcast-details-actions-view)
+       (m/Divider)]))
+    (podcast-episode-list-view podcast episode-list)]))
 
 ;;------;;
 ;; main ;;

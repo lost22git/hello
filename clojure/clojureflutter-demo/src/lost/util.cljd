@@ -15,11 +15,6 @@
   [cx]
   (-> (m/Theme.of cx) (.-brightness) (= m/Brightness.dark)))
 
-(defn get-primary-color
-  "Get primary color of theme"
-  [cx]
-  (-> (m/Theme.of cx) (.-colorScheme) (.-primary)))
-
 (defn goto
   "Go to destination path page (with extra data)"
   ([cx path] (goto cx path nil))
