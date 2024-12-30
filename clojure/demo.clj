@@ -167,3 +167,19 @@
 (assert (= [2 4] (filter even? [1 2 3 4 5])))
 (assert (= [1 3 5] (filter (complement even?) [1 2 3 4 5])))
 
+(assert (= 1 ((constantly 1) 1)))
+(assert (= 1 ((constantly 1) 1 2)))
+(assert (= 1 ((constantly 1) 1 2 "sdsf")))
+
+;; fnil default param
+(defn foo [x] (str "x=" x))
+(assert (= "x=bar" ((fnil foo "bar") nil)))
+(assert (= "x=foo" ((fnil foo "bar") "foo")))
+
+;; for 
+(->
+ (for [{:keys [fid name]} [{:fid 1 :name "foo"} {:fid 2 :name "bar"}]]
+   [fid name])
+ (= [[1 "foo"] [2 "bar"]])
+ (assert))
+
