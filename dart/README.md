@@ -11,4 +11,27 @@
 - `js`: js and run with `node demo.js`
 - `wasm` wasm and run with `node demo.wasm`
 
+## Flutter
+
+### Container vs ConstraintedBox vs SizedBox vs DecorationBox vs ColorBox vs Padding vs Alignment
+
+### InkWell vs GestureDetector
+
+### Visibility vs Offstage vs Opacity 
+
+### CustomScrollView vs SingleChildScrollView vs ListView
+
+### CustomScrollView slivers
+
+### ExpansionTile vs ExpansionPanelList
+
+### Flex vs Row/Column
+
+### Flexible vs Expand
+
+### WidgetsBinding vs SchedulerBinding
+
+### Tween vs Curves
+
+### Gradient linear vs radial
 
