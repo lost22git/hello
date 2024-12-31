@@ -183,3 +183,17 @@
  (= [[1 "foo"] [2 "bar"]])
  (assert))
 
+;; infinity
+(assert (infinite? ##Inf))
+(assert (infinite? ##-Inf))
+
+;; Clojure History
+;;
+;; persistent data structures
+;; STM (software transaction management)
+;; concurrent primities
+;; multi-methods
+;; protocols 
+;; core.async
+;; transducer
+
