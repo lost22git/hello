@@ -203,17 +203,34 @@
    [(m/ListTile
      .title (m/Text title)
      .subtitle (m/Text author))
-    (m/ShaderMask
-     .shaderCallback
-     (fn [bounds]
-       (->
-        (m/LinearGradient
-         .begin m/Alignment.topCenter
-         .end m/Alignment.bottomCenter
-         .colors [m/Colors.white (.withAlpha m/Colors.white 0)]
-         .stops [0.9 1])
-        (.createShader bounds)))
-     .child (m/Text description))]))
+    (podcast-details-description-view description)]))
+
+(defn podcast-details-description-view
+  [description]
+  (f/widget
+   :watch [expanded (atom false) :as expanded-state]
+   :let [gradient (m/LinearGradient
+                   .begin m/Alignment.topCenter
+                   .end m/Alignment.bottomCenter
+                   .stops [0.8 1]
+                   .colors [m/Colors.white (.withAlpha m/Colors.white 0)])
+         constriants  (if expanded
+                        (m/BoxConstraints)
+                        (m/BoxConstraints.loose (m/Size ##Inf 100)))
+         content-view (m/InkWell
+                       .onTap (fn [] (swap! expanded-state not) nil)
+                       .child (m/Text description))]
+
+   (m/AnimatedSize
+    .duration (Duration .milliseconds 150)
+    .curve m/Curves.fastOutSlowIn
+    .alignment m/Alignment.topCenter)
+   (m/Container .constraints constriants)
+   (if expanded
+     content-view
+     (m/ShaderMask
+      .shaderCallback (fn [bound] (.createShader gradient bound))
+      .child content-view))))
 
 (defn podcast-details-actions-view
   "Create podcast details actions view"
@@ -222,11 +239,11 @@
    :context cx
    :padding (m/EdgeInsets.symmetric .horizontal 20)
    :watch [search-bar-visible (atom false) :as search-bar-visible-state]
-   :managed [text-edit-controller (m/TextEditingController)]
    (m/Column
     .mainAxisSize m/MainAxisSize.min)
    .children
-   [(m/Row
+   [;; action buttons
+    (m/Row
      .mainAxisAlignment m/MainAxisAlignment.start
      .children
      [(m/OutlinedButton.icon
@@ -246,9 +263,10 @@
        .icon (m/Icon m/Icons.filter_alt_outlined)
        .onPressed (partial show-podcast-episode-list-filter-bottomsheet cx))])
 ;; search bar
-    (m/Visibility
-     .visible search-bar-visible
-     .child
+    (f/widget
+     :managed [text-edit-controller (m/TextEditingController)]
+     (m/Visibility
+      .visible search-bar-visible)
      (m/TextField
       .controller text-edit-controller
       .autofocus true
@@ -276,7 +294,6 @@
                                    .fontSizeFactor 2)
          text-style (.apply style
                             .fontWeightDelta 1
-
                             .fontSizeFactor 1)]
    (m/SingleChildScrollView)
    (m/Column
