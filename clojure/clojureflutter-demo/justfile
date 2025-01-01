@@ -1,0 +1,14 @@
+set windows-shell := ["powershell", "-nologo", "-noprofile", "-c"]
+
+_default:
+    @just --list --unsorted
+
+# list all flutter widgets used in the project
+[unix]
+widget:
+    rg '(\(|\s)(m/\w+)' . -oIN -r '$2' | sort | uniq -c | sort -k3n | tee /dev/tty | wc -l
+
+# list all flutter widgets used in the project
+[windows]
+widget:
+    rg '(\(|\s)(m/\w+)' . -oIN -r '$2' | group -noelement | sort count | tee -variable $output | measure -line

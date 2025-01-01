@@ -30,7 +30,6 @@
 (defonce ^:private app-state (atom {:theme-mode m/ThemeMode.light}))
 (defonce ^:private navibar-state (atom {:current-index 0}))
 (defonce ^:private podcast-list-state (atom {:data []}))
-(defonce ^:private podcast-episode-list-state (atom {:podcast {} :episode-list []}))
 
 ;;---------------;;
 ;; state updater ;;
@@ -76,17 +75,9 @@
                :description tt/podcast-description}))
        (into [])))
 
-(defn podcast-episode-list-refresh-data
-  "Refresh podcast episode list data"
+(defn episode-list-fetch-data
   [rss]
-  (log "[podcast-episode-list-refresh-data]" ":rss" rss)
-  (let [data (podcast-episode-list-fetch-data rss)]
-    ; (log ":data" data)
-    (swap! podcast-episode-list-state assoc :episode-list data)))
-
-(defn podcast-episode-list-fetch-data
-  [rss]
-  (log "[podcast-episode-list-fetch-data]" ":rss" rss)
+  (log "[episode-list-fetch-data]" ":rss" rss)
   (->> (range) (take 40)
        (map (fn [i]
               {:title (str "ep" i)
@@ -209,14 +200,15 @@
   [description]
   (f/widget
    :watch [expanded (atom false) :as expanded-state]
-   :let [gradient (m/LinearGradient
+   :let [max-height 80
+         gradient (m/LinearGradient
                    .begin m/Alignment.topCenter
                    .end m/Alignment.bottomCenter
-                   .stops [0.8 1]
+                   .stops [0.9 1]
                    .colors [m/Colors.white (.withAlpha m/Colors.white 0)])
          constriants  (if expanded
                         (m/BoxConstraints)
-                        (m/BoxConstraints.loose (m/Size ##Inf 100)))
+                        (m/BoxConstraints.loose (m/Size ##Inf max-height)))
          content-view (m/InkWell
                        .onTap (fn [] (swap! expanded-state not) nil)
                        .child (m/Text description))]
@@ -234,7 +226,7 @@
 
 (defn podcast-details-actions-view
   "Create podcast details actions view"
-  []
+  [episode-list-query-state]
   (f/widget
    :context cx
    :padding (m/EdgeInsets.symmetric .horizontal 20)
@@ -258,19 +250,25 @@
        .onPressed (partial swap! search-bar-visible-state not))
       (m/IconButton
        .icon (m/Icon m/Icons.sort)
-       .onPressed (partial show-podcast-episode-list-sort-bottomsheet cx))
+       .onPressed (partial show-episode-list-sort-bottomsheet cx episode-list-query-state))
       (m/IconButton
        .icon (m/Icon m/Icons.filter_alt_outlined)
-       .onPressed (partial show-podcast-episode-list-filter-bottomsheet cx))])
+       .onPressed (partial show-episode-list-filter-bottomsheet cx episode-list-query-state))])
 ;; search bar
     (f/widget
-     :managed [text-edit-controller (m/TextEditingController)]
+     :managed [text-edit-controller (m/TextEditingController)
+               focus-node (m/FocusNode)]
      (m/Visibility
       .visible search-bar-visible)
      (m/TextField
       .controller text-edit-controller
+      .focusNode focus-node
       .autofocus true
-      .onChanged (fn [v] (log "[search-input]" v))
+      .onChanged (fn [v]
+                   (log "[search-input]" v)
+                   (swap! episode-list-query-state assoc :q-search v))
+      .onTap (fn [] (.requestFocus focus-node))
+      .onTapOutside (fn [event] (.unfocus focus-node))
       .decoration (m/InputDecoration
                    .hintText "Search episode"
                    .prefixIcon (m/Icon m/Icons.search)
@@ -294,25 +292,27 @@
                                    .fontSizeFactor 2)
          text-style (.apply style
                             .fontWeightDelta 1
-                            .fontSizeFactor 1)]
-   (m/SingleChildScrollView)
-   (m/Column
-    .mainAxisSize m/MainAxisSize.min)
-   .children
-   [(m/Text
-     header
-     .style header-text-style)
-    (m/Column
-     .mainAxisSize m/MainAxisSize.min
-     .children
-     (for [{:keys [kw display-text]} items]
-       (m/ListTile
-        .onTap (partial on-select kw)
-        .leading (m/Text display-text .style text-style)
-        .trailing (when (test-selected kw) (m/Icon m/Icons.check)))))]))
+                            .fontSizeFactor 1)
+         header-view (m/Container
+                      .alignment m/Alignment.center
+                      .child (m/Text header .style header-text-style))]
+   :padding (m/EdgeInsets.symmetric .horizontal 20)
+   (m/ListView.separated
+    .itemCount (inc (count items))
+    .separatorBuilder (constantly (m/Divider))
+    .shrinkWrap true
+    .itemBuilder
+    (fn [cx i]
+      (case i
+        0 header-view
+        (let [{:keys [kw display-text]} (items (dec i))]
+          (m/ListTile
+           .onTap (partial on-select kw)
+           .leading (m/Text display-text .style text-style)
+           .trailing (when (test-selected kw) (m/Icon m/Icons.check)))))))))
 
-(defn show-podcast-episode-list-sort-bottomsheet
-  [cx]
+(defn show-episode-list-sort-bottomsheet
+  [cx episode-list-query-state]
   (m/showModalBottomSheet
    .context cx
    .showDragHandle true .isScrollControlled false
@@ -320,15 +320,18 @@
    (fn [cx]
      (bottomsheet-selection-view
       :header "Sort episode"
-      :items [{:kw :latest-first :display-text "Latest first"}
-              {:kw :earliest-frist :display-text "Earliest first"}
-              {:kw :alphabet-A-Z :display-text "Alphabetical A-Z"}
-              {:kw :alphabet-Z-A :display-text "Alphabetical Z-A"}]
-      :test-selected (fn [kw] true)
-      :on-select (fn [kw])))))
+      :items [{:kw :sort-default :display-text "Default"}
+              {:kw :sort-latest-first :display-text "Latest first"}
+              {:kw :sort-earliest-frist :display-text "Earliest first"}
+              {:kw :sort-alphabet-A-Z :display-text "Alphabetical A-Z"}
+              {:kw :sort-alphabet-Z-A :display-text "Alphabetical Z-A"}]
+      :test-selected (partial = (@episode-list-query-state :q-sort))
+      :on-select (fn [kw]
+                   (swap! episode-list-query-state assoc :q-sort kw)
+                   (m/Navigator.pop cx))))))
 
-(defn show-podcast-episode-list-filter-bottomsheet
-  [cx]
+(defn show-episode-list-filter-bottomsheet
+  [cx episode-list-query-state]
   (m/showModalBottomSheet
    .context cx
    .showDragHandle true .isScrollControlled false
@@ -336,42 +339,58 @@
    (fn [cx]
      (bottomsheet-selection-view
       :header "Episode Filter"
-      :items [{:kw :none :display-text "None"}
-              {:kw :started :display-text "Started"}
-              {:kw :played :display-text "Played"}
-              {:kw :unplayed :display-text "Unplayed"}]
-      :test-selected (fn [kw] true)
-      :on-select (fn [kw])))))
+      :items [{:kw :filter-none :display-text "None"}
+              {:kw :filter-started :display-text "Started"}
+              {:kw :filter-played :display-text "Played"}
+              {:kw :filter-unplayed :display-text "Unplayed"}]
+      :test-selected (partial = (@episode-list-query-state :q-filter))
+      :on-select (fn [kw]
+                   (swap! episode-list-query-state assoc :q-filter kw)
+                   (m/Navigator.pop cx))))))
 
-(defn podcast-episode-avatar-view
+(defn episode-avatar-view
   "Craete podcast episode avatar view"
   [image]
   (avatar-view image))
 
-(defn podcast-episode-list-view
+(defn episode-list-view
   "Create podcast episode list view"
-  [podcast episode-list]
-  (log "[podcast-episode-list-view]" ":podcast" podcast ":episode-list" (count episode-list))
-  (m/SliverList.builder
-   .itemBuilder
-   (fn [cx i]
-     (podcast-episode-list-item-view (episode-list i)))
-   .itemCount (count episode-list)))
+  [episode-list-state episode-list-query-state]
+  (f/widget
+   :watch [{:keys [episode-list]} episode-list-state
+           episode-list-query episode-list-query-state]
+   :let [_ (log "[episode-list-view]..." ":episode-list" (count episode-list) ":episode-list-query" episode-list-query)
+         {:keys [q-sort q-filter q-search]} episode-list-query
+         sort-fn (condp = q-sort
+                   :sort-default identity
+                   :sort-alphabet-A-Z (partial sort-by #(:title %))
+                   :sort-alphabet-Z-A (partial sort-by #(:title %) #(compare %2 %1))
+                   (partial sort-by #(:title %)))
+         items (->> episode-list
+                    (filter #(clojure.string/includes? (% :title) q-search))
+                    sort-fn
+                    (into []))
+         _ (log "[episode-list-view]!!!" ":episode-list" (count items))]
+   (m/SliverList.builder
+    .itemBuilder
+    (fn [cx i]
+      (episode-list-item-view (items i)))
+    .itemCount (count items))))
 
-(defn podcast-episode-list-item-view
+(defn episode-list-item-view
   "Create podcast episode list item view"
   [{:keys [title pubDate duration image description] :as episode}]
   (m/ExpansionTile
-   .leading (podcast-episode-avatar-view image)
+   .leading (episode-avatar-view image)
    .title (m/Text title)
    .subtitle (m/Text (str pubDate " | " duration))
-   .trailing (podcast-episode-list-item-trailing-actions-view)
+   .trailing (episode-list-item-trailing-actions-view)
    .childrenPadding (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
    .children
    [(m/Text description .maxLines 5 .overflow m/TextOverflow.ellipsis)
-    (podcast-episode-list-item-expansion-actions-view episode)]))
+    (episode-list-item-expansion-actions-view episode)]))
 
-(defn podcast-episode-list-item-trailing-actions-view
+(defn episode-list-item-trailing-actions-view
   "Create podcast episode list item trailing actions view"
   []
   (f/widget
@@ -390,7 +409,7 @@
      .icon (m/Icon m/Icons.play_circle .color primaryColor)
      .onPressed (fn []))]))
 
-(defn podcast-episode-list-item-expansion-actions-view
+(defn episode-list-item-expansion-actions-view
   "Create podcast episode list item expansion actions view"
   [episode]
   (f/widget
@@ -441,17 +460,17 @@
                   .children
                   [(m/Icon m/Icons.expand)
                    (m/Text "More")])
-                 .onPressed (partial show-podcast-episode-list-item-bottomsheet cx episode)))]))
+                 .onPressed (partial show-episode-list-item-bottomsheet cx episode)))]))
 
-(defn show-podcast-episode-list-item-bottomsheet
+(defn show-episode-list-item-bottomsheet
   "Show podcast episode list item bottomsheel"
   [cx episode]
   (m/showModalBottomSheet
    .context cx
    .showDragHandle true .isScrollControlled true
-   .builder (fn [cx] (podcast-episode-list-item-bottomsheet-content-view episode))))
+   .builder (fn [cx] (episode-list-item-bottomsheet-content-view episode))))
 
-(defn podcast-episode-list-item-bottomsheet-content-view
+(defn episode-list-item-bottomsheet-content-view
   "Create podcast episode list item bottomsheel content view"
   [{:keys [title description]}]
   (f/widget
@@ -501,10 +520,10 @@
   "Create podcast detail page"
   [{:keys [rss title image] :as podcast}]
   (log "[podcast-detail-page]" ":podcast" podcast)
-  (swap! podcast-episode-list-state assoc :podcast podcast)
   (f/widget
    :context cx
-   :watch [{:keys [podcast episode-list]} podcast-episode-list-state]
+   :let [episode-list-state (atom {:episode-list []})
+         episode-list-query-state (atom {:q-filter :filter-none :q-sort :sort-default :q-search ""})]
    :managed [controller (er/EasyRefreshController)]
    (m/Scaffold)
    .body
@@ -513,7 +532,10 @@
     .header (er/ClassicHeader)
     .footer (er/ClassicFooter)
     .refreshOnStart true
-    .onRefresh (partial podcast-episode-list-refresh-data rss))
+    .onRefresh
+    (fn []
+      (let [data (episode-list-fetch-data rss)]
+        (swap! episode-list-state assoc :episode-list data))))
    (m/CustomScrollView)
    .slivers
    [(m/SliverAppBar
@@ -531,9 +553,9 @@
      (m/Column
       .children
       [(podcast-details-info-view podcast)
-       (podcast-details-actions-view)
+       (podcast-details-actions-view episode-list-query-state)
        (m/Divider)]))
-    (podcast-episode-list-view podcast episode-list)]))
+    (episode-list-view episode-list-state episode-list-query-state)]))
 
 ;;------;;
 ;; main ;;
