@@ -187,13 +187,19 @@
 (assert (infinite? ##Inf))
 (assert (infinite? ##-Inf))
 
-;; Clojure History
-;;
-;; persistent data structures
-;; STM (software transaction management)
-;; concurrent primities
-;; multi-methods
-;; protocols 
-;; core.async
-;; transducer
+;; Pitfalls
+
+(->> (let [filter :abc
+           search "foo"]
+       (filter (partial = search) ["foo" "bar" "foo"]))
+     (= ["foo" "bar" "foo"])
+     assert)
+
+(->> (let [filter :abc
+           search "foo"]
+       (clojure.core/filter (partial = search) ["foo" "bar" "foo"]))
+     (= ["foo" "foo"])
+     assert)
+
+
 
