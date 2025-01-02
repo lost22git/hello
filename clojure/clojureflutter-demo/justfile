@@ -3,12 +3,21 @@ set windows-shell := ["powershell", "-nologo", "-noprofile", "-c"]
 _default:
     @just --list --unsorted
 
-# list all flutter widgets used in the project
+# list used flutter widgets
 [unix]
 widget:
-    rg '(\(|\s)(m/\w+)' . -oIN -r '$2' | sort | uniq -c | sort -k3n | tee /dev/tty | wc -l
+    rg -g '*.cljd' '[\[\(\s](m/\w+)' . -oIN -r '$1' | sort | uniq -c | sort -k3n | tee /dev/tty | wc -l
 
-# list all flutter widgets used in the project
+# list used flutter widgets
 [windows]
 widget:
-    rg '(\(|\s)(m/\w+)' . -oIN -r '$2' | group -noelement | sort count | tee -variable $output | measure -line
+    rg -g '*.cljd' '[\[\(\s](m/\w+)' . -oIN -r '$1' | group -noelement | sort count | tee -variable $output | measure -line
+
+# show hard-coded numbers
+num:
+    rg -g '*.cljd' '[\s\(\[]\d+(\.\d+)?' .
+
+# show hard-coded strings
+str:
+    # \s\s* - remove fn description
+    rg -g '*.cljd' '\S\s*".+"' . | rg log -v

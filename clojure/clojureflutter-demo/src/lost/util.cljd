@@ -1,6 +1,5 @@
 (ns lost.util
-  (:require ["package:flutter/material.dart" :as m]
-            ["package:go_router/go_router.dart" :refer [GoRouter]]))
+  (:require ["package:flutter/material.dart" :as m]))
 
 (def log (partial println "[LOG]"))
 
@@ -14,18 +13,3 @@
   "Check dark mode?"
   [cx]
   (-> (m/Theme.of cx) (.-brightness) (= m/Brightness.dark)))
-
-(defn goto
-  "Go to destination path page (with extra data)"
-  ([cx path] (goto cx path nil))
-  ([cx path extra]
-   (-> (GoRouter.of cx)
-       (.go path .extra extra))))
-
-(defn pushto
-  "Push to destination path page (with extra data)"
-  ([cx path] (pushto cx path nil))
-  ([cx path extra]
-   (log "[pushto]" ":path" path ":extra" extra)
-   (-> (GoRouter.of cx)
-       (.push path .extra extra))))

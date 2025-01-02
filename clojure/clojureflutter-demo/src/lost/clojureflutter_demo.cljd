@@ -2,15 +2,19 @@
   (:require ["package:flutter/material.dart" :as m]
             ["package:flutter/foundation.dart" :refer [kDebugMode]]
             ["package:easy_refresh/easy_refresh.dart" :as er]
-            ["package:go_router/go_router.dart" :refer [GoRouter GoRoute GoRouterState]]
             ["package:restart_app/restart_app.dart" :refer [Restart]]
+            ["package:go_router/go_router.dart" :refer [GoRouter GoRoute GoRouterState]]
             [lost.test-text :as tt]
-            [lost.util :refer [log vec-del goto pushto]]
+            [lost.util :as u :refer [log]]
             [cljd.flutter :as f]))
 
 (defonce app-name "ClojureDart Flutter Demo")
 
-(defonce ^:private router
+;;--------;;
+;; router ;;
+;;--------;;
+
+(defonce router
   (GoRouter
    .debugLogDiagnostics true
    .routes
@@ -23,17 +27,26 @@
      (fn [cx ^GoRouterState state]
        (podcast-detail-page (.-extra state))))]))
 
+(defn goto
+  "Go to destination path page (with extra data)"
+  ([cx path & {:keys [extra]}]
+   (log "[goto]" ":path" path ":extra" extra)
+   (-> (GoRouter.of cx)
+       (.go path .extra extra))))
+
+(defn pushto
+  "Push to destination path page (with extra data)"
+  ([cx path & {:keys [extra]}]
+   (log "[pushto]" ":path" path ":extra" extra)
+   (-> (GoRouter.of cx)
+       (.push path .extra extra))))
+
 ;;-------;;
 ;; state ;;
 ;;-------;;
 
 (defonce ^:private app-state (atom {:theme-mode m/ThemeMode.light}))
 (defonce ^:private navibar-state (atom {:current-index 0}))
-(defonce ^:private podcast-list-state (atom {:data []}))
-
-;;---------------;;
-;; state updater ;;
-;;---------------;;
 
 (defn compute-theme-mode
   "Compute theme mode by given theme mode"
@@ -51,17 +64,6 @@
   "Switch navibar by index"
   [current-index]
   (swap! navibar-state assoc  :current-index current-index))
-
-(defn podcast-list-del
-  "Delete podcast by index from data"
-  [data index]
-  (swap! podcast-list-state assoc :data (vec-del data index)))
-
-(defn podcast-list-refresh-data
-  "Refresh podcast list data"
-  []
-  (let [data (podcast-list-fetch-data)]
-    (swap! podcast-list-state assoc :data data)))
 
 (defn podcast-list-fetch-data
   "Fetching podcast list data"
@@ -136,29 +138,24 @@
   [image]
   (avatar-view image))
 
-(defn podcast-list-easy-refresh-view
-  "Create podcast list easy_refresh view"
-  []
-  (f/widget
-   :managed [controller (er/EasyRefreshController)]
-   (er/EasyRefresh
-    .controller controller
-    .header (er/ClassicHeader)
-    .footer (er/ClassicFooter)
-    .refreshOnStart true
-    .onRefresh podcast-list-refresh-data)
-   (podcast-list-view)))
-
 (defn podcast-list-view
   "Create podcast list view"
   []
   (log "[podcast-list-view]")
   (f/widget
-   :watch [{:keys [data]} podcast-list-state]
+   :managed [controller (er/EasyRefreshController)]
+   :watch [{:keys [data]} (atom {:data []}) :as podcast-list-state]
+   (er/EasyRefresh
+    .controller controller
+    .header (er/ClassicHeader)
+    .footer (er/ClassicFooter)
+    .refreshOnStart true
+    .onRefresh (fn []
+                 (let [data (podcast-list-fetch-data)]
+                   (swap! podcast-list-state assoc :data data))))
    (m/ListView.builder
-    .itemBuilder
-    (fn [cx i]
-      (podcast-list-item-view (data i)))
+    .itemBuilder (fn [cx i]
+                   (podcast-list-item-view (data i)))
     .itemCount (count data))))
 
 (defn podcast-list-item-view
@@ -170,7 +167,7 @@
     .leading (podcast-avatar-view image)
     .title (m/Text title)
     .subtitle (m/Text author)
-    .onTap #(pushto cx (str "/podcast/" title) podcast))))
+    .onTap (fn [] (pushto cx (str "/podcast/" title) :extra podcast)))))
 
 (defn podcast-details-background-view
   "Create podcast details background view"
@@ -197,6 +194,7 @@
     (podcast-details-description-view description)]))
 
 (defn podcast-details-description-view
+  "Create podcast details description view"
   [description]
   (f/widget
    :watch [expanded (atom false) :as expanded-state]
@@ -212,7 +210,6 @@
          content-view (m/InkWell
                        .onTap (fn [] (swap! expanded-state not) nil)
                        .child (m/Text description))]
-
    (m/AnimatedSize
     .duration (Duration .milliseconds 150)
     .curve m/Curves.fastOutSlowIn
@@ -265,7 +262,6 @@
       .focusNode focus-node
       .autofocus true
       .onChanged (fn [v]
-                   (log "[search-input]" v)
                    (swap! episode-list-query-state assoc :q-search v))
       .onTap (fn [] (.requestFocus focus-node))
       .onTapOutside (fn [event] (.unfocus focus-node))
@@ -273,7 +269,10 @@
                    .hintText "Search episode"
                    .prefixIcon (m/Icon m/Icons.search)
                    .suffixIcon (m/GestureDetector
-                                .onTap (fn [] (.-text! text-edit-controller "") nil)
+                                .onTap (fn []
+                                         (.-text! text-edit-controller "") ;; can not trigger onChange, so we manually trigger the handler
+                                         (swap! episode-list-query-state assoc :q-search "")
+                                         nil)
                                 .child (m/Icon m/Icons.close))
                    .filled true .isDense false
                    .contentPadding (m/EdgeInsets.all 0)
@@ -283,6 +282,7 @@
                             .gapPadding 0.0))))]))
 
 (defn bottomsheet-selection-view
+  "Creaet common bottomsheet selection view"
   [& {:keys [header items test-selected on-select]}]
   (f/widget
    :context cx
@@ -312,6 +312,7 @@
            .trailing (when (test-selected kw) (m/Icon m/Icons.check)))))))))
 
 (defn show-episode-list-sort-bottomsheet
+  "Show podcast episode list sort bottomsheet"
   [cx episode-list-query-state]
   (m/showModalBottomSheet
    .context cx
@@ -331,6 +332,7 @@
                    (m/Navigator.pop cx))))))
 
 (defn show-episode-list-filter-bottomsheet
+  "Show podcast episode list filter bottomsheet"
   [cx episode-list-query-state]
   (m/showModalBottomSheet
    .context cx
@@ -366,8 +368,9 @@
                    :sort-alphabet-A-Z (partial sort-by #(:title %))
                    :sort-alphabet-Z-A (partial sort-by #(:title %) #(compare %2 %1))
                    (partial sort-by #(:title %)))
+         search-fn (partial filter #(clojure.string/includes? (% :title) q-search))
          items (->> episode-list
-                    (filter #(clojure.string/includes? (% :title) q-search))
+                    search-fn
                     sort-fn
                     (into []))
          _ (log "[episode-list-view]!!!" ":episode-list" (count items))]
@@ -463,7 +466,7 @@
                  .onPressed (partial show-episode-list-item-bottomsheet cx episode)))]))
 
 (defn show-episode-list-item-bottomsheet
-  "Show podcast episode list item bottomsheel"
+  "Show podcast episode list item bottomsheet"
   [cx episode]
   (m/showModalBottomSheet
    .context cx
@@ -471,7 +474,7 @@
    .builder (fn [cx] (episode-list-item-bottomsheet-content-view episode))))
 
 (defn episode-list-item-bottomsheet-content-view
-  "Create podcast episode list item bottomsheel content view"
+  "Create podcast episode list item bottomsheet content view"
   [{:keys [title description]}]
   (f/widget
    :context cx
@@ -508,7 +511,7 @@
     .title (m/Text app-name)
     .actions [(theme-mode-switch-view) (m/SizedBox .width 20)])
    .bottomNavigationBar (navibar-view)
-   .body (m/Center .child (podcast-list-easy-refresh-view))
+   .body (m/Center .child (podcast-list-view))
    .floatingActionButton
    (when kDebugMode
      (m/FloatingActionButton.extended
