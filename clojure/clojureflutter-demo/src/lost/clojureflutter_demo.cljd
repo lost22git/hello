@@ -23,9 +23,8 @@
      .builder (fn [cx state] (home-page)))
     (GoRoute
      .path "/podcast/:title"
-     .builder
-     (fn [cx ^GoRouterState state]
-       (podcast-detail-page (.-extra state))))]))
+     .builder (fn [cx ^GoRouterState state]
+                (podcast-detail-page (.-extra state))))]))
 
 (defn goto
   "Go to destination path page (with extra data)"
@@ -41,29 +40,9 @@
    (-> (GoRouter.of cx)
        (.push path .extra extra))))
 
-;;-------;;
-;; state ;;
-;;-------;;
-
-(defonce app-state (atom {:theme-mode m/ThemeMode.light}))
-(defonce navibar-state (atom {:current-index 0}))
-
-(defn compute-theme-mode
-  "Compute theme mode by given theme mode"
-  [mode]
-  (condp = mode
-    m/ThemeMode.dark m/ThemeMode.light
-    m/ThemeMode.light m/ThemeMode.dark))
-
-(defn switch-theme-mode
-  "Switch theme mode"
-  [current-mode]
-  (swap! app-state assoc :theme-mode (compute-theme-mode current-mode)))
-
-(defn navibar-switch-index
-  "Switch navibar by index"
-  [current-index]
-  (swap! navibar-state assoc  :current-index current-index))
+;;------;;
+;; data ;;
+;;------;;
 
 (defn podcast-list-fetch-data
   "Fetching podcast list data"
@@ -97,22 +76,26 @@
   "Create theme mode switch view"
   []
   (f/widget
-   :watch [{:keys [theme-mode]} app-state]
+   :get [:dark-mode-state]
+   :watch [is-dark-mode dark-mode-state]
    (m/IconButton
-    .onPressed (partial switch-theme-mode theme-mode)
-    .icon (condp = theme-mode
-            m/ThemeMode.dark (m/Icon m/Icons.light_mode_outlined)
-            m/ThemeMode.light (m/Icon m/Icons.dark_mode_outlined)))))
+    .onPressed (fn []
+                 (swap! dark-mode-state not))
+    .icon (case is-dark-mode
+            false (m/Icon m/Icons.dark_mode_outlined)
+            true (m/Icon m/Icons.light_mode_outlined)))))
 
 (defn navibar-view
   "Create navigationbar view"
   []
   (f/widget
+   :managed [navibar-state (atom {:current-index 0}) :dispose nil]
    :watch [{:keys [current-index]} navibar-state]
    (m/NavigationBar
     .labelBehavior m/NavigationDestinationLabelBehavior.alwaysShow
     .selectedIndex current-index
-    .onDestinationSelected (partial navibar-switch-index)
+    .onDestinationSelected (fn [i]
+                             (swap! navibar-state assoc :current-index i))
     .destinations [(m/NavigationDestination .icon (m/Icon m/Icons.audiotrack) .label "library")
                    (m/NavigationDestination .icon (m/Icon m/Icons.explore) .label "explore")
                    (m/NavigationDestination .icon (m/Icon m/Icons.download) .label "download")])))
@@ -143,9 +126,9 @@
   []
   (log "[podcast-list-view]")
   (f/widget
-   :managed [controller (er/EasyRefreshController)]
-   :let [podcast-list-state (atom {:data []})]
+   :managed [podcast-list-state (atom {:data []}) :dispose nil]
    :watch [{:keys [data]} podcast-list-state]
+   :managed [controller (er/EasyRefreshController)]
    (er/EasyRefresh
     .controller controller
     .header (er/ClassicHeader)
@@ -199,7 +182,7 @@
   "Create podcast details description view"
   [description]
   (f/widget
-   :let [podcast-description-expanded-state (atom false)]
+   :managed [podcast-description-expanded-state (atom false) :dispose nil]
    :watch [expanded podcast-description-expanded-state]
    :let [max-height 80
          gradient (m/LinearGradient
@@ -230,7 +213,7 @@
   (f/widget
    :context cx
    :padding (m/EdgeInsets.symmetric .horizontal 20)
-   :let [episode-list-search-bar-visible-state (atom false)]
+   :managed [episode-list-search-bar-visible-state (atom false) :dispose nil]
    :watch [search-bar-visible episode-list-search-bar-visible-state]
    (m/Column
     .mainAxisSize m/MainAxisSize.min)
@@ -528,8 +511,8 @@
   (log "[podcast-detail-page]" ":podcast" podcast)
   (f/widget
    :context cx
-   :let [episode-list-state (atom {:episode-list []})
-         episode-list-query-state (atom {:q-filter :filter-none :q-sort :sort-default :q-search ""})]
+   :managed [episode-list-state (atom {:episode-list []}) :dispose nil]
+   :managed [episode-list-query-state (atom {:q-filter :filter-none :q-sort :sort-default :q-search ""}) :dispose nil]
    :managed [controller (er/EasyRefreshController)]
    (m/Scaffold)
    .body
@@ -571,11 +554,15 @@
   "Main: program entrypoint"
   []
   (f/run
-   :watch [{:keys [theme-mode]} app-state]
+   :managed [dark-mode-state (atom false) :dispose nil]
+   :bind {:dark-mode-state dark-mode-state}
+   :watch [is-dark-mode dark-mode-state]
    (m/MaterialApp.router
     .title app-name
     .debugShowCheckedModeBanner false
     .theme (m/ThemeData.light .useMaterial3 true)
     .darkTheme (m/ThemeData.dark .useMaterial3 true)
-    .themeMode theme-mode
+    .themeMode (case is-dark-mode
+                 false (m/ThemeMode.light)
+                 true (m/ThemeMode.dark))
     .routerConfig router)))

@@ -223,9 +223,10 @@ last-index-of
 
 ## Tips 
 
-check alias `cljd` more functions
+### check alias `cljd` more functions
 
 ```sh
 clj -M:cljd help
 ```
+### use `:managed` rather than `:watch :as` to keep consistency
 
