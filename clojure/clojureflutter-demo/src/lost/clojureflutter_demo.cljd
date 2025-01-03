@@ -45,8 +45,8 @@
 ;; state ;;
 ;;-------;;
 
-(defonce ^:private app-state (atom {:theme-mode m/ThemeMode.light}))
-(defonce ^:private navibar-state (atom {:current-index 0}))
+(defonce app-state (atom {:theme-mode m/ThemeMode.light}))
+(defonce navibar-state (atom {:current-index 0}))
 
 (defn compute-theme-mode
   "Compute theme mode by given theme mode"
@@ -144,7 +144,8 @@
   (log "[podcast-list-view]")
   (f/widget
    :managed [controller (er/EasyRefreshController)]
-   :watch [{:keys [data]} (atom {:data []}) :as podcast-list-state]
+   :let [podcast-list-state (atom {:data []})]
+   :watch [{:keys [data]} podcast-list-state]
    (er/EasyRefresh
     .controller controller
     .header (er/ClassicHeader)
@@ -167,7 +168,8 @@
     .leading (podcast-avatar-view image)
     .title (m/Text title)
     .subtitle (m/Text author)
-    .onTap (fn [] (pushto cx (str "/podcast/" title) :extra podcast)))))
+    .onTap (fn []
+             (pushto cx (str "/podcast/" title) :extra podcast)))))
 
 (defn podcast-details-background-view
   "Create podcast details background view"
@@ -197,7 +199,8 @@
   "Create podcast details description view"
   [description]
   (f/widget
-   :watch [expanded (atom false) :as expanded-state]
+   :let [podcast-description-expanded-state (atom false)]
+   :watch [expanded podcast-description-expanded-state]
    :let [max-height 80
          gradient (m/LinearGradient
                    .begin m/Alignment.topCenter
@@ -208,7 +211,7 @@
                         (m/BoxConstraints)
                         (m/BoxConstraints.loose (m/Size ##Inf max-height)))
          content-view (m/InkWell
-                       .onTap (fn [] (swap! expanded-state not) nil)
+                       .onTap (fn [] (swap! podcast-description-expanded-state not) nil)
                        .child (m/Text description))]
    (m/AnimatedSize
     .duration (Duration .milliseconds 150)
@@ -227,7 +230,8 @@
   (f/widget
    :context cx
    :padding (m/EdgeInsets.symmetric .horizontal 20)
-   :watch [search-bar-visible (atom false) :as search-bar-visible-state]
+   :let [episode-list-search-bar-visible-state (atom false)]
+   :watch [search-bar-visible episode-list-search-bar-visible-state]
    (m/Column
     .mainAxisSize m/MainAxisSize.min)
    .children
@@ -244,7 +248,7 @@
        .onPressed (fn []))
       (m/IconButton
        .icon (m/Icon m/Icons.search)
-       .onPressed (partial swap! search-bar-visible-state not))
+       .onPressed (partial swap! episode-list-search-bar-visible-state not))
       (m/IconButton
        .icon (m/Icon m/Icons.sort)
        .onPressed (partial show-episode-list-sort-bottomsheet cx episode-list-query-state))
@@ -360,9 +364,8 @@
   [episode-list-state episode-list-query-state]
   (f/widget
    :watch [{:keys [episode-list]} episode-list-state
-           episode-list-query episode-list-query-state]
+           {:keys [q-sort q-filter q-search] :as episode-list-query} episode-list-query-state]
    :let [_ (log "[episode-list-view]..." ":episode-list" (count episode-list) ":episode-list-query" episode-list-query)
-         {:keys [q-sort q-filter q-search]} episode-list-query
          sort-fn (condp = q-sort
                    :sort-default identity
                    :sort-alphabet-A-Z (partial sort-by #(:title %))

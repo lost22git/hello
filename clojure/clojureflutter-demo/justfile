@@ -6,12 +6,12 @@ _default:
 # list used flutter widgets
 [unix]
 widget:
-    rg -g '*.cljd' '[\[\(\s](m/\w+)' . -oIN -r '$1' | sort | uniq -c | sort -k3n | tee /dev/tty | wc -l
+    rg -g '*.cljd' '[\[\(\s](m/[A-Z]\w+)' . -oIN -r '$1' | sort | uniq -c | sort -k3n | tee /dev/tty | wc -l
 
 # list used flutter widgets
 [windows]
 widget:
-    rg -g '*.cljd' '[\[\(\s](m/\w+)' . -oIN -r '$1' | group -noelement | sort count | tee -variable $output | measure -line
+    rg -g '*.cljd' '[\[\(\s](m/[A-Z]\w+)' . -oIN -r '$1' | group -noelement | sort count | tee -variable $output | measure -line
 
 # show hard-coded numbers
 num:
@@ -19,5 +19,10 @@ num:
 
 # show hard-coded strings
 str:
-    # \s\s* - remove fn description
+    # `\s\s*` - remove fn description
     rg -g '*.cljd' '\S\s*".+"' . | rg log -v
+
+# show states
+state:
+    # `:let state` or `defonce state`
+    rg -g '*.cljd' '(let.+[\w\-]+state|defonce\s+[\w\-]+state)'
