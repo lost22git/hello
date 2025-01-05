@@ -254,4 +254,108 @@ book
     greet = &"Hello #{&1}"
     assert greet.("folks") == "Hello folks"
   end
+
+  test "BitString: binary is special case of BitString" do
+    assert <<256>> == <<256::8>>
+    # truncate overflow
+    assert <<256>> == <<0>>
+    assert <<1::1, 0::1, 0::1, 1::1>> == <<0b1001::4>>
+
+    assert is_bitstring(<<1::1, 0::1>>)
+    assert !is_binary(<<1::1, 0::1>>)
+
+    assert is_bitstring(<<1, 2>>)
+    assert is_binary(<<1, 2>>)
+    assert String.valid?(<<1, 2>>)
+    assert String.valid?(<<127>>)
+    assert !String.valid?(<<128>>)
+
+    assert is_bitstring("Elixir")
+    assert is_binary("Elixir")
+    assert String.valid?("Elixir")
+
+    <<first_char, rest::binary>> = "Elixir"
+    assert first_char == ?E
+    assert rest == "lixir"
+
+    <<first_char::utf8, _::binary>> = "👨: Hi"
+    assert first_char == ?👨
+  end
+
+  test "keywordlist" do
+  end
+
+  test "map" do
+    m = %{:name => "Foo"}
+    m = %{m | name: "Bar"}
+    assert m[:name] == "Bar"
+    assert m[:notfound] == nil
+
+    assert m.name == "Bar"
+    assert_raise KeyError, fn -> m.notfound end
+
+    m = Map.put(m, :name, "Barbar")
+    m = Map.put(m, :age, 11)
+    assert %{:name => "Barbar", :age => 11} == m
+
+    # not found
+    assert Map.get(m, :notfound) == nil
+    assert Map.get(m, :notfound, "fallback") == "fallback"
+
+    assert map_size(m) == 2
+    assert Map.keys(m) == [:name, :age]
+    assert Map.values(m) == ["Barbar", 11]
+
+    # nil value
+    m = Map.put(m, "nil", nil)
+    assert Map.get(m, "nil") == nil
+    assert Map.get(m, "nil", "fallback") == nil
+    assert Map.get(m, "nil") || "fallback" == "fallback"
+    assert m["nil"] || "fallback" == "fallback"
+
+    m = Map.delete(m, "nil")
+    assert %{:name => "Barbar", :age => 11} == m
+  end
+
+  defmodule Book do
+    defstruct [:name, tags: [], pubdate: ~D[2001-01-01]]
+  end
+
+  test "struct: internal impl is a map" do
+    book = %Book{}
+    assert book.name == nil
+    book = %{book | name: "the Elixir book"}
+    assert book.name == "the Elixir book"
+    assert book == %Book{name: "the Elixir book", tags: [], pubdate: ~D[2001-01-01]}
+
+    assert book.__struct__ == Book
+    assert is_map(book)
+  end
+
+  defprotocol Count do
+    @spec count(t) :: Integer.t()
+    def count(value)
+  end
+
+  defimpl Count, for: BitString do
+    def count(value) when is_binary(value) do
+      String.length(value)
+    end
+
+    def count(value) do
+      bit_size(value)
+    end
+  end
+
+  defimpl Count, for: List do
+    def count(value) do
+      length(value)
+    end
+  end
+
+  test "protocol" do
+    assert Count.count(<<1, 2>>) == 2
+    assert Count.count("Elixir") == 6
+    assert Count.count(~c"Elixir") == 6
+  end
 end
