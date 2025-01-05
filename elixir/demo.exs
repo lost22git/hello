@@ -1,0 +1,257 @@
+#!/usr/bin/env elixir
+
+ExUnit.start()
+
+defmodule DemoTest do
+  use ExUnit.Case, async: true
+
+  @doc """
+   floor divide and modulo
+  """
+  def fdiv_mod(x, y) do
+    {Integer.floor_div(x, y), Integer.mod(x, y)}
+  end
+
+  @doc """
+  truncate divide and remain
+  """
+  def tdiv_rem(x, y) do
+    {div(x, y), rem(x, y)}
+  end
+
+  test "fdiv_mod" do
+    assert fdiv_mod(-5, 3) == {-2, 1}
+    assert fdiv_mod(5, -3) == {-2, -1}
+    assert fdiv_mod(-5, -3) == {1, -2}
+    assert fdiv_mod(5, 3) == {1, 2}
+  end
+
+  test "tdiv_rem" do
+    assert tdiv_rem(-5, 3) == {-1, -2}
+    assert tdiv_rem(5, -3) == {-1, 2}
+    assert tdiv_rem(-5, -3) == {1, -2}
+    assert tdiv_rem(5, 3) == {1, 2}
+  end
+
+  test "bool: ternary operator" do
+    # in Elixir - <cond> && <expr> || <expr>
+    # in Lua - <cond> and <expr> or <expr>
+    # in Java - <cond> ? <expr> : <expr>
+    v = true
+    assert ((v && "true") || "false") == "true"
+    v = false
+    assert ((v && "true") || "false") == "false"
+  end
+
+  # in Elixir - <expr> && <expr> || <expr>
+  # in Lua - <expr> and <expr> or <expr>
+  test "nil: ternary operator" do
+    v = nil
+    assert ((v && 1) || :default) == :default
+    # short version of (v && v || :default)
+    assert (v || :default) == :default
+
+    v = "Elixir"
+    assert ((v && 1) || :default) == 1
+    # short version of (v && v || :default)
+    assert (v || :default) == v
+  end
+
+  test "bool: -> error" do
+    v = false
+    assert_raise RuntimeError, fn -> v || raise "assert not false" end
+  end
+
+  test "nil: -> error" do
+    v = nil
+    assert_raise RuntimeError, fn -> v || raise "assert not nil" end
+  end
+
+  test "atom: special atoms" do
+    # assert :true == true
+    # assert :false == false
+    # assert :nil == nil
+  end
+
+  test "string: concat" do
+    v = "Elixir"
+    assert "the " <> v <> " book" == "the Elixir book"
+  end
+
+  test "string: interpolation" do
+    v = "Elixir"
+    assert "the #{v} book" == "the Elixir book"
+  end
+
+  # absolute indentation
+  test "string: multilines" do
+    v = "
+the
+  Elixir
+book
+"
+    assert v == "\nthe\n  Elixir\nbook\n"
+  end
+
+  test "string: size" do
+    v = "👨‍👩‍👦‍👦"
+    assert byte_size(v) == 25
+    assert String.length(v) == 1
+  end
+
+  test "string: codepoints and graphemes" do
+    v = "👨‍👩‍👦‍👦"
+    assert String.codepoints(v) == ["👨", "\u200d", "👩", "\u200d", "👦", "\u200d", "👦"]
+    assert String.graphemes(v) == ["👨‍👩‍👦‍👦"]
+    assert String.to_charlist(v) == [128_104, 8205, 128_105, 8205, 128_102, 8205, 128_102]
+  end
+
+  test "string: parse number" do
+    assert String.to_integer("-10") == -10
+    assert String.to_integer("1010", 2) == 10
+    assert String.to_float("10.10") == 10.10
+    assert String.to_float("1.0e-10") == 1.0e-10
+
+    assert_raise ArgumentError, fn -> String.to_integer("foo") end
+  end
+
+  test "string: <-> atom" do
+    assert String.to_atom("Elixir") == :"Elixir"
+    assert String.to_existing_atom("Elixir") == :"Elixir"
+    assert Atom.to_string(:"Elixir") == "Elixir"
+  end
+
+  # list is a singly linked list and an immutable list
+  test "linked list" do
+    a = [1, 2]
+    assert length(a) == 2
+    v = 1
+    # prepend
+    assert a == [v | [2]]
+    assert a == [v] ++ [2]
+    v = 2
+    # append
+    assert a == [1] ++ [v]
+
+    b = [3, 4]
+    c = a ++ b ++ a ++ b
+    # just do once, not remove all matchings
+    d = c -- [1, 3]
+    assert c == [1, 2, 3, 4, 1, 2, 3, 4]
+    assert d == [2, 4, 1, 2, 3, 4]
+
+    # head
+    assert hd(d) == 2
+    # tail? no, rest!
+    assert tl(d) == [4, 1, 2, 3, 4]
+
+    # get at index
+    assert Enum.at(d, 1) == 4
+
+    # del at index
+    assert List.delete_at(d, 1) == [2, 1, 2, 3, 4]
+
+    # del elem, but just once
+    assert List.delete(d, 2) == [4, 1, 2, 3, 4]
+
+    # del all match
+    assert Enum.reject(d, fn x -> x == 2 end) == [4, 1, 3, 4]
+  end
+
+  test "tuple: like static array in other languages" do
+    # tuple <-> list
+    assert List.to_tuple([1, 2]) == {1, 2}
+    assert Tuple.to_list({1, 2}) == [1, 2]
+
+    # size
+    assert tuple_size({1, 2}) == 2
+
+    # get elem at index
+    assert elem({1, 2}, 1) == 2
+
+    # set elem at index
+    assert put_elem({1, 2}, 1, 3) == {1, 3}
+
+    # insert at index
+    assert Tuple.insert_at({1, 2}, 1, 3) == {1, 3, 2}
+
+    # del at index
+    assert Tuple.delete_at({1, 2}, 1) == {1}
+
+    # dup
+    assert Tuple.duplicate({1}, 2) == {{1}, {1}}
+    assert Tuple.duplicate(1, 2) == {1, 1}
+
+    # sum 
+    assert Tuple.sum({1, 2}) == 3
+
+    # product 
+    assert Tuple.product({1, 2}) == 2
+  end
+
+  test "pattern matching" do
+    # destructing 
+    list = [1, 2, 3]
+    [h | t] = list
+    assert h == 1
+    assert t == [2, 3]
+
+    # rebind variable
+    h = 2
+
+    # `^` operator to pin variable
+    # `^h = 1` is equals to `2 = 1`, so rasie `MatchError`
+    assert_raise MatchError, fn -> ^h = 1 end
+
+    # case
+    case t do
+      # never match this
+      [x, y] when x > y -> assert false
+      # fallback branch
+      _ -> assert true
+    end
+  end
+
+  test "if/cond" do
+    x = 1
+    # cond
+    cond do
+      x >= 2 -> assert false
+      x <= 0 -> assert false
+      true -> assert true
+    end
+
+    # if
+    if x >= 2 do
+      assert false
+    else
+      if(x <= 0) do
+        assert false
+      else
+        assert true
+      end
+    end
+  end
+
+  test "anonymous functions" do
+    # def a anonymous function to count length of String or List
+    count = fn
+      x when is_binary(x) -> String.length(x)
+      x when is_list(x) -> length(x)
+    end
+
+    # `.()` call anonymous function
+    assert count.("Elixir") == 6
+    assert count.([1, 2, 3]) == 3
+
+    # `&` is used to simply construct an anonymous function 
+    str_len = &String.length/1
+    assert str_len.("Elixir") == 6
+    str_len = &String.length(&1)
+    assert str_len.("Elixir") == 6
+    inc = &(&1 + 1)
+    assert inc.(10) == 11
+    greet = &"Hello #{&1}"
+    assert greet.("folks") == "Hello folks"
+  end
+end
