@@ -230,3 +230,4 @@ clj -M:cljd help
 ```
 ### use `:managed` rather than `:watch :as` to keep consistency
 
+### use `:bind` state to Context in parent widget and `:get` state from Context in children widgets

@@ -69,6 +69,69 @@
        (into [])))
 
 ;;------;;
+;; page ;;
+;;------;;
+
+(defn home-page
+  "Create home page"
+  []
+  (log "[home-page]")
+  (m/Scaffold
+   .appBar
+   (m/AppBar
+    .title (m/Text app-name)
+    .actions [(theme-mode-switch-view) (m/SizedBox .width 20)])
+   .bottomNavigationBar (navibar-view)
+   .body (m/Center .child (podcast-list-view))
+   .floatingActionButton
+   (when kDebugMode
+     (m/FloatingActionButton.extended
+      .label (m/Text "restart")
+      .icon (m/Icon m/Icons.refresh)
+      .onPressed Restart.restartApp))))
+
+(defn podcast-detail-page
+  "Create podcast detail page"
+  [{:keys [rss title image] :as podcast}]
+  (log "[podcast-detail-page]" ":podcast" podcast)
+  (f/widget
+   :context cx
+   :managed [episode-list-state (atom {:episode-list []}) :dispose nil]
+   :managed [episode-list-query-state (atom {:q-filter :filter-none :q-sort :sort-default :q-search ""}) :dispose nil]
+   :managed [controller (er/EasyRefreshController)]
+   (m/Scaffold)
+   .body
+   (er/EasyRefresh
+    .controller controller
+    .header (er/ClassicHeader)
+    .footer (er/ClassicFooter)
+    .refreshOnStart true
+    .onRefresh
+    (fn []
+      (let [data (episode-list-fetch-data rss)]
+        (swap! episode-list-state assoc :episode-list data))))
+   (m/CustomScrollView)
+   .slivers
+   [(m/SliverAppBar
+     .title (m/Text title)
+     .expandedHeight 300
+     .pinned true .stretch true
+     .flexibleSpace
+     (m/FlexibleSpaceBar
+      .stretchModes
+      [m/StretchMode.zoomBackground
+       m/StretchMode.fadeTitle]
+      .background (podcast-details-background-view image)))
+    (m/SliverToBoxAdapter
+     .child
+     (m/Column
+      .children
+      [(podcast-details-info-view podcast)
+       (podcast-details-actions-view episode-list-query-state)
+       (m/Divider)]))
+    (episode-list-view episode-list-state episode-list-query-state)]))
+
+;;------;;
 ;; view ;;
 ;;------;;
 
@@ -482,69 +545,6 @@
        [(m/Text title .style text-style)
         (m/SizedBox .height 20)
         (m/Text description)])))))
-
-;;------;;
-;; page ;;
-;;------;;
-
-(defn home-page
-  "Create home page"
-  []
-  (log "[home-page]")
-  (m/Scaffold
-   .appBar
-   (m/AppBar
-    .title (m/Text app-name)
-    .actions [(theme-mode-switch-view) (m/SizedBox .width 20)])
-   .bottomNavigationBar (navibar-view)
-   .body (m/Center .child (podcast-list-view))
-   .floatingActionButton
-   (when kDebugMode
-     (m/FloatingActionButton.extended
-      .label (m/Text "restart")
-      .icon (m/Icon m/Icons.refresh)
-      .onPressed Restart.restartApp))))
-
-(defn podcast-detail-page
-  "Create podcast detail page"
-  [{:keys [rss title image] :as podcast}]
-  (log "[podcast-detail-page]" ":podcast" podcast)
-  (f/widget
-   :context cx
-   :managed [episode-list-state (atom {:episode-list []}) :dispose nil]
-   :managed [episode-list-query-state (atom {:q-filter :filter-none :q-sort :sort-default :q-search ""}) :dispose nil]
-   :managed [controller (er/EasyRefreshController)]
-   (m/Scaffold)
-   .body
-   (er/EasyRefresh
-    .controller controller
-    .header (er/ClassicHeader)
-    .footer (er/ClassicFooter)
-    .refreshOnStart true
-    .onRefresh
-    (fn []
-      (let [data (episode-list-fetch-data rss)]
-        (swap! episode-list-state assoc :episode-list data))))
-   (m/CustomScrollView)
-   .slivers
-   [(m/SliverAppBar
-     .title (m/Text title)
-     .expandedHeight 300
-     .pinned true .stretch true
-     .flexibleSpace
-     (m/FlexibleSpaceBar
-      .stretchModes
-      [m/StretchMode.zoomBackground
-       m/StretchMode.fadeTitle]
-      .background (podcast-details-background-view image)))
-    (m/SliverToBoxAdapter
-     .child
-     (m/Column
-      .children
-      [(podcast-details-info-view podcast)
-       (podcast-details-actions-view episode-list-query-state)
-       (m/Divider)]))
-    (episode-list-view episode-list-state episode-list-query-state)]))
 
 ;;------;;
 ;; main ;;
