@@ -34,6 +34,7 @@
         - [ ] saturation
 - String
     - [ ] utf-8
+    - [ ] grapheme cluster
     - [ ] raw string
     - multi-lines
         - [ ] absolute indent
