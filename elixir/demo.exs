@@ -6,7 +6,7 @@ defmodule DemoTest do
   use ExUnit.Case, async: true
 
   @doc """
-   floor divide and modulo
+  floor divide and modulo
   """
   def fdiv_mod(x, y) do
     {Integer.floor_div(x, y), Integer.mod(x, y)}
@@ -326,7 +326,12 @@ book
     assert book.name == nil
     book = %{book | name: "the Elixir book"}
     assert book.name == "the Elixir book"
-    assert book == %Book{name: "the Elixir book", tags: [], pubdate: ~D[2001-01-01]}
+
+    assert book == %Book{
+             name: "the Elixir book",
+             tags: [],
+             pubdate: ~D[2001-01-01]
+           }
 
     assert book.__struct__ == Book
     assert is_map(book)
@@ -357,5 +362,40 @@ book
     assert Count.count(<<1, 2>>) == 2
     assert Count.count("Elixir") == 6
     assert Count.count(~c"Elixir") == 6
+  end
+
+  # more: https://hexdocs.pm/elixir/sigils.html
+  test "sigils" do
+    # charlist
+    assert ~c"hello" == [?h, ?e, ?l, ?l, ?o]
+
+    # raw string
+    assert ~s[hello "Elixir"] == "hello \"Elixir\""
+
+    # word list
+    assert ~w[hello Elixir] == ["hello", "Elixir"]
+
+    # atom list
+    assert ~w[hello Elixir]a == [:hello, :"Elixir"]
+
+    # regex
+    # ~r/()/
+
+    # date
+    {:ok, date} = Date.from_iso8601("2002-02-02")
+    assert ~D[2002-02-02] == date
+
+    # time
+    {:ok, time} = Time.from_iso8601("02:02:02")
+    assert ~T[02:02:02] == time
+
+    # naive datetime
+    {:ok, naivedatetime} = NaiveDateTime.from_iso8601("2002-02-02 02:02:02")
+    assert ~N[2002-02-02 02:02:02] == naivedatetime
+
+    # utc datetime
+    {:ok, utcdatetime, timeoffset} = DateTime.from_iso8601("2002-02-02T02:02:02+0100")
+    assert ~U[2002-02-02T01:02:02Z] == utcdatetime
+    assert timeoffset == 1 * 3600
   end
 end
