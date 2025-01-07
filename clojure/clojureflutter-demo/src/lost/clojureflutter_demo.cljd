@@ -1,12 +1,15 @@
 (ns lost.clojureflutter-demo
-  (:require ["package:flutter/material.dart" :as m]
-            ["package:flutter/foundation.dart" :refer [kDebugMode]]
-            ["package:easy_refresh/easy_refresh.dart" :as er]
-            ["package:restart_app/restart_app.dart" :refer [Restart]]
-            ["package:go_router/go_router.dart" :refer [GoRouter GoRoute GoRouterState]]
-            [lost.test-text :as tt]
-            [lost.util :as u :refer [log]]
-            [cljd.flutter :as f]))
+  (:require
+   ["package:flutter/material.dart" :as m]
+   ["package:flutter/foundation.dart" :refer [kDebugMode]]
+   ["package:easy_refresh/easy_refresh.dart" :as er]
+   ["package:restart_app/restart_app.dart" :refer [Restart]]
+   ["package:go_router/go_router.dart" :refer [GoRouter GoRoute GoRouterState]]
+   [lost.util :refer [log]]
+   [lost.api :as api]
+   [lost.html :refer [render-html]]
+   [lost.intl :as i]
+   [cljd.flutter :as f]))
 
 (defonce app-name "ClojureDart Flutter Demo")
 
@@ -36,7 +39,7 @@
 (defn pushto
   "Push to destination path page (with extra data)"
   ([cx path & {:keys [extra]}]
-   (log "[pushto]" ":path" path ":extra" extra)
+   ; (log "[pushto]" ":path" path ":extra" extra)
    (-> (GoRouter.of cx)
        (.push path .extra extra))))
 
@@ -50,22 +53,13 @@
   (->> (range) (take 40)
        (map (fn [i]
               {:rss "http://rss.lizhi.fm/rss/14275.xml"
-               :image tt/image
+               :image "https://cdn.lizhi.fm/podcast_cover/2018/12/10/2708425912842789447_3000x3000.jpg"
                :title "大内密谈"
                :author "大内密谈"
-               :description tt/podcast-description}))
-       (into [])))
-
-(defn episode-list-fetch-data
-  [rss]
-  (log "[episode-list-fetch-data]" ":rss" rss)
-  (->> (range) (take 40)
-       (map (fn [i]
-              {:title (str "ep" i)
-               :pubDate "now"
-               :duration "30min"
-               :image tt/image
-               :description tt/episode-description}))
+               :description "「大内密谈Midnightalks」是一档由“深夜谈谈Midnight Network”出品的播客节目。密而不宣，无所不谈。
+  「大内密谈Midnightalks」是一档由“深夜谈谈Midnight Network”出品的播客节目。密而不宣，无所不谈。
+  「大内密谈Midnightalks」是一档由“深夜谈谈Midnight Network”出品的播客节目。密而不宣，无所不谈。
+  「大内密谈Midnightalks」是一档由“深夜谈谈Midnight Network”出品的播客节目。密而不宣，无所不谈。"}))
        (into [])))
 
 ;;------;;
@@ -108,8 +102,8 @@
     .refreshOnStart true
     .onRefresh
     (fn []
-      (let [data (episode-list-fetch-data rss)]
-        (swap! episode-list-state assoc :episode-list data))))
+      (let [{:keys [episode-list]} (await (api/fetch-podcast rss))]
+        (swap! episode-list-state assoc :episode-list episode-list))))
    (m/CustomScrollView)
    .slivers
    [(m/SliverAppBar
@@ -348,6 +342,7 @@
                       .child (m/Text header .style header-text-style))]
    :padding (m/EdgeInsets.symmetric .horizontal 20)
    (m/ListView.separated
+    .physics (m/ClampingScrollPhysics)
     .itemCount (inc (count items))
     .separatorBuilder (constantly (m/Divider))
     .shrinkWrap true
@@ -376,7 +371,7 @@
               {:kw :sort-earliest-frist :display-text "Earliest first"}
               {:kw :sort-alphabet-A-Z :display-text "Alphabetical A-Z"}
               {:kw :sort-alphabet-Z-A :display-text "Alphabetical Z-A"}]
-      :test-selected (partial = (@episode-list-query-state :q-sort))
+      :test-selected (partial = (:q-sort @episode-list-query-state))
       :on-select (fn [kw]
                    (swap! episode-list-query-state assoc :q-sort kw)
                    (m/Navigator.pop cx))))))
@@ -395,7 +390,7 @@
               {:kw :filter-started :display-text "Started"}
               {:kw :filter-played :display-text "Played"}
               {:kw :filter-unplayed :display-text "Unplayed"}]
-      :test-selected (partial = (@episode-list-query-state :q-filter))
+      :test-selected (partial = (:q-filter @episode-list-query-state))
       :on-select (fn [kw]
                    (swap! episode-list-query-state assoc :q-filter kw)
                    (m/Navigator.pop cx))))))
@@ -417,7 +412,7 @@
                    :sort-alphabet-A-Z (partial sort-by #(:title %))
                    :sort-alphabet-Z-A (partial sort-by #(:title %) #(compare %2 %1))
                    (partial sort-by #(:title %)))
-         search-fn (partial filter #(clojure.string/includes? (% :title) q-search))
+         search-fn (partial filter #(clojure.string/includes? (:title %) q-search))
          items (->> episode-list
                     search-fn
                     sort-fn
@@ -431,11 +426,12 @@
 
 (defn episode-list-item-view
   "Create podcast episode list item view"
-  [{:keys [title pubDate duration image description] :as episode}]
+  [{:keys [title pub-date duration image description] :as episode}]
   (m/ExpansionTile
    .leading (episode-avatar-view image)
    .title (m/Text title)
-   .subtitle (m/Text (str pubDate " | " duration))
+   ;; ·•
+   .subtitle (m/Text (str (i/format-episode-pub-date pub-date) " • " (i/format-episode-duration duration)))
    .trailing (episode-list-item-trailing-actions-view)
    .childrenPadding (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
    .children
@@ -538,13 +534,17 @@
     .builder
     (fn [cx scroll-controller]
       (f/widget
+       (m/ScrollConfiguration
+         ;; make child widget's physics work
+        .behavior (.copyWith (m/ScrollBehavior) .overscroll false))
        (m/SingleChildScrollView
+        .physics (m/ClampingScrollPhysics)
         .controller scroll-controller)
        (m/Column)
        .children
        [(m/Text title .style text-style)
         (m/SizedBox .height 20)
-        (m/Text description)])))))
+        (render-html description)])))))
 
 ;;------;;
 ;; main ;;

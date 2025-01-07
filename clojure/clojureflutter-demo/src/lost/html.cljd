@@ -1,0 +1,8 @@
+(ns lost.html
+  (:require
+   ["package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart" :as h]))
+
+(defn render-html
+  "Render html"
+  [html]
+  (h/HtmlWidget html))

@@ -1,5 +1,6 @@
 (ns lost.util
-  (:require ["package:flutter/material.dart" :as m]))
+  (:require
+   ["package:flutter/material.dart" :as m]))
 
 ;; log messages on client land
 (def log (partial println "[LOG]"))
@@ -14,3 +15,5 @@
   "Check dark mode?"
   [cx]
   (-> (m/Theme.of cx) (.-brightness) (= m/Brightness.dark)))
+
+

@@ -1,0 +1,17 @@
+(ns lost.api
+  (:require
+   ["package:dio/dio.dart" :as dio]
+   [lost.util :refer [log]]
+   [lost.model :as model]))
+
+(defonce ^:private http (delay (dio/Dio)))
+
+(defn ^:async fetch-podcast
+  "Fetch podcast info via rss feed"
+  [^String rss-link]
+  (->> rss-link
+       (.get ^dio/Dio @http)
+       await
+       (.-data)
+       (.toString)
+       (model/rssfeed->Podcast rss-link)))

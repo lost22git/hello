@@ -1,0 +1,23 @@
+(ns lost.intl
+  (:require
+   ["package:intl/intl.dart" :as i]))
+
+(defonce ^{:tag i/DateFormat :private true} rss-date-format (i/DateFormat "E, dd MMM yyyy HH:mm:ss zzz"))
+
+(defn parse-rss-datetime
+  "Parse rss datetime as DateTime"
+  ^DateTime [^String rss-datetime-str]
+  (.parse  rss-date-format rss-datetime-str))
+
+(defonce ^{:tag i/DateFormat :private true} episode-pub-date-format (i/DateFormat.yMMMMd))
+
+(defn format-episode-pub-date
+  "Format episode's pub-date to display"
+  ^String [^DateTime pub-date]
+  (.format episode-pub-date-format pub-date))
+
+(defn format-episode-duration
+  "Format episode's duration to display"
+  ^String [^Duration duration]
+  ; (re-find #"\d+\:\d+\:\d+" (.toString duration))
+  (str (.-inMinutes duration) "min"))

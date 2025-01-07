@@ -1,0 +1,80 @@
+(ns lost.model
+  (:require
+   ["package:rss_dart/dart_rss.dart" :as rss]
+   [lost.util :refer [log]]
+   [lost.intl :as i]))
+
+(defrecord Podcast [id ;; same as `rss` now
+                    rss
+                    image
+                    title
+                    author
+                    description
+                    link
+                    language
+                    copyright
+                    episode-list])
+
+(defrecord Episode [guid
+                    pid ;; podcast id
+                    image
+                    title
+                    description
+                    pub-date
+                    duration
+                    audio-url
+                    audio-length
+                    audio-type])
+
+(defn rssfeed->Podcast
+  "Convert RssFeed to Podcast"
+  ^Podcast [^String rss-link ^String rssfeed-str]
+  (let [rssfeed (.parse rss/RssFeed rssfeed-str)
+        {:flds [image
+                title
+                author
+                description
+                link
+                language
+                copyright
+                itunes
+                items]} rssfeed
+        episode-list (->> items
+                          (map rssfeed-item->Episode rss-link)
+                          (into []))]
+    (map->Podcast {:id rss-link
+                   :rss rss-link
+                   :image (or image (some-> itunes .-image .-href))
+                   :title title
+                   :author (or author (some-> itunes .-author))
+                   :description description
+                   :link link
+                   :language language
+                   :copyright copyright
+                   :episode-list episode-list})))
+
+(defn rssfeed-item->Episode
+  "Convert rssfeed's item to Episode"
+  ^Episode [^String rss-link ^rss/RssItem {:flds [guid
+                                                  title
+                                                  description
+                                                  link
+                                                  pubDate
+                                                  enclosure
+                                                  itunes]}]
+
+  (let [{:flds [url type length]} enclosure
+        {:flds [duration image]} itunes
+        {:flds [href]} image]
+
+    (map->Episode
+     {:guid guid
+      :pid rss-link
+      :image href
+      :title title
+      :description description
+      :pub-date (i/parse-rss-datetime pubDate)
+      :duration duration
+      :audio-url url
+      :audio-length length
+      :audio-type type})))
