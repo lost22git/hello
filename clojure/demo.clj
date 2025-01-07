@@ -201,5 +201,11 @@
      (= ["foo" "foo"])
      assert)
 
+(comment
+  (use '[clojure.repl])
+  (apropos "or")
+  (doc future)
+  (dir clojure.string))
+
 
 
