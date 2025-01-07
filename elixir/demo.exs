@@ -379,7 +379,7 @@ book
     assert ~w[hello Elixir]a == [:hello, :"Elixir"]
 
     # regex
-    # ~r/()/
+    assert "121-121" =~ ~r/\d+\-\d+/
 
     # date
     {:ok, date} = Date.from_iso8601("2002-02-02")
@@ -397,5 +397,14 @@ book
     {:ok, utcdatetime, timeoffset} = DateTime.from_iso8601("2002-02-02T02:02:02+0100")
     assert ~U[2002-02-02T01:02:02Z] == utcdatetime
     assert timeoffset == 1 * 3600
+  end
+
+  test "for" do
+    vv =
+      for v <- 1..10 do
+        v * v
+      end
+
+    assert vv == 1..10 |> Enum.map(&(&1 * &1))
   end
 end
