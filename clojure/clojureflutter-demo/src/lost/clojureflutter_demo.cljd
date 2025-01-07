@@ -50,7 +50,7 @@
 (defn podcast-list-fetch-data
   "Fetching podcast list data"
   []
-  (->> (range) (take 40)
+  (->> (range) (take 1)
        (map (fn [i]
               {:rss "http://rss.lizhi.fm/rss/14275.xml"
                :image "https://cdn.lizhi.fm/podcast_cover/2018/12/10/2708425912842789447_3000x3000.jpg"
@@ -115,7 +115,7 @@
       .stretchModes
       [m/StretchMode.zoomBackground
        m/StretchMode.fadeTitle]
-      .background (podcast-details-background-view image)))
+      .background (podcast-details-background-image-view image)))
     (m/SliverToBoxAdapter
      .child
      (m/Column
@@ -157,26 +157,26 @@
                    (m/NavigationDestination .icon (m/Icon m/Icons.explore) .label "explore")
                    (m/NavigationDestination .icon (m/Icon m/Icons.download) .label "download")])))
 
-(defn avatar-view
-  "Create avatar view"
+(defn tile-image-view
+  "Create tile image view"
   [image]
-  (f/widget
-   :context cx
-   :width 80 :height 80
-   (m/Container)
-   .decoration
-   (m/BoxDecoration
-    .borderRadius  (m/BorderRadius.circular 10))
-   .image
-   (m/DecorationImage
-    .fit m/BoxFit.cover)
-   .image
-   (m/NetworkImage image)))
-
-(defn podcast-avatar-view
-  "Create podcast avatar view"
-  [image]
-  (avatar-view image))
+  (m/LayoutBuilder
+   .builder
+   (fn [cx ^m/BoxConstraints {:flds [maxHeight]}]
+     (m/Hero
+      .tag image
+      .child
+      (m/Container
+       .width maxHeight
+       .height maxHeight
+       .decoration
+       (m/BoxDecoration
+        .borderRadius  (m/BorderRadius.circular 4)
+        .image
+        (m/DecorationImage
+         .fit m/BoxFit.cover
+         .image
+         (m/NetworkImage image))))))))
 
 (defn podcast-list-view
   "Create podcast list view"
@@ -205,22 +205,25 @@
   (f/widget
    :context cx
    (m/ListTile
-    .leading (podcast-avatar-view image)
+    .leading (tile-image-view image)
     .title (m/Text title)
     .subtitle (m/Text author)
     .onTap (fn []
              (pushto cx (str "/podcast/" title) :extra podcast)))))
 
-(defn podcast-details-background-view
-  "Create podcast details background view"
+(defn podcast-details-background-image-view
+  "Create podcast details background image view"
   [image]
-  (m/Container
-   .decoration
-   (m/BoxDecoration
-    .image
-    (m/DecorationImage
-     .fit m/BoxFit.cover
-     .image (m/NetworkImage image)))))
+  (m/Hero
+   .tag image
+   .child
+   (m/Container
+    .decoration
+    (m/BoxDecoration
+     .image
+     (m/DecorationImage
+      .fit m/BoxFit.cover
+      .image (m/NetworkImage image))))))
 
 (defn podcast-details-info-view
   "Create podcast details info view"
@@ -395,11 +398,6 @@
                    (swap! episode-list-query-state assoc :q-filter kw)
                    (m/Navigator.pop cx))))))
 
-(defn episode-avatar-view
-  "Craete podcast episode avatar view"
-  [image]
-  (avatar-view image))
-
 (defn episode-list-view
   "Create podcast episode list view"
   [episode-list-state episode-list-query-state]
@@ -428,9 +426,8 @@
   "Create podcast episode list item view"
   [{:keys [title pub-date duration image description] :as episode}]
   (m/ExpansionTile
-   .leading (episode-avatar-view image)
+   .leading (tile-image-view image)
    .title (m/Text title)
-   ;; ·•
    .subtitle (m/Text (str (i/format-episode-pub-date pub-date) " • " (i/format-episode-duration duration)))
    .trailing (episode-list-item-trailing-actions-view)
    .childrenPadding (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
@@ -444,18 +441,22 @@
   (f/widget
    :context cx
    :get {{:flds [primaryColor]} m/Theme}
+   :managed [play-button-selected-state (atom false) :dispose nil]
+   :watch [play-button-selected play-button-selected-state]
    (m/Row
-    .mainAxisAlignment m/MainAxisAlignment.spaceBetween
     .mainAxisSize m/MainAxisSize.min)
    .children
    [;; episode download action
     (m/IconButton.outlined
      .icon (m/Icon m/Icons.download .color primaryColor)
-     .onPressed (fn []))
+     .onPressed nil)
    ;; episode play/pause actions
     (m/IconButton.outlined
      .icon (m/Icon m/Icons.play_circle .color primaryColor)
-     .onPressed (fn []))]))
+     .selectedIcon (m/Icon m/Icons.pause_circle .color primaryColor)
+     .isSelected play-button-selected
+     .onPressed (fn []
+                  (swap! play-button-selected-state not)))]))
 
 (defn episode-list-item-expansion-actions-view
   "Create podcast episode list item expansion actions view"
