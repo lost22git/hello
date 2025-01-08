@@ -441,14 +441,14 @@
   []
   (f/widget
    :vsync vsync
-   :managed [playing-state (atom false) :dispose nil]
-   :watch [is-playing playing-state]
+   :managed [episode-playing-state (atom false) :dispose nil]
+   :watch [is-playing episode-playing-state]
    :let [animation-duration (Duration .milliseconds 400)]
    :managed [animation-controller (m/AnimationController .vsync vsync .duration animation-duration  .reverseDuration animation-duration)]
    :let [_ (if is-playing (.forward animation-controller) (.reverse animation-controller))]
    (m/IconButton.outlined
     .onPressed (fn []
-                 (if (swap! playing-state not)
+                 (if (swap! episode-playing-state not)
                    (.forward animation-controller)
                    (.reverse animation-controller))
                  nil)
@@ -460,18 +460,26 @@
   "Create episode list item download button view"
   []
   (f/widget
-   :managed [download-state (atom {:download-status :not-downloaded :download-progress 0}) :dispose nil]
-   :watch [{:keys [download-status download-progress]} download-state]
-   :managed [sub (let [stream (Stream/periodic (Duration .seconds 1) identity)
-                       subscription (.listen stream
-                                             (fn [_]
-                                               (let [s (swap! download-state update :download-progress (partial + 10))]
-                                                 (when (< 100 (:download-progress s))
-                                                   (swap! download-state assoc :download-status :downloaded)))))]
-                   (.pause subscription)
-                   subscription)
+   :managed [episode-download-state (atom {:download-status :not-downloaded :download-progress 0}) :dispose nil]
+   :watch [{:keys [download-status download-progress]} episode-download-state]
+   :managed [sub (-> (Stream/periodic (Duration .seconds 1) identity)
+                     (.listen
+                      (fn [_]
+                        (let [s (swap! episode-download-state update :download-progress (partial + 10))]
+                          (when (< 100 (:download-progress s))
+                            (swap! episode-download-state assoc :download-status :downloaded)))))
+                     (doto (.pause)))
              :dispose .cancel]
-   :let [[icon text]
+   :let [on-pressed (fn []
+                      (swap! episode-download-state
+                             (fn [old]
+                               (condp = (:download-status old)
+                                 :not-downloaded (do (.resume sub) (assoc old :download-status :downloading))
+                                 :downloading (do (.pause sub) (assoc old :download-status :not-downloaded))
+                                ;; delete and reset
+                                 :downloaded (do (.pause sub) (assoc old :download-progress 0 :download-status :not-downloaded)))))
+                      nil)
+         children
          (condp = download-status
            :not-downloaded [(m/Icon m/Icons.download) (m/Text "Download")]
            :downloading [(m/Stack
@@ -483,19 +491,11 @@
            :downloaded [(m/Icon m/Icons.delete) (m/Text "Delete")])]
 
    (m/IconButton
-    .onPressed (fn []
-                 (swap! download-state
-                        (fn [old]
-                          (condp = (:download-status old)
-                            :not-downloaded (do (.resume sub) (assoc old :download-status :downloading))
-                            :downloading (do (.pause sub) (assoc old :download-status :not-downloaded))
-                            ;; delete and reset
-                            :downloaded (do (.pause sub) (assoc old :download-progress 0 :download-status :not-downloaded)))))
-                 nil))
+    .onPressed on-pressed)
    .icon
    (m/Column
     .mainAxisSize m/MainAxisSize.min
-    .children [icon text])))
+    .children children)))
 
 (defn episode-list-item-expansion-actions-view
   "Create podcast episode list item expansion actions view"
