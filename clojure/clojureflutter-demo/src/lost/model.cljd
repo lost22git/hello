@@ -13,7 +13,11 @@
                     link
                     language
                     copyright
-                    episode-list])
+                    episode-list
+                    local-state])
+
+(defrecord PodcastLocalState [pid ;; podcast id
+                              last-fetching-time])
 
 (defrecord Episode [guid
                     pid ;; podcast id
@@ -24,7 +28,13 @@
                     duration
                     audio-url
                     audio-length
-                    audio-type])
+                    audio-type
+                    local-state])
+
+(defrecord EpisodeLocalState [eid ;; episode id
+                              play-position
+                              download-progress ;; -1:not-downloaded 0~99:downloading 100:finished
+                              download-location])
 
 (defn rssfeed->Podcast
   "Convert RssFeed to Podcast"

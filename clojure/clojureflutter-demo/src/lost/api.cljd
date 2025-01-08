@@ -5,13 +5,27 @@
    [lost.model :as model]))
 
 (defonce ^:private http (delay (dio/Dio)))
-
 (defn ^:async fetch-podcast
   "Fetch podcast info via rss feed"
   [^String rss-link]
-  (->> rss-link
-       (.get ^dio/Dio @http)
-       await
-       (.-data)
-       (.toString)
-       (model/rssfeed->Podcast rss-link)))
+
+  (->> (range)
+       (take 10)
+       (map (fn [i]
+              (model/map->Episode {:guid "1"
+                                   :pid "1"
+                                   :image "1"
+                                   :title (str i)
+                                   :description ""
+                                   :pub-date (DateTime.now)
+                                   :duration (Duration .minutes 22)})))
+       (into [])
+       (assoc {} :episode-list)
+       (model/map->Podcast)))
+
+  ; (->> rss-link
+  ;      (.get ^dio/Dio @http)
+  ;      await
+  ;      (.-data)
+  ;      (.toString)
+  ;      (model/rssfeed->Podcast rss-link)))

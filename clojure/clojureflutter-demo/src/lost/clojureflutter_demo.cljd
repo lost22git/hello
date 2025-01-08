@@ -425,38 +425,77 @@
 (defn episode-list-item-view
   "Create podcast episode list item view"
   [{:keys [title pub-date duration image description] :as episode}]
-  (m/ExpansionTile
-   .leading (tile-image-view image)
-   .title (m/Text title)
-   .subtitle (m/Text (str (i/format-episode-pub-date pub-date) " • " (i/format-episode-duration duration)))
-   .trailing (episode-list-item-trailing-actions-view)
-   .childrenPadding (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
-   .children
-   [(m/Text description .maxLines 5 .overflow m/TextOverflow.ellipsis)
-    (episode-list-item-expansion-actions-view episode)]))
+  (f/widget
+   (m/ExpansionTile
+    .leading (tile-image-view image)
+    .title (m/Text title)
+    .subtitle (m/Text (str (i/format-episode-pub-date pub-date) " • " (i/format-episode-duration duration)))
+    .trailing (episode-list-item-play-button-view)
+    .childrenPadding (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
+    .children
+    [(m/Text description .maxLines 5 .overflow m/TextOverflow.ellipsis)
+     (episode-list-item-expansion-actions-view episode)])))
 
-(defn episode-list-item-trailing-actions-view
-  "Create podcast episode list item trailing actions view"
+(defn episode-list-item-play-button-view
+  "Creae episode list item play/pause button view"
   []
   (f/widget
-   :context cx
-   :get {{:flds [primaryColor]} m/Theme}
-   :managed [play-button-selected-state (atom false) :dispose nil]
-   :watch [play-button-selected play-button-selected-state]
-   (m/Row
-    .mainAxisSize m/MainAxisSize.min)
-   .children
-   [;; episode download action
-    (m/IconButton.outlined
-     .icon (m/Icon m/Icons.download .color primaryColor)
-     .onPressed nil)
-   ;; episode play/pause actions
-    (m/IconButton.outlined
-     .icon (m/Icon m/Icons.play_circle .color primaryColor)
-     .selectedIcon (m/Icon m/Icons.pause_circle .color primaryColor)
-     .isSelected play-button-selected
-     .onPressed (fn []
-                  (swap! play-button-selected-state not)))]))
+   :vsync vsync
+   :managed [playing-state (atom false) :dispose nil]
+   :watch [is-playing playing-state]
+   :let [animation-duration (Duration .milliseconds 400)]
+   :managed [animation-controller (m/AnimationController .vsync vsync .duration animation-duration  .reverseDuration animation-duration)]
+   :let [_ (if is-playing (.forward animation-controller) (.reverse animation-controller))]
+   (m/IconButton.outlined
+    .onPressed (fn []
+                 (if (swap! playing-state not)
+                   (.forward animation-controller)
+                   (.reverse animation-controller))
+                 nil)
+    .icon (m/AnimatedIcon
+           .icon m/AnimatedIcons.play_pause
+           .progress animation-controller))))
+
+(defn episode-list-item-download-button-view
+  "Create episode list item download button view"
+  []
+  (f/widget
+   :managed [download-state (atom {:download-status :not-downloaded :download-progress 0}) :dispose nil]
+   :watch [{:keys [download-status download-progress]} download-state]
+   :managed [sub (let [stream (Stream/periodic (Duration .seconds 1) identity)
+                       subscription (.listen stream
+                                             (fn [_]
+                                               (let [s (swap! download-state update :download-progress (partial + 10))]
+                                                 (when (< 100 (:download-progress s))
+                                                   (swap! download-state assoc :download-status :downloaded)))))]
+                   (.pause subscription)
+                   subscription)
+             :dispose .cancel]
+   :let [[icon text]
+         (condp = download-status
+           :not-downloaded [(m/Icon m/Icons.download) (m/Text "Download")]
+           :downloading [(m/Stack
+                          .alignment m/Alignment.center
+                          .children
+                          [(m/CircularProgressIndicator.adaptive .value (/ download-progress 100))
+                           (m/Text (str download-progress))])
+                         (m/SizedBox .width 0 .height 0)]
+           :downloaded [(m/Icon m/Icons.delete) (m/Text "Delete")])]
+
+   (m/IconButton
+    .onPressed (fn []
+                 (swap! download-state
+                        (fn [old]
+                          (condp = (:download-status old)
+                            :not-downloaded (do (.resume sub) (assoc old :download-status :downloading))
+                            :downloading (do (.pause sub) (assoc old :download-status :not-downloaded))
+                            ;; delete and reset
+                            :downloaded (do (.pause sub) (assoc old :download-progress 0 :download-status :not-downloaded)))))
+                 nil))
+   .icon
+   (m/Column
+    .mainAxisSize m/MainAxisSize.min
+    .children [icon text])))
 
 (defn episode-list-item-expansion-actions-view
   "Create podcast episode list item expansion actions view"
@@ -466,17 +505,9 @@
    (m/Row
     .mainAxisAlignment m/MainAxisAlignment.spaceBetween)
    .children
-   [;; episode delete action
+   [;; episode download action
     (m/Flexible .fit m/FlexFit.tight
-                .child
-                (m/IconButton
-                 .icon
-                 (m/Column
-                  .mainAxisSize m/MainAxisSize.min
-                  .children
-                  [(m/Icon m/Icons.delete)
-                   (m/Text "Delete")])
-                 .onPressed (fn [])))
+                .child (episode-list-item-download-button-view))
     ;; episode add action
     (m/Flexible .fit m/FlexFit.tight
                 .child

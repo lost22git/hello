@@ -15,5 +15,3 @@
   "Check dark mode?"
   [cx]
   (-> (m/Theme.of cx) (.-brightness) (= m/Brightness.dark)))
-
-
