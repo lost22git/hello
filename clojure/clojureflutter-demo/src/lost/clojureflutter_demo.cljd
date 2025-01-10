@@ -194,9 +194,10 @@
                  (let [data (podcast-list-fetch-data)]
                    (swap! podcast-list-state assoc :data data))))
    (m/ListView.builder
-    .itemBuilder (fn [cx i]
-                   (podcast-list-item-view (data i)))
-    .itemCount (count data))))
+    .itemCount (count data)
+    .itemBuilder
+    (fn [cx i]
+      (podcast-list-item-view (data i))))))
 
 (defn podcast-list-item-view
   "Create podcast list item view"
@@ -292,10 +293,10 @@
        .onPressed (partial swap! episode-list-search-bar-visible-state not))
       (m/IconButton
        .icon (m/Icon m/Icons.sort)
-       .onPressed (partial show-episode-list-sort-bottomsheet cx episode-list-query-state))
+       .onPressed (partial show-episode-list-query-sort-bottomsheet cx episode-list-query-state))
       (m/IconButton
        .icon (m/Icon m/Icons.filter_alt_outlined)
-       .onPressed (partial show-episode-list-filter-bottomsheet cx episode-list-query-state))])
+       .onPressed (partial show-episode-list-query-filter-bottomsheet cx episode-list-query-state))])
 ;; search bar
     (f/widget
      :managed [text-edit-controller (m/TextEditingController)
@@ -326,6 +327,61 @@
                             .borderSide m/BorderSide.none
                             .gapPadding 0.0))))]))
 
+(defonce episode-list-query-sort-options
+  [{:kw :sort-default
+    :display-text "Default"
+    :sort-fn identity}
+   {:kw :sort-latest-first
+    :display-text "Latest first"
+    :sort-fn identity}
+   {:kw :sort-earliest-frist
+    :display-text "Earliest first"
+    :sort-fn identity}
+   {:kw :sort-alphabet-A-Z
+    :display-text "Alphabetical A-Z"
+    :sort-fn (partial sort-by :title)}
+   {:kw :sort-alphabet-Z-A
+    :display-text "Alphabetical Z-A"
+    :sort-fn (partial sort-by :title #(compare %2 %1))}])
+
+(defonce episode-list-query-filter-options
+  [{:kw :filter-none :display-text "None"}
+   {:kw :filter-started :display-text "Started"}
+   {:kw :filter-played :display-text "Played"}
+   {:kw :filter-unplayed :display-text "Unplayed"}])
+
+(defn show-episode-list-query-sort-bottomsheet
+  "Show podcast episode list query sort bottomsheet"
+  [cx episode-list-query-state]
+  (m/showModalBottomSheet
+   .context cx
+   .showDragHandle true .isScrollControlled false
+   .builder
+   (fn [cx]
+     (bottomsheet-selection-view
+      :header "Sort episode"
+      :items episode-list-query-sort-options
+      :testSelected (partial = (:q-sort @episode-list-query-state))
+      :onSelected (fn [kw]
+                    (swap! episode-list-query-state assoc :q-sort kw)
+                    (m/Navigator.pop cx))))))
+
+(defn show-episode-list-query-filter-bottomsheet
+  "Show podcast episode list query filter bottomsheet"
+  [cx episode-list-query-state]
+  (m/showModalBottomSheet
+   .context cx
+   .showDragHandle true .isScrollControlled false
+   .builder
+   (fn [cx]
+     (bottomsheet-selection-view
+      :header "Filter episode"
+      :items episode-list-query-filter-options
+      :testSelected (partial = (:q-filter @episode-list-query-state))
+      :onSelected (fn [kw]
+                    (swap! episode-list-query-state assoc :q-filter kw)
+                    (m/Navigator.pop cx))))))
+
 (defn bottomsheet-selection-view
   "Creaet common bottomsheet selection view"
   [& {:keys [header items testSelected onSelected]}]
@@ -344,80 +400,38 @@
    :padding (m/EdgeInsets.symmetric .horizontal 20)
    (m/ListView.separated
     .physics (m/ClampingScrollPhysics)
+    .shrinkWrap true
     .itemCount (inc (count items))
     .separatorBuilder (constantly (m/Divider))
-    .shrinkWrap true
-    .itemBuilder (fn [cx i]
-                   (case i
-                     0 header-view
-                     (let [{:keys [kw display-text]} (items (dec i))]
-                       (m/ListTile
-                        .onTap (partial onSelected kw)
-                        .leading (m/Text display-text .style text-style)
-                        .trailing (when (testSelected kw) (m/Icon m/Icons.check)))))))))
-
-(defn show-episode-list-sort-bottomsheet
-  "Show podcast episode list sort bottomsheet"
-  [cx episode-list-query-state]
-  (m/showModalBottomSheet
-   .context cx
-   .showDragHandle true .isScrollControlled false
-   .builder
-   (fn [cx]
-     (bottomsheet-selection-view
-      :header "Sort episode"
-      :items [{:kw :sort-default :display-text "Default"}
-              {:kw :sort-latest-first :display-text "Latest first"}
-              {:kw :sort-earliest-frist :display-text "Earliest first"}
-              {:kw :sort-alphabet-A-Z :display-text "Alphabetical A-Z"}
-              {:kw :sort-alphabet-Z-A :display-text "Alphabetical Z-A"}]
-      :testSelected (partial = (:q-sort @episode-list-query-state))
-      :onSelected (fn [kw]
-                    (swap! episode-list-query-state assoc :q-sort kw)
-                    (m/Navigator.pop cx))))))
-
-(defn show-episode-list-filter-bottomsheet
-  "Show podcast episode list filter bottomsheet"
-  [cx episode-list-query-state]
-  (m/showModalBottomSheet
-   .context cx
-   .showDragHandle true .isScrollControlled false
-   .builder
-   (fn [cx]
-     (bottomsheet-selection-view
-      :header "Filter episode"
-      :items [{:kw :filter-none :display-text "None"}
-              {:kw :filter-started :display-text "Started"}
-              {:kw :filter-played :display-text "Played"}
-              {:kw :filter-unplayed :display-text "Unplayed"}]
-      :testSelected (partial = (:q-filter @episode-list-query-state))
-      :onSelected (fn [kw]
-                    (swap! episode-list-query-state assoc :q-filter kw)
-                    (m/Navigator.pop cx))))))
+    .itemBuilder
+    (fn [cx i]
+      (case i
+        0 header-view
+        (let [{:keys [kw display-text]} (items (dec i))]
+          (m/ListTile
+           .onTap (partial onSelected kw)
+           .leading (m/Text display-text .style text-style)
+           .trailing (when (testSelected kw) (m/Icon m/Icons.check)))))))))
 
 (defn episode-list-view
   "Create podcast episode list view"
   [episode-list-state episode-list-query-state]
   (f/widget
    :watch [{:keys [episode-list]} episode-list-state
-           {:keys [q-sort q-filter q-search] :as episode-list-query} episode-list-query-state]
-   :let [_ (log "[episode-list-view]..." ":episode-list" (count episode-list) ":episode-list-query" episode-list-query)
-         sort-fn (condp = q-sort
-                   :sort-default identity
-                   :sort-alphabet-A-Z (partial sort-by #(:title %))
-                   :sort-alphabet-Z-A (partial sort-by #(:title %) #(compare %2 %1))
-                   (partial sort-by #(:title %)))
-         search-fn (partial filter #(clojure.string/includes? (:title %) q-search))
+           {:keys [q-sort q-filter q-search]} episode-list-query-state]
+   :let [_ (log "[episode-list-view]..." ":episode-list" (count episode-list) ":episode-list-query" @episode-list-query-state)
+         search-fn (partial filter (comp #(clojure.string/includes? % q-search) :title))
+         sort-fn (->> episode-list-query-sort-options (filter (comp (partial = q-sort) :kw)) first :sort-fn)
          items (->> episode-list
                     search-fn
                     sort-fn
                     (into []))
          _ (log "[episode-list-view]!!!" ":episode-list" (count items))]
    (m/SliverList.builder
+    .itemCount (count items)
     .itemBuilder
     (fn [cx i]
-      (episode-list-item-view (items i)))
-    .itemCount (count items))))
+      (episode-list-item-view (items i))))))
 
 (defn episode-list-item-view
   "Create podcast episode list item view"
