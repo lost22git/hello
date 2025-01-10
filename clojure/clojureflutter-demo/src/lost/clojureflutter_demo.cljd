@@ -58,7 +58,6 @@
                :author "大内密谈"
                :description "「大内密谈Midnightalks」是一档由“深夜谈谈Midnight Network”出品的播客节目。密而不宣，无所不谈。
   「大内密谈Midnightalks」是一档由“深夜谈谈Midnight Network”出品的播客节目。密而不宣，无所不谈。
-  「大内密谈Midnightalks」是一档由“深夜谈谈Midnight Network”出品的播客节目。密而不宣，无所不谈。
   「大内密谈Midnightalks」是一档由“深夜谈谈Midnight Network”出品的播客节目。密而不宣，无所不谈。"}))
        (into [])))
 
@@ -136,11 +135,11 @@
    :get [:dark-mode-state]
    :watch [is-dark-mode dark-mode-state]
    (m/IconButton
-    .onPressed (fn []
-                 (swap! dark-mode-state not))
-    .icon (case is-dark-mode
-            false (m/Icon m/Icons.dark_mode_outlined)
-            true (m/Icon m/Icons.light_mode_outlined)))))
+    .onPressed (fn [] (swap! dark-mode-state not)))
+   .icon
+   (case is-dark-mode
+     false (m/Icon m/Icons.dark_mode_outlined)
+     true (m/Icon m/Icons.light_mode_outlined))))
 
 (defn navibar-view
   "Create navigationbar view"
@@ -214,16 +213,15 @@
 (defn podcast-details-background-image-view
   "Create podcast details background image view"
   [image]
-  (m/Hero
-   .tag image
-   .child
-   (m/Container
-    .decoration
-    (m/BoxDecoration
-     .image
-     (m/DecorationImage
-      .fit m/BoxFit.cover
-      .image (m/NetworkImage image))))))
+  (f/widget
+   (m/Hero .tag image)
+   (m/Container)
+   .decoration
+   (m/BoxDecoration)
+   .image
+   (m/DecorationImage
+    .fit m/BoxFit.cover)
+   .image (m/NetworkImage image)))
 
 (defn podcast-details-info-view
   "Create podcast details info view"
@@ -264,7 +262,7 @@
    (if expanded
      content-view
      (m/ShaderMask
-      .shaderCallback (fn [bound] (.createShader gradient bound))
+      .shaderCallback #(.createShader gradient %)
       .child content-view))))
 
 (defn podcast-details-actions-view
@@ -330,7 +328,7 @@
 
 (defn bottomsheet-selection-view
   "Creaet common bottomsheet selection view"
-  [& {:keys [header items test-selected on-select]}]
+  [& {:keys [header items testSelected onSelected]}]
   (f/widget
    :context cx
    :get {{:flds [style]} m/DefaultTextStyle}
@@ -349,15 +347,14 @@
     .itemCount (inc (count items))
     .separatorBuilder (constantly (m/Divider))
     .shrinkWrap true
-    .itemBuilder
-    (fn [cx i]
-      (case i
-        0 header-view
-        (let [{:keys [kw display-text]} (items (dec i))]
-          (m/ListTile
-           .onTap (partial on-select kw)
-           .leading (m/Text display-text .style text-style)
-           .trailing (when (test-selected kw) (m/Icon m/Icons.check)))))))))
+    .itemBuilder (fn [cx i]
+                   (case i
+                     0 header-view
+                     (let [{:keys [kw display-text]} (items (dec i))]
+                       (m/ListTile
+                        .onTap (partial onSelected kw)
+                        .leading (m/Text display-text .style text-style)
+                        .trailing (when (testSelected kw) (m/Icon m/Icons.check)))))))))
 
 (defn show-episode-list-sort-bottomsheet
   "Show podcast episode list sort bottomsheet"
@@ -374,10 +371,10 @@
               {:kw :sort-earliest-frist :display-text "Earliest first"}
               {:kw :sort-alphabet-A-Z :display-text "Alphabetical A-Z"}
               {:kw :sort-alphabet-Z-A :display-text "Alphabetical Z-A"}]
-      :test-selected (partial = (:q-sort @episode-list-query-state))
-      :on-select (fn [kw]
-                   (swap! episode-list-query-state assoc :q-sort kw)
-                   (m/Navigator.pop cx))))))
+      :testSelected (partial = (:q-sort @episode-list-query-state))
+      :onSelected (fn [kw]
+                    (swap! episode-list-query-state assoc :q-sort kw)
+                    (m/Navigator.pop cx))))))
 
 (defn show-episode-list-filter-bottomsheet
   "Show podcast episode list filter bottomsheet"
@@ -388,15 +385,15 @@
    .builder
    (fn [cx]
      (bottomsheet-selection-view
-      :header "Episode Filter"
+      :header "Filter episode"
       :items [{:kw :filter-none :display-text "None"}
               {:kw :filter-started :display-text "Started"}
               {:kw :filter-played :display-text "Played"}
               {:kw :filter-unplayed :display-text "Unplayed"}]
-      :test-selected (partial = (:q-filter @episode-list-query-state))
-      :on-select (fn [kw]
-                   (swap! episode-list-query-state assoc :q-filter kw)
-                   (m/Navigator.pop cx))))))
+      :testSelected (partial = (:q-filter @episode-list-query-state))
+      :onSelected (fn [kw]
+                    (swap! episode-list-query-state assoc :q-filter kw)
+                    (m/Navigator.pop cx))))))
 
 (defn episode-list-view
   "Create podcast episode list view"
@@ -431,10 +428,10 @@
     .title (m/Text title)
     .subtitle (m/Text (str (i/format-episode-pub-date pub-date) " • " (i/format-episode-duration duration)))
     .trailing (episode-list-item-play-button-view)
-    .childrenPadding (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
-    .children
-    [(m/Text description .maxLines 5 .overflow m/TextOverflow.ellipsis)
-     (episode-list-item-expansion-actions-view episode)])))
+    .childrenPadding (m/EdgeInsets.symmetric .horizontal 20 .vertical 0))
+   .children
+   [(m/Text description .maxLines 5 .overflow m/TextOverflow.ellipsis)
+    (episode-list-item-actions-view episode)]))
 
 (defn episode-list-item-play-button-view
   "Creae episode list item play/pause button view"
@@ -451,13 +448,24 @@
                  (if (swap! episode-playing-state not)
                    (.forward animation-controller)
                    (.reverse animation-controller))
-                 nil)
-    .icon (m/AnimatedIcon
-           .icon m/AnimatedIcons.play_pause
-           .progress animation-controller))))
+                 nil))
+   .icon
+   (m/AnimatedIcon
+    .icon m/AnimatedIcons.play_pause
+    .progress animation-controller)))
 
-(defn episode-list-item-download-button-view
-  "Create episode list item download button view"
+(defn episode-list-item-action-view
+  "Create episode list item action view"
+  [& {:keys [onTap children]}]
+  (f/widget
+   (m/GestureDetector
+    .onTap onTap)
+   (m/Column
+    .mainAxisSize m/MainAxisSize.min)
+   .children children))
+
+(defn episode-list-item-download-action-view
+  "Create episode list item download action view"
   []
   (f/widget
    :managed [episode-download-state (atom {:download-status :not-downloaded :download-progress 0}) :dispose nil]
@@ -470,77 +478,56 @@
                             (swap! episode-download-state assoc :download-status :downloaded)))))
                      (doto (.pause)))
              :dispose .cancel]
-   :let [on-pressed (fn []
-                      (swap! episode-download-state
-                             (fn [old]
-                               (condp = (:download-status old)
-                                 :not-downloaded (do (.resume sub) (assoc old :download-status :downloading))
-                                 :downloading (do (.pause sub) (assoc old :download-status :not-downloaded))
+   :let [on-tap (fn []
+                  (swap! episode-download-state
+                         (fn [old]
+                           (condp = (:download-status old)
+                                 ;; start downloading 
+                             :not-downloaded (do (.resume sub) (assoc old :download-status :downloading))
+                                 ;; stop downloading
+                             :downloading (do (.pause sub) (assoc old :download-status :not-downloaded))
                                 ;; delete and reset
-                                 :downloaded (do (.pause sub) (assoc old :download-progress 0 :download-status :not-downloaded)))))
-                      nil)
-         children
-         (condp = download-status
-           :not-downloaded [(m/Icon m/Icons.download) (m/Text "Download")]
-           :downloading [(m/Stack
-                          .alignment m/Alignment.center
-                          .children
-                          [(m/CircularProgressIndicator.adaptive .value (/ download-progress 100))
-                           (m/Text (str download-progress))])
-                         (m/SizedBox .width 0 .height 0)]
-           :downloaded [(m/Icon m/Icons.delete) (m/Text "Delete")])]
+                             :downloaded (do (.pause sub) (assoc old :download-progress 0 :download-status :not-downloaded)))))
+                  nil)
+         children (condp = download-status
+                    :not-downloaded [(m/Icon m/Icons.download) (m/Text "Download")]
+                    :downloading [(m/Stack
+                                   .alignment m/Alignment.center
+                                   .children
+                                   [(m/CircularProgressIndicator.adaptive .value (/ download-progress 100))
+                                    (m/Text (str download-progress))])
+                                  (m/SizedBox .width 0 .height 0)]
+                    :downloaded [(m/Icon m/Icons.delete) (m/Text "Delete")])]
 
-   (m/IconButton
-    .onPressed on-pressed)
-   .icon
-   (m/Column
-    .mainAxisSize m/MainAxisSize.min
-    .children children)))
+   (episode-list-item-action-view
+    :onTap on-tap
+    :children children)))
 
-(defn episode-list-item-expansion-actions-view
+(defn episode-list-item-actions-view
   "Create podcast episode list item expansion actions view"
   [episode]
   (f/widget
    :context cx
+   :let [actions [(episode-list-item-download-action-view)
+                  (episode-list-item-action-view
+                   :children
+                   [(m/Icon m/Icons.add)
+                    (m/Text "Add")])
+                  (episode-list-item-action-view
+                   :onTap (fn [])
+                   :children
+                   [(m/Icon m/Icons.check)
+                    (m/Text "Mark Played")])
+                  (episode-list-item-action-view
+                   :onTap (partial show-episode-list-item-bottomsheet cx episode)
+                   :children
+                   [(m/Icon m/Icons.expand)
+                    (m/Text "More")])]]
    (m/Row
     .mainAxisAlignment m/MainAxisAlignment.spaceBetween)
    .children
-   [;; episode download action
-    (m/Flexible .fit m/FlexFit.tight
-                .child (episode-list-item-download-button-view))
-    ;; episode add action
-    (m/Flexible .fit m/FlexFit.tight
-                .child
-                (m/IconButton
-                 .icon
-                 (m/Column
-                  .mainAxisSize m/MainAxisSize.min
-                  .children
-                  [(m/Icon m/Icons.add)
-                   (m/Text "Add")])
-                 .onPressed (fn [])))
-    ;; episode mark-played action
-    (m/Flexible .fit m/FlexFit.tight
-                .child
-                (m/IconButton
-                 .icon
-                 (m/Column
-                  .mainAxisSize m/MainAxisSize.min
-                  .children
-                  [(m/Icon m/Icons.check)
-                   (m/Text "Mark Played")])
-                 .onPressed (fn [])))
-    ;; episode details action
-    (m/Flexible .fit m/FlexFit.tight
-                .child
-                (m/IconButton
-                 .icon
-                 (m/Column
-                  .mainAxisSize m/MainAxisSize.min
-                  .children
-                  [(m/Icon m/Icons.expand)
-                   (m/Text "More")])
-                 .onPressed (partial show-episode-list-item-bottomsheet cx episode)))]))
+   (for [a actions]
+     (m/Expanded .flex 1 .child a))))
 
 (defn show-episode-list-item-bottomsheet
   "Show podcast episode list item bottomsheet"
