@@ -5,27 +5,47 @@
    [lost.model :as model]))
 
 (defonce ^:private http (delay (dio/Dio)))
+
+(defn ^:async fetch-podcast-list
+  "Fetching podcast list"
+  []
+  [{:rss "https://rss.lizhi.fm/rss/14275.xml"
+    :link "https://rss.lizhi.fm"
+    :image "https://cdn.lizhi.fm/podcast_cover/2018/12/10/2708425912842789447_3000x3000.jpg"
+    :title "大内密谈"
+    :author "大内密谈"
+    :description "「大内密谈Midnightalks」是一档由“深夜谈谈Midnight Network”出品的播客节目。密而不宣，无所不谈。
+  「大内密谈Midnightalks」是一档由“深夜谈谈Midnight Network”出品的播客节目。密而不宣，无所不谈。"}
+   {:rss "https://feed.xyzfm.space/hwen8wf69c6g"
+    :link "https://www.xiaoyuzhoufm.com/podcast/625635587bfca4e73e990703?utm_source=rss"
+    :image "https://image.xyzcdn.net/Fhcbb6JgoBoehDn8iex2HR3cbx9g"
+    :title "岩中花述"
+    :author "GIADA | JustPod"
+    :description "本节目是由意大利品牌GIADA为GIADA WOMAN推出的一档播客节目。见识过世界也体味过生活的GIADA WOMAN聚集在这里进行自由表达，交流人生思考，讨论专属于这个人生阶段的女性议题，传递出坚韧与温柔并存的女性力量。本节目由GIADA出品，JustPod制作发行。"}])
+
 (defn ^:async fetch-podcast
   "Fetch podcast info via rss feed"
   [^String rss-link]
 
-  (->> (range)
-       (take 10)
-       (map (fn [i]
-              (model/map->Episode {:guid "1"
-                                   :pid "1"
-                                   :image "1"
-                                   :title (str i)
-                                   :description ""
-                                   :pub-date (DateTime.now)
-                                   :duration (Duration .minutes 22)})))
-       (into [])
-       (assoc {} :episode-list)
-       (model/map->Podcast)))
+  ; (->> (range)
+  ;      (take 30)
+  ;      (map (fn [i]
+  ;             (model/map->Episode {:guid "1"
+  ;                                  :pid "1"
+  ;                                  :image "1"
+  ;                                  :title (str i)
+  ;                                  :description ""
+  ;                                  :pub-date (-> (DateTime.now) (.add (Duration .days i)))
+  ;                                  :duration (Duration .minutes 22)})))
+  ;      (into [])
+  ;      (assoc {} :episode-list)
+  ;      (model/map->Podcast)))
+  ;
+  (->> rss-link
+       (.get ^dio/Dio @http)
+       await
+       (.-data)
+       (.toString)
+       (model/rssfeed->Podcast rss-link)))
 
-  ; (->> rss-link
-  ;      (.get ^dio/Dio @http)
-  ;      await
-  ;      (.-data)
-  ;      (.toString)
-  ;      (model/rssfeed->Podcast rss-link)))
+

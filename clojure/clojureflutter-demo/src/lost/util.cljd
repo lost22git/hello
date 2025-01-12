@@ -1,6 +1,7 @@
 (ns lost.util
   (:require
-   ["package:flutter/material.dart" :as m]))
+   ["package:flutter/material.dart" :as m]
+   ["package:flutter/services.dart" :as svc]))
 
 ;; log messages on client land
 (def log (partial println "[LOG]"))
@@ -15,3 +16,8 @@
   "Check dark mode?"
   [cx]
   (-> (m/Theme.of cx) (.-brightness) (= m/Brightness.dark)))
+
+(defn ^:async clipboard-set
+  [content]
+  (-> (svc/ClipboardData .text content)
+      (svc/Clipboard.setData)))

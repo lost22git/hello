@@ -6,3 +6,8 @@
   "Render html"
   [html]
   (h/HtmlWidget html))
+
+(defn trim-html-tags
+  "Trim all html tags"
+  [html]
+  (clojure.string/replace html #"<.*?>" ""))

@@ -50,7 +50,7 @@
                 itunes
                 items]} rssfeed
         episode-list (->> items
-                          (map rssfeed-item->Episode rss-link)
+                          (map (partial rssfeed-item->Episode rss-link))
                           (into []))]
     (map->Podcast {:id rss-link
                    :rss rss-link
