@@ -1,4 +1,4 @@
-import gleam/bytes_builder
+import gleam/bytes_tree
 import gleam/erlang/process
 import gleam/http
 import gleam/http/request.{Request as RequestValue}
@@ -8,7 +8,7 @@ import gleam/http/response.{
 import gleam/httpc
 import gleam/list
 import gleam/result.{map, map_error, try}
-import gleam/string_builder.{type StringBuilder}
+import gleam/string_tree.{type StringTree}
 import mist
 import wisp.{type Request, type Response}
 import wisp/wisp_mist
@@ -49,16 +49,16 @@ type AppErr {
 fn handle_app_err(err: AppErr) -> Response {
   case err {
     ParamNotFound(s) ->
-      string_builder.from_string("Param not found:" <> s)
+      string_tree.from_string("Param not found:" <> s)
       |> plain_response(400)
     FailedToClientRequestInit(s) ->
-      string_builder.from_string("Failed to init client request, target:" <> s)
+      string_tree.from_string("Failed to init client request, target:" <> s)
       |> plain_response(500)
     FailedToClientRequestSend(s) ->
-      string_builder.from_string("Failed to send client request, target:" <> s)
+      string_tree.from_string("Failed to send client request, target:" <> s)
       |> plain_response(500)
     FailedToServerRequestReadBody ->
-      string_builder.from_string("Failed to read body of server request")
+      string_tree.from_string("Failed to read body of server request")
       |> plain_response(500)
   }
 }
@@ -129,7 +129,7 @@ fn from_target_response(target_res: HttpResponse(BitArray)) -> Response {
     wisp.response(target_res.status)
     |> wisp.set_body(
       target_res.body
-      |> bytes_builder.from_bit_array
+      |> bytes_tree.from_bit_array
       |> wisp.Bytes,
     )
   ResponseValue(..res, headers: target_res.headers)
@@ -144,8 +144,8 @@ fn recover(r: Result(a, b), recover_fn: fn(b) -> a) -> a {
 
 /// plain response
 ///
-fn plain_response(body: StringBuilder, status: Int) -> Response {
+fn plain_response(body: StringTree, status: Int) -> Response {
   wisp.response(status)
-  |> wisp.string_builder_body(body)
+  |> wisp.string_tree_body(body)
   |> wisp.set_header("content-type", "text/plain; charset=utf-8")
 }
