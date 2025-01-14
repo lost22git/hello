@@ -17,7 +17,7 @@
 
 (defonce router
   (GoRouter
-   .debugLogDiagnostics true
+   .debugLogDiagnostics kDebugMode
    .routes
    [(GoRoute
      .path "/"
@@ -49,17 +49,17 @@
 ;;--------;;
 
 (defn my-refresh-indicator
-  [& {:keys [on-refresh child]}]
+  [.onRefresh .child]
   (f/widget
    :let [refresh-key (#/(m/GlobalKey m/RefreshIndicatorState))]
    :let [_ (Future.delayed (Duration .milliseconds 400) #(some-> refresh-key .-currentState .show))]
    (m/RefreshIndicator.adaptive
     .key refresh-key
-    .onRefresh on-refresh)
+    .onRefresh onRefresh)
    child))
 
 (defn my-overflow-expansion
-  [& {:keys [duration max-height children]}]
+  [.duration .maxHeight .children]
   (f/widget
    :managed [expanded-state (atom false) :dispose nil]
    :watch [expanded expanded-state]
@@ -70,13 +70,13 @@
                           .colors [m/Colors.white (.withAlpha m/Colors.white 0)])]
 
    (m/AnimatedSize
-    .duration (or duration (Duration .milliseconds 200))
+    .duration (or duration (Duration .milliseconds 400))
     .curve m/Curves.fastOutSlowIn
     .alignment m/Alignment.topCenter)
    (m/ConstrainedBox
     .constraints (if expanded
                    (m/BoxConstraints)
-                   (m/BoxConstraints.loose (m/Size ##Inf max-height))))
+                   (m/BoxConstraints.loose (m/Size ##Inf maxHeight))))
    (m/GestureDetector .onTap (fn [] (swap! expanded-state not) nil))
    (if expanded
      (m/Column .children children)
@@ -118,29 +118,28 @@
     (test-floating-action-button-view))
    .body
    (my-refresh-indicator
-    :on-refresh
+    .onRefresh
     (fn []
       (let [{:keys [episode-list]} (await (api/fetch-podcast rss))]
-        (swap! episode-list-state assoc :episode-list episode-list)))
-    :child
-    (m/CustomScrollView
-     .slivers
-     [(m/SliverAppBar
-       .title (m/Text title)
-       .expandedHeight 300
-       .pinned true .floating false .snap false
-       .flexibleSpace
-       (m/FlexibleSpaceBar
-        .background
-        (podcast-details-background-image-view image)))
-      (m/SliverToBoxAdapter
-       .child
-       (podcast-details-info-view podcast))
-      (m/SliverToBoxAdapter
-       .child
-       (podcast-details-actions-view episode-list-query-state))
-      (m/SliverToBoxAdapter .child (m/Divider))
-      (episode-list-view episode-list-state episode-list-query-state)]))))
+        (swap! episode-list-state assoc :episode-list episode-list))))
+   (m/CustomScrollView)
+   .slivers
+   [(m/SliverAppBar
+     .title (m/Text title)
+     .expandedHeight 300
+     .pinned true .floating false .snap false
+     .flexibleSpace
+     (m/FlexibleSpaceBar
+      .background
+      (podcast-details-background-image-view image)))
+    (m/SliverToBoxAdapter
+     .child
+     (podcast-details-info-view podcast))
+    (m/SliverToBoxAdapter
+     .child
+     (podcast-details-actions-view episode-list-query-state))
+    (m/SliverToBoxAdapter .child (m/Divider))
+    (episode-list-view episode-list-state episode-list-query-state)]))
 
 ;;------;;
 ;; test ;;
@@ -232,15 +231,14 @@
    :managed [podcast-list-state (atom {:podcast-list []}) :dispose nil]
    :watch [{:keys [podcast-list]} podcast-list-state]
    (my-refresh-indicator
-    :on-refresh (fn []
-                  (let [data (await (api/fetch-podcast-list))]
-                    (swap! podcast-list-state assoc :podcast-list data)))
-    :child
-    (m/ListView.builder
-     .itemCount (count podcast-list)
-     .itemBuilder
-     (fn [cx i]
-       (podcast-list-item-view (podcast-list i)))))))
+    .onRefresh (fn []
+                 (let [data (await (api/fetch-podcast-list))]
+                   (swap! podcast-list-state assoc :podcast-list data))))
+   (m/ListView.builder
+    .itemCount (count podcast-list)
+    .itemBuilder
+    (fn [cx i]
+      (podcast-list-item-view (podcast-list i))))))
 
 (defn podcast-list-item-view
   "Create podcast list item view"
@@ -284,8 +282,8 @@
   "Create podcast details expansion view"
   [{:keys [rss link description]}]
   (my-overflow-expansion
-   :max-height 40
-   :children
+   .maxHeight 40
+   .children
    [(m/Text description)
     (m/Column
      .mainAxisSize m/MainAxisSize.min
@@ -422,12 +420,12 @@
    .builder
    (fn [cx]
      (bottomsheet-selection-view
-      :header "Sort episode"
-      :items episode-list-query-sort-options
-      :test-selected (partial = (:q-sort @episode-list-query-state))
-      :on-selected (fn [kw]
-                     (swap! episode-list-query-state assoc :q-sort kw)
-                     (m/Navigator.pop cx))))))
+      .header "Sort episode"
+      .items episode-list-query-sort-options
+      .testSelected (partial = (:q-sort @episode-list-query-state))
+      .onSelected (fn [kw]
+                    (swap! episode-list-query-state assoc :q-sort kw)
+                    (m/Navigator.pop cx))))))
 
 (defn show-episode-list-query-filter-bottomsheet
   "Show podcast episode list query filter bottomsheet"
@@ -438,16 +436,16 @@
    .builder
    (fn [cx]
      (bottomsheet-selection-view
-      :header "Filter episode"
-      :items episode-list-query-filter-options
-      :test-selected (partial = (:q-filter @episode-list-query-state))
-      :on-selected (fn [kw]
-                     (swap! episode-list-query-state assoc :q-filter kw)
-                     (m/Navigator.pop cx))))))
+      .header "Filter episode"
+      .items episode-list-query-filter-options
+      .testSelected (partial = (:q-filter @episode-list-query-state))
+      .onSelected (fn [kw]
+                    (swap! episode-list-query-state assoc :q-filter kw)
+                    (m/Navigator.pop cx))))))
 
 (defn bottomsheet-selection-view
   "Creaet common bottomsheet selection view"
-  [& {:keys [header items test-selected on-selected]}]
+  [.header .items .testSelected .onSelected]
   (f/widget
    :context cx
    :get {{:flds [style]} m/DefaultTextStyle}
@@ -472,9 +470,9 @@
         0 header-view
         (let [{:keys [kw display-text]} (items (dec i))]
           (m/ListTile
-           .onTap (partial on-selected kw)
+           .onTap (partial onSelected kw)
            .leading (m/Text display-text .style text-style)
-           .trailing (when (test-selected kw) (m/Icon m/Icons.check)))))))))
+           .trailing (when (testSelected kw) (m/Icon m/Icons.check)))))))))
 
 (defn episode-list-view
   "Create podcast episode list view"
@@ -534,10 +532,10 @@
 
 (defn episode-list-item-action-view
   "Create episode list item action view"
-  [& {:keys [on-tap children]}]
+  [.onTap .children]
   (f/widget
    (m/GestureDetector
-    .onTap on-tap)
+    .onTap onTap)
    (m/Column
     .mainAxisSize m/MainAxisSize.min)
    .children children))
@@ -578,8 +576,8 @@
                     :downloaded [(m/Icon m/Icons.delete) (m/Text "Delete")])]
 
    (episode-list-item-action-view
-    :on-tap on-tap
-    :children children)))
+    .onTap on-tap
+    .children children)))
 
 (defn episode-list-item-actions-view
   "Create podcast episode list item expansion actions view"
@@ -588,17 +586,17 @@
    :context cx
    :let [actions [(episode-list-item-download-action-view)
                   (episode-list-item-action-view
-                   :children
+                   .children
                    [(m/Icon m/Icons.add)
                     (m/Text "Add")])
                   (episode-list-item-action-view
-                   :on-tap (fn [])
-                   :children
+                   .onTap (fn [])
+                   .children
                    [(m/Icon m/Icons.check)
                     (m/Text "Mark Played")])
                   (episode-list-item-action-view
-                   :on-tap (partial show-episode-list-item-bottomsheet cx episode)
-                   :children
+                   .onTap (partial show-episode-list-item-bottomsheet cx episode)
+                   .children
                    [(m/Icon m/Icons.expand)
                     (m/Text "More")])]]
    (m/Row

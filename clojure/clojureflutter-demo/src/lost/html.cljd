@@ -1,13 +1,14 @@
 (ns lost.html
   (:require
-   ["package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart" :as h]))
+   ["package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart" :as h]
+   [cljd.string :as s]))
 
 (defn render-html
   "Render html"
-  [html]
+  [^String html]
   (h/HtmlWidget html))
 
 (defn trim-html-tags
   "Trim all html tags"
-  [html]
-  (clojure.string/replace html #"<.*?>" ""))
+  ^String [^String html]
+  (s/replace html #"<.*?>" ""))

@@ -18,6 +18,6 @@
   (-> (m/Theme.of cx) (.-brightness) (= m/Brightness.dark)))
 
 (defn ^:async clipboard-set
-  [content]
+  [^String content]
   (-> (svc/ClipboardData .text content)
       (svc/Clipboard.setData)))
