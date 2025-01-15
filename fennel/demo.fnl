@@ -9,6 +9,28 @@
 (set mvar 2)
 (assert (= mvar 2))
 
+; tables not= forever
+(assert (not= [1 2] [1 2]))
+(assert (not= {:a 1 :b 2} {:a 1 :b 2}))
+
+; get set table
+(local books [{:title "the fennel book" :tags ["fennel"]}])
+
+; books.1.title
+(-> (. books 1 :title)
+    (= "the fennel book")
+    assert)
+
+; books.1.tags.1
+(-> (. books 1 :tags 1)
+    (= "fennel")
+    assert)
+
+; book?.2?.title
+(-> (?. books 2 :title)
+    (= nil)
+    assert)
+
 ; define a function
 (fn add [x y]
   (+ x y))
@@ -43,9 +65,28 @@
 (each [k v (pairs {:foo "halo" :bar "fennel"})]
   (print k v))
 
-; tables not= forever
-(assert (not= [1 2] [1 2]))
-(assert (not= {:a 1 :b 2} {:a 1 :b 2}))
+; iterate and return array
+(icollect [i v (ipairs [:a "foo" :b "bar"])]
+  (when (= v "foo")
+    (.. i "#" v)))
+
+; iterate and return table
+(collect [k v (pairs {:a 1 :b 2})]
+  (when (= k :a)
+    (values k v)))
+
+; range iterate and return array
+(fcollect [i 0 10 2]
+  (when (> i 4)
+    i))
+
+; acc
+(accumulate [sum 0 _ v (ipairs (fcollect [i 0 10 2] i))]
+  (+ sum v))
+
+; range acc
+(faccumulate [sum 0 i 0 10 2]
+  (+ sum i))
 
 ; doto
 (let [t {}]
@@ -63,3 +104,16 @@
 (assert (= "HALO" (-?> {:a "halo"} (. :a) (string.upper))))
 (assert (= nil (-?> {:a "halo"} (. :b) (string.upper))))
 ; -?>> 
+
+(fn os.run [cmd ?strip]
+  "Run cmd and return cmd's execution result. 
+  Return empty string if failed.
+  Strip result's leading and trailing spaces if strip is true."
+  (let [s (with-open [f (io.popen cmd "r")] (f:read "*a"))]
+    (case (or ?strip false)
+      false s
+      true (-> s
+               (string.gsub "^%s+" "")
+               (string.gsub "%s+$" "")))))
+
+(os.run "fennel --version" true)
