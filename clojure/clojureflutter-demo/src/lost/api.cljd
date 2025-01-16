@@ -26,21 +26,6 @@
 (defn ^:async fetch-podcast
   "Fetch podcast info via rss feed"
   [^String rss-link]
-
-  ; (->> (range)
-  ;      (take 30)
-  ;      (map (fn [i]
-  ;             (model/map->Episode {:guid "1"
-  ;                                  :pid "1"
-  ;                                  :image "1"
-  ;                                  :title (str i)
-  ;                                  :description ""
-  ;                                  :pub-date (-> (DateTime.now) (.add (Duration .days i)))
-  ;                                  :duration (Duration .minutes 22)})))
-  ;      (into [])
-  ;      (assoc {} :episode-list)
-  ;      (model/map->Podcast)))
-  ;
   (->> rss-link
        (.get ^dio/Dio @http)
        await

@@ -99,7 +99,7 @@
    .appBar
    (m/AppBar
     .title (m/Text app-name)
-    .actions [(theme-mode-switch-view) (m/SizedBox .width 20)])
+    .actions [(podcast-list-layout-switch-view) (theme-mode-switch-view) (m/SizedBox .width 20)])
    .bottomNavigationBar (navibar-view)
    .body (m/Center .child (podcast-list-view))
    .floatingActionButton
@@ -188,6 +188,21 @@
      false (m/Icon m/Icons.dark_mode_outlined)
      true (m/Icon m/Icons.light_mode_outlined))))
 
+(defn podcast-list-layout-switch-view
+  "Create podcast list layout switch view"
+  []
+  (f/widget
+   :get [:podcast-list-layout-state]
+   :watch [layout podcast-list-layout-state]
+   (m/IconButton
+    .onPressed (fn []
+                 (swap! podcast-list-layout-state
+                        #(case %
+                           :list :grid
+                           :grid :list))))
+   .icon
+   (m/Icon (get-in podcast-list-layout-options [layout :icon]))))
+
 (defn navibar-view
   "Create navigationbar view"
   []
@@ -223,25 +238,47 @@
       .image
       (m/NetworkImage image)))))
 
+(defonce podcast-list-layout-options
+  {:list
+   {:icon m/Icons.grid_on_outlined :builder (fn [podcast-list]
+                                              (m/ListView.builder
+                                               .physics (m/ClampingScrollPhysics)
+                                               .itemCount (count podcast-list)
+                                               .itemBuilder
+                                               (fn [cx i]
+                                                 (podcast-list-list-item-view (podcast-list i)))))}
+   :grid
+   {:icon m/Icons.list :builder (fn [podcast-list]
+                                  (m/GridView.builder
+                                   :padding (m/EdgeInsets.symmetric .horizontal 10)
+                                   .physics (m/ClampingScrollPhysics)
+                                   .itemCount (count podcast-list)
+                                   .itemBuilder
+                                   (fn [cx i]
+                                     (podcast-list-grid-item-view (podcast-list i)))
+                                   .gridDelegate
+                                   (m/SliverGridDelegateWithFixedCrossAxisCount
+                                    .crossAxisCount 3
+                                    .crossAxisSpacing 10
+                                    .mainAxisSpacing 10)))}})
+
 (defn podcast-list-view
   "Create podcast list view"
   []
   (log "[podcast-list-view]")
   (f/widget
+   :get [:podcast-list-layout-state]
+   :watch [layout podcast-list-layout-state]
    :managed [podcast-list-state (atom {:podcast-list []}) :dispose nil]
    :watch [{:keys [podcast-list]} podcast-list-state]
    (my-refresh-indicator
     .onRefresh (fn []
                  (let [data (await (api/fetch-podcast-list))]
                    (swap! podcast-list-state assoc :podcast-list data))))
-   (m/ListView.builder
-    .itemCount (count podcast-list)
-    .itemBuilder
-    (fn [cx i]
-      (podcast-list-item-view (podcast-list i))))))
+   ((get-in podcast-list-layout-options [layout :builder]) podcast-list)))
 
-(defn podcast-list-item-view
-  "Create podcast list item view"
+(defn podcast-list-list-item-view
+  "Create podcast list listview item view"
   [{:keys [title author image] :as podcast}]
   (f/widget
    :context cx
@@ -251,6 +288,16 @@
     .subtitle (m/Text author)
     .onTap (fn []
              (pushto cx (str "/podcast/" title) :extra podcast)))))
+
+(defn podcast-list-grid-item-view
+  "Create podcast list gridview item view"
+  [{:keys [title image] :as podcast}]
+  (f/widget
+   :context cx
+   (m/GestureDetector
+    .onTap (fn []
+             (pushto cx (str "/podcast/" title) :extra podcast)))
+   (tile-image-view image)))
 
 (defn podcast-details-background-image-view
   "Create podcast details background image view"
@@ -268,7 +315,6 @@
 (defn podcast-details-info-view
   "Create podcast details info view"
   [{:keys [rss title author description] :as podcast}]
-  (log "[podcast-details-info-view]" ":podcast" podcast)
   (f/widget
    :padding (m/EdgeInsets.symmetric .horizontal 20 .vertical 0)
    (m/Column)
@@ -323,14 +369,14 @@
   (f/widget
    :context cx
    :padding (m/EdgeInsets.symmetric .horizontal 20)
-   :managed [episode-list-search-bar-visible-state (atom false) :dispose nil]
-   :watch [search-bar-visible episode-list-search-bar-visible-state]
+   :managed [episode-list-searchbar-visible-state (atom false) :dispose nil]
+   :watch [searchbar-visible episode-list-searchbar-visible-state]
    :let [actions
          [{:icon (m/Icon m/Icons.more_vert_outlined)
            :on-pressed (fn [])}
           {:icon (m/Icon m/Icons.search)
            :on-pressed
-           (partial swap! episode-list-search-bar-visible-state not)}
+           (partial swap! episode-list-searchbar-visible-state not)}
           {:icon (m/Icon m/Icons.sort)
            :on-pressed
            (partial show-episode-list-query-sort-bottomsheet cx episode-list-query-state)}
@@ -357,36 +403,39 @@
           (m/IconButton
            .icon (:icon a)
            .onPressed (:on-pressed a)))))])
+    (episode-list-searchbar-view episode-list-query-state searchbar-visible)]))
 
-;; search bar
-    (f/widget
-     :managed [text-edit-controller (m/TextEditingController)
-               focus-node (m/FocusNode)]
-     (m/Visibility
-      .visible search-bar-visible)
-     (m/TextField
-      .controller text-edit-controller
-      .focusNode focus-node
-      .autofocus true
-      .onChanged (fn [v]
-                   (swap! episode-list-query-state assoc :q-search v))
-      .onTap (fn [] (.requestFocus focus-node))
-      .onTapOutside (fn [event] (.unfocus focus-node))
-      .decoration (m/InputDecoration
-                   .hintText "Search episode"
-                   .prefixIcon (m/Icon m/Icons.search)
-                   .suffixIcon (m/GestureDetector
-                                .onTap (fn []
-                                         (.-text! text-edit-controller "") ;; can not trigger onChange, so we manually trigger the handler
-                                         (swap! episode-list-query-state assoc :q-search "")
-                                         nil)
-                                .child (m/Icon m/Icons.close))
-                   .filled true .isDense false
-                   .contentPadding (m/EdgeInsets.all 0)
-                   .border (m/OutlineInputBorder
-                            .borderRadius (m/BorderRadius.all (m/Radius.circular 8))
-                            .borderSide m/BorderSide.none
-                            .gapPadding 0.0))))]))
+(defn episode-list-searchbar-view
+  "Create episode list searchbar view"
+  [episode-list-query-state searchbar-visible]
+  (f/widget
+   :managed [text-edit-controller (m/TextEditingController)
+             focus-node (m/FocusNode)]
+   (m/Visibility
+    .visible searchbar-visible)
+   (m/TextField
+    .controller text-edit-controller
+    .focusNode focus-node
+    .autofocus true
+    .onChanged (fn [v]
+                 (swap! episode-list-query-state assoc :q-search v))
+    .onTap (fn [] (.requestFocus focus-node))
+    .onTapOutside (fn [event] (.unfocus focus-node))
+    .decoration (m/InputDecoration
+                 .hintText "Search episode"
+                 .prefixIcon (m/Icon m/Icons.search)
+                 .suffixIcon (m/GestureDetector
+                              .onTap (fn []
+                                       (.-text! text-edit-controller "") ;; can not trigger onChange, so we manually trigger the handler
+                                       (swap! episode-list-query-state assoc :q-search "")
+                                       nil)
+                              .child (m/Icon m/Icons.close))
+                 .filled true .isDense false
+                 .contentPadding (m/EdgeInsets.all 0)
+                 .border (m/OutlineInputBorder
+                          .borderRadius (m/BorderRadius.all (m/Radius.circular 8))
+                          .borderSide m/BorderSide.none
+                          .gapPadding 0.0)))))
 
 (defonce episode-list-query-sort-options
   [{:kw :sort-default
@@ -481,8 +530,8 @@
    :watch [{:keys [episode-list]} episode-list-state
            {:keys [q-sort q-filter q-search]} episode-list-query-state]
    :let [_ (log "[episode-list-view]..." ":episode-list" (count episode-list) ":episode-list-query" @episode-list-query-state)
-         search-fn (partial filter (comp #(clojure.string/includes? % q-search) :title))
-         sort-fn (->> episode-list-query-sort-options (filter (comp (partial = q-sort) :kw)) first :sort-fn)
+         search-fn (partial filter #(clojure.string/includes? (:title %) q-search))
+         sort-fn (->> episode-list-query-sort-options (filter #(= q-sort (:kw %))) first :sort-fn)
          items (->> episode-list
                     search-fn
                     sort-fn
@@ -529,6 +578,32 @@
    (m/AnimatedIcon
     .icon m/AnimatedIcons.play_pause
     .progress animation-controller)))
+
+(defn episode-list-item-actions-view
+  "Create podcast episode list item expansion actions view"
+  [episode]
+  (f/widget
+   :context cx
+   :let [actions [(episode-list-item-download-action-view)
+                  (episode-list-item-action-view
+                   .children
+                   [(m/Icon m/Icons.add)
+                    (m/Text "Add")])
+                  (episode-list-item-action-view
+                   .onTap (fn [])
+                   .children
+                   [(m/Icon m/Icons.check)
+                    (m/Text "Mark Played")])
+                  (episode-list-item-action-view
+                   .onTap (partial show-episode-list-item-bottomsheet cx episode)
+                   .children
+                   [(m/Icon m/Icons.expand)
+                    (m/Text "More")])]]
+   (m/Row
+    .mainAxisAlignment m/MainAxisAlignment.spaceBetween)
+   .children
+   (for [a actions]
+     (m/Expanded .flex 1 .child a))))
 
 (defn episode-list-item-action-view
   "Create episode list item action view"
@@ -579,32 +654,6 @@
     .onTap on-tap
     .children children)))
 
-(defn episode-list-item-actions-view
-  "Create podcast episode list item expansion actions view"
-  [episode]
-  (f/widget
-   :context cx
-   :let [actions [(episode-list-item-download-action-view)
-                  (episode-list-item-action-view
-                   .children
-                   [(m/Icon m/Icons.add)
-                    (m/Text "Add")])
-                  (episode-list-item-action-view
-                   .onTap (fn [])
-                   .children
-                   [(m/Icon m/Icons.check)
-                    (m/Text "Mark Played")])
-                  (episode-list-item-action-view
-                   .onTap (partial show-episode-list-item-bottomsheet cx episode)
-                   .children
-                   [(m/Icon m/Icons.expand)
-                    (m/Text "More")])]]
-   (m/Row
-    .mainAxisAlignment m/MainAxisAlignment.spaceBetween)
-   .children
-   (for [a actions]
-     (m/Expanded .flex 1 .child a))))
-
 (defn show-episode-list-item-bottomsheet
   "Show podcast episode list item bottomsheet"
   [cx episode]
@@ -651,6 +700,8 @@
   (f/run
    :managed [dark-mode-state (atom false) :dispose nil]
    :bind {:dark-mode-state dark-mode-state}
+   :managed [podcast-list-layout-state (atom :list) :dispose nil]
+   :bind {:podcast-list-layout-state podcast-list-layout-state}
    :watch [is-dark-mode dark-mode-state]
    (m/MaterialApp.router
     .title app-name
