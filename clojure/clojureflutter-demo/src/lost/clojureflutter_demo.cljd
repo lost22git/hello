@@ -64,11 +64,6 @@
   (f/widget
    :managed [expanded-state (atom false) :dispose nil]
    :watch [expanded expanded-state]
-   :let [shader-gradient (m/LinearGradient
-                          .begin m/Alignment.topCenter
-                          .end m/Alignment.bottomCenter
-                          .stops [0.4 1]
-                          .colors [m/Colors.white (.withAlpha m/Colors.white 0)])]
 
    (m/AnimatedSize
     .duration (or duration (Duration .milliseconds 400))
@@ -82,11 +77,18 @@
    (if expanded
      (m/Column .children children)
      (m/ShaderMask
-      .shaderCallback #(.createShader shader-gradient %)
-      .child (m/OverflowBox
-              .maxHeight ##Inf
-              .alignment m/Alignment.topCenter
-              .child (m/Column .children children))))))
+      .shaderCallback (fn [bounds] (-> (m/LinearGradient
+                                        .begin m/Alignment.topCenter
+                                        .end m/Alignment.bottomCenter
+                                        .stops [0.4 1]
+                                        .colors [m/Colors.white (.withAlpha m/Colors.white 0)])
+                                       (.createShader bounds)))
+      .child
+      (m/OverflowBox
+       .maxHeight ##Inf
+       .alignment m/Alignment.topCenter
+       .child
+       (m/Column .children children))))))
 
 ;;------;;
 ;; page ;;
@@ -127,24 +129,26 @@
         (swap! episode-list-state assoc :episode-list episode-list))))
    (m/CustomScrollView)
    .slivers
-   [(m/SliverAppBar
-     .expandedHeight 300
-     .pinned true .floating false .snap false
-     .title (m/Text title)
-     .flexibleSpace
-     (m/FlexibleSpaceBar
-      .background
-      (podcast-details-background-image-view image)))
-    (m/SliverToBoxAdapter
-     .child
-     (podcast-details-info-view podcast))
-    (m/SliverAppBar
-     .automaticallyImplyLeading false
-     .pinned true .floating false .snap false
-     .title
-     (podcast-details-actions-view))
-    (m/SliverToBoxAdapter .child (m/Divider))
-    (episode-list-view)]))
+   [(m/SliverMainAxisGroup
+     .slivers [(m/SliverAppBar
+                .expandedHeight 300
+                .pinned true .floating false .snap false
+                .title (m/Text title)
+                .flexibleSpace
+                (m/FlexibleSpaceBar
+                 .background
+                 (podcast-details-background-image-view image)))
+               (m/SliverToBoxAdapter
+                .child
+                (podcast-details-info-view podcast))])
+    (m/SliverMainAxisGroup
+     .slivers [(m/SliverAppBar
+                .automaticallyImplyLeading false
+                .pinned true .floating false .snap false
+                .title
+                (podcast-details-actions-view))
+               (m/SliverToBoxAdapter .child (m/Divider))
+               (episode-list-view)])]))
 
 ;;------;;
 ;; test ;;
@@ -155,9 +159,6 @@
   []
   (f/widget
    :context cx
-   :get {{:flds [colorScheme]} m/Theme}
-   :get {{:flds [style]} m/DefaultTextStyle}
-   :let [text-style (.apply style .color m/Colors.white)]
    :managed [q-sort-state (atom {:q-sort-kw :duration :q-sort-asc true}) :dispose nil]
    :watch [{:keys [q-sort-kw q-sort-asc]} q-sort-state]
    :padding (m/EdgeInsets.symmetric .horizontal 20)
@@ -256,12 +257,12 @@
 
 (defn tile-image-view
   "Create tile image view"
-  [image]
+  [.image .tag]
   (m/LayoutBuilder
    .builder
    (fn [cx ^m/BoxConstraints {:flds [maxHeight]}]
      (f/widget
-      (m/Hero .tag image)
+      (m/Hero .tag (or tag image))
       (m/Container
        .width maxHeight
        .height maxHeight)
@@ -280,7 +281,7 @@
     :icon m/Icons.grid_on_outlined
     :builder (fn [podcast-list]
                (m/ListView.builder
-                .physics (m/ClampingScrollPhysics)
+                ; .physics (m/ClampingScrollPhysics)
                 .itemCount (count podcast-list)
                 .itemBuilder
                 (fn [cx i]
@@ -291,7 +292,7 @@
     :builder (fn [podcast-list]
                (m/GridView.builder
                 .padding (m/EdgeInsets.symmetric .horizontal 10)
-                .physics (m/ClampingScrollPhysics)
+                ; .physics (m/ClampingScrollPhysics)
                 .itemCount (count podcast-list)
                 .itemBuilder
                 (fn [cx i]
@@ -325,7 +326,7 @@
   (f/widget
    :context cx
    (m/ListTile
-    .leading (tile-image-view image)
+    .leading (tile-image-view .image image)
     .title (m/Text title)
     .subtitle (m/Text author)
     .onTap (fn []
@@ -339,7 +340,7 @@
    (m/GestureDetector
     .onTap (fn []
              (pushto cx (str "/podcast/" title) :extra podcast)))
-   (tile-image-view image)))
+   (tile-image-view .image image)))
 
 (defn podcast-details-background-image-view
   "Create podcast details background image view"
@@ -361,7 +362,7 @@
    (m/Column)
    .children
    [(m/ListTile
-     .leading (tile-image-view image)
+     .leading (tile-image-view .image image .tag "")
      .trailing (m/OutlinedButton.icon
                 .label (m/Text "Follow")
                 .icon (m/Icon m/Icons.add)
@@ -397,7 +398,8 @@
          .visualDensity m/VisualDensity.compact
          .leading (m/Icon icon)
          .title (m/Text link
-                        .overflow m/TextOverflow.fade
+                        ; .overflow m/TextOverflow.fade
+                        .maxLines 1
                         .style (m/TextStyle
                                 .color m/Colors.blue
                                 .decoration (m/TextDecoration.underline)
@@ -544,16 +546,10 @@
   [.header .items .testSelected .onSelected]
   (f/widget
    :context cx
-   :get {{:flds [style]} m/DefaultTextStyle}
-   :let [header-text-style (.apply style
-                                   .fontWeightDelta 2
-                                   .fontSizeFactor 2)
-         text-style (.apply style
-                            .fontWeightDelta 1
-                            .fontSizeFactor 1)
-         header-view (m/Container
+   :get {{{:flds [headlineLarge bodyLarge]} .-textTheme} m/Theme}
+   :let [header-view (m/Container
                       .alignment m/Alignment.center
-                      .child (m/Text header .style header-text-style))]
+                      .child (m/Text header .style headlineLarge))]
    :padding (m/EdgeInsets.symmetric .horizontal 20)
    (m/ListView.separated
     .physics (m/ClampingScrollPhysics)
@@ -567,7 +563,7 @@
         (let [{:keys [kw display-text]} (items (dec i))]
           (m/ListTile
            .onTap (partial onSelected kw)
-           .leading (m/Text display-text .style text-style)
+           .leading (m/Text display-text .style bodyLarge)
            .trailing (when (testSelected kw) (m/Icon m/Icons.check)))))))))
 
 (defn episode-list-view
@@ -598,7 +594,7 @@
   ; (log "[episode-list-item-view]" title pub-date duration image)
   (f/widget
    (m/ExpansionTile
-    .leading (tile-image-view (or image ""))
+    .leading (tile-image-view .image (or image ""))
     .title (m/Text (or title "nil"))
     .subtitle (m/Text (str (some-> pub-date i/format-episode-pub-date (or "nil")) " • " (some-> duration i/format-episode-duration (or "nil"))))
     .trailing (episode-list-item-play-button-view)
@@ -718,11 +714,8 @@
   [{:keys [title description]}]
   (f/widget
    :context cx
-   :get {{:flds [style]} m/DefaultTextStyle}
+   :get {{{:flds [titleLarge]} .-textTheme} m/Theme}
    :padding (m/EdgeInsets.symmetric .horizontal 20)
-   :let [text-style (.apply style
-                            .fontWeightDelta 2
-                            .fontSizeFactor 2)]
    (m/DraggableScrollableSheet
     .initialChildSize 0.5
     .expand false .snap false
@@ -737,7 +730,7 @@
         .controller scroll-controller)
        (m/Column)
        .children
-       [(m/Text title .style text-style)
+       [(m/Text title .style titleLarge)
         (m/SizedBox .height 20)
         (h/render-html description)])))))
 
