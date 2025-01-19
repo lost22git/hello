@@ -24,6 +24,7 @@
                     image
                     title
                     description
+                    content
                     pub-date
                     duration
                     audio-url
@@ -68,12 +69,14 @@
   ^Episode [^String rss-link ^rss/RssItem {:flds [guid
                                                   title
                                                   description
+                                                  content
                                                   link
                                                   pubDate
                                                   enclosure
                                                   itunes]}]
 
-  (let [{:flds [url type length]} enclosure
+  (let [{:flds [value]} content
+        {:flds [url type length]} enclosure
         {:flds [duration image]} itunes
         {:flds [href]} image]
 
@@ -83,6 +86,7 @@
       :image href
       :title title
       :description description
+      :content value
       :pub-date (i/parse-rss-datetime pubDate)
       :duration duration
       :audio-url url
