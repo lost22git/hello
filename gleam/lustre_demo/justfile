@@ -1,0 +1,10 @@
+_default:
+    @just --list -v
+
+# add tailwindcss support
+tailwind *args:
+    gleam run -m lustre/dev add tailwind {{ args }}
+
+# start dev server
+dev *args:
+    gleam run -m lustre/dev start {{ args }}
