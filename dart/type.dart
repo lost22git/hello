@@ -1,3 +1,5 @@
+#!/usr/bin/env dart
+
 void main() {
   // Null
   assert(null.runtimeType == Null);
@@ -45,7 +47,7 @@ void main() {
   assert(book is Book);
   book = null;
   assert(book.runtimeType == Null);
-  assert(book is Null);
+  assert(book == null);
 }
 
 class Book {
