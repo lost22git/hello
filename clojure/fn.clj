@@ -130,4 +130,5 @@
 (assert (= 1 ((constantly 1) 1 2 "sdsf")))
 
 ;; comp: compose
-
+(assert (= "HELLO"
+           ((comp clojure.string/upper-case clojure.string/trim) " hello ")))
