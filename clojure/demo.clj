@@ -22,6 +22,7 @@
   (assert (= lang "Clojure")))
 (assert (= lang "Java"))
 
+;; list
 ;; singly-linked-list '()
 (def mylist '("alex" "bob"))
 (def mylist (conj mylist "cindy")) ; cnoj: prepend
@@ -32,39 +33,13 @@
 (assert (= ["fred" "douglas" "cindy" "alex" "bob"]
            (into  mylist ["douglas" "fred"])))   ; into: union
 
-;; set
-(def myset #{"alex" "bob"})
-(def myset (conj myset "cindy")) ; conj: add
-(assert (= (count myset) 3))
-(assert (contains? myset "cindy"))
-(def myset (disj myset "cindy")) ; disj: del
-(assert (= (count myset) 2))
-(assert (not (contains? myset "cindy")))
-(def myset (into myset '("cindy"))) ; into: A + B
-(assert (= (count myset) 3))
-(assert (contains? myset "cindy"))
+;; vector
 
 ;; map
-(def mymap {"alex" 22 "bob" 33})
-(def mymap (assoc mymap "cindy" 44)) ; assoc: add
-(assert (= (count mymap) 3))
-(assert (contains? mymap "cindy"))
-(assert (= (get mymap "cindy") 44)) ; get
-(assert (= (mymap "cindy") 44)) ; get
-(assert (nil? (mymap "douglas"))) ; get not exists
-(assert (= (mymap "douglas" 0) 0)) ; get not exists with default
-(def mymap (zipmap (keys mymap) (vals mymap))) ; zipmap keys vals
-(assert (= (count mymap) 3))
-(def mymap (dissoc mymap "cindy")) ; dissoc: del
-(assert (= (count mymap) 2))
-(assert (nil? (mymap "cindy")))
-(def mymap (merge mymap {"cindy" 44 "douglas" 55})) ; merge
-(assert (= (count mymap) 4))
-(assert (= (mymap "cindy") 44))
-(assert (= (mymap "douglas") 55))
-(def mymap (merge-with + mymap {"douglas" 11})) ; merge-with
-(assert (= (count mymap) 4))
-(assert (= (mymap "douglas") (+ 55 11)))
+
+;; set
+
+;; seq
 
 ;; record
 (defrecord Book [name pages])
@@ -168,10 +143,29 @@
  (= (* 10 10))
  assert)
 
+;; when/when-not/when-some/when-let
+
+;; if/if-not/if-some/if-let
+
+;; case
+(assert (= "t"
+           (case (= 1 1)
+             true "t"
+             false "f")))
+
+;; cond
+
+;; condp
+
+;; datafy VS str
+(->
+ #uuid "f0babccb-e33e-49a9-bc38-46a9c6267dcc"
+ ((juxt clojure.core.protocols/datafy clojure.datafy/datafy str)))
+
 (comment
   (use '[clojure.repl])
-  (apropos "upper-case")
-  (doc not-empty)
-  (source filterv)
-  (dir clojure.string))
+  (apropos "with")
+  (doc clojure.core.protocols/datafy)
+  (source clojure.core.protocols/datafy)
+  (dir clojure.datafy))
 

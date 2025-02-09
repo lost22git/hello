@@ -25,13 +25,13 @@ https://clojure.org/guides/install_clojure
 
 `clj -Ttools install-latest :lib <lib-name> :as <tool-name>`
 
-```shell
+```sh
 clj -Ttools install-latest :lib io.github.seancorfield/deps-new :as new
 ```
 
 #### list all tools
 
-```shell
+```sh
 clj -Ttools list
 ```
 
@@ -39,13 +39,13 @@ clj -Ttools list
 
 `clj -Ttools show :tool <tool-name>`
 
-```shell
+```sh
 clj -Ttools show :tool new
 ```
 
 #### view deps-new help doc
 
-```shell
+```sh
 clj -A:deps -Tnew help/doc
 ```
 
@@ -54,7 +54,7 @@ clj -A:deps -Tnew help/doc
 `clj -Tnew <template-name> :name <project-ns-name>/<project-name>`
 
 
-```shell
+```sh
 clj -Tnew app :name io.github.lost/deps-new-demo
 ```
 
@@ -85,7 +85,7 @@ then create project structure:
 
 and build uberjar
 
-```shell
+```sh
 clj -T:build ci
 ```
 then create build target
@@ -106,7 +106,7 @@ target
    └── deps-new-demo-0.1.0-SNAPSHOT.jar
 ```
 
-```shell
+```sh
 unzip -p ./target/io.github.lost/deps-new-demo-0.1.0-SNAPSHOT.jar META-INF/MANIFEST.MF
 ```
 

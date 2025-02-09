@@ -42,13 +42,19 @@
   (print-table (get-thread-table))
 
   ;; send agent: clojure-agent-send-pool
+  ;; send-off agent: clojure-agent-send-off-pool
   (let [a (agent 1)]
     (dotimes [_ 1000]
       (send a inc))
-    (print-title "Thread Table (after call agent)")
+    (print-title "Thread Table (after call sned agent)")
+    (print-table (get-thread-table))
+
+    (dotimes [_ 1000]
+      (send-off a inc))
+    (print-title "Thread Table (after call sned-off agent)")
     (print-table (get-thread-table)))
 
-  ;; pmap: clojure-agent-send-off-pool
+;; pmap: clojure-agent-send-off-pool
   (doall (pmap (fn [v] v) (range 0 1000)))
   (print-title "Thread Table (after call pmap)")
   (print-table (get-thread-table)))
