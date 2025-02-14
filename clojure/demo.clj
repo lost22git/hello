@@ -4,7 +4,7 @@
 (assert (infinite? ##Inf))
 (assert (infinite? ##-Inf))
 
-; def variables
+; def 
 (def m 1)
 (def n 2)
 ; cal function
@@ -19,7 +19,9 @@
 (def ^:dynamic lang "Java")
 (assert ((meta #'lang) :dynamic))
 (binding [lang "Clojure"]
-  (assert (= lang "Clojure")))
+  (assert (= lang "Clojure"))
+  (set! lang  "Javascript") ;; set! only work in binding scope
+  (assert (= lang "Javascript")))
 (assert (= lang "Java"))
 
 ;; list
@@ -162,10 +164,46 @@
  #uuid "f0babccb-e33e-49a9-bc38-46a9c6267dcc"
  ((juxt clojure.core.protocols/datafy clojure.datafy/datafy str)))
 
+;; symbol / var / ns
+(def a 1)
+;; var from symbol
+(assert (= #'user/a
+           (var a)
+           (find-var 'user/a)
+           (resolve 'a)
+           (ns-resolve 'user 'a)))
+;; get val from var
+(assert (= 1
+           a
+           @#'a
+           (deref #'a)
+           (var-get #'a)))
+
+;; resolve symbol as var
+(assert (= #'clojure.core/map
+           (resolve 'map)
+           (ns-resolve 'clojure.core 'map)))
+(assert (= java.lang.Exception
+           (resolve 'Exception)
+           (ns-resolve *ns* 'Exception)))
+(assert
+ (fn? @#'map))
+(assert
+ (fn? map))
+
 (comment
   (use '[clojure.repl])
-  (apropos "with")
-  (doc clojure.core.protocols/datafy)
-  (source clojure.core.protocols/datafy)
-  (dir clojure.datafy))
-
+  ;; apropos
+  (->> "symbol"
+       (apropos)
+       (filter #(clojure.string/starts-with? % "clojure")))
+  ;; doc
+  (doc with-open)
+  ;; source
+  (source with-open)
+  ;; dir
+  (->>
+   (dir clojure.java.io)
+   (with-out-str)
+   (clojure.string/split-lines)
+   (map symbol)))

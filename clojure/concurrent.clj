@@ -35,7 +35,7 @@
 ;; could simulate java.util.concurrent.CompletableFuture 
 ;; # functions
 ;; - send / send-off / send-via
-;; - await / await-for / await1 
+;; - await / await-for
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (comment (apropos "agent"))
 (def a (agent 0 :validator #(>= % 0)))

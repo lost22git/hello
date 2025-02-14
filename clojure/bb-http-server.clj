@@ -3,7 +3,6 @@
 (comment
   :ref
   {:babashka "https://book.babashka.org/#usage"
-   :match "https://github.com/clojure/core.match"
    :logging "https://github.com/clojure/tools.logging"
    :json "https://github.com/dakrone/cheshire"
    :ring "https://github.com/ring-clojure/ring/wiki"
@@ -20,7 +19,6 @@
 (deps/add-deps '{:deps {ring/ring-core {:mvn/version "1.13.0"}}})
 
 (use 'clojure.pprint)
-(use 'clojure.core.match)
 (require '[cheshire.core :as json])
 (require '[babashka.http-client :as http])
 (use 'clojure.tools.logging)
@@ -52,10 +50,10 @@
 
 ; routing (manual)
 (defn router [req]
-  (match [(:request-method req) (:uri req)]
+  (case [(:request-method req) (:uri req)]
     [:get "/halo"] (handle-halo req)
     [_ "/proxy"] (handle-proxy req)
-    :else {:status 404 :body (str "NOT FOUND " (:uri req))}))
+    {:status 404 :body (str "NOT FOUND " (:uri req))}))
 
 ; wrapping middlewares
 (def app

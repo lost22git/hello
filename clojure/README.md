@@ -15,6 +15,8 @@ https://clojure.org/guides/install_clojure
 - [reader](https://clojure.org/reference/reader)
 - [contrib_libs](https://clojure.org/dev/contrib_libs)
 - [news](https://clojure.org/news/news)
+- [quickref](https://clojuredocs.org/quickref)
+- [code guide ](https://grishaev.me/en/clojure-guide/)
 
 
 ## New Project
