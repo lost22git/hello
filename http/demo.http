@@ -1,11 +1,11 @@
 @BASE_URI = "https://httpbin.org"
 
+### 
 # @name GET_IP
 GET {{BASE_URI}}/ip HTTP/1.1
 Accept: application/json
 
 ###
-
 # @name POST_JSON
 POST {{BASE_URI}}/post HTTP/1.1
 Accept: application/json
@@ -16,7 +16,6 @@ Content-Type: application/json
 }
 
 ###
-
 # @name POST_FORMDATA
 POST {{BASE_URI}}/post HTTP/1.1
 Accept: application/json
@@ -32,7 +31,6 @@ delivery=20:30&
 comments=roc
 
 ###
-
 # @name POST_MULTIPART
 POST https://api.imgur.com/3/image?client_id=546c25a59c58ad7 HTTP/1.1
 Accept: application/json
@@ -46,6 +44,4 @@ Content-Type: image/jpeg
 
 {{FILE_DATA}}
 ------WebKitFormBoundary{{$timestamp}}--
-
-###
 
