@@ -1,19 +1,20 @@
 #!/usr/bin/env bb
 
-(set! *warn-on-reflection* true)
+(import '[java.io File IOException])
+(import '[java.nio.file NoSuchFileException])
 
-; (println *command-line-args*)
+(set! *warn-on-reflection* true)
 
 ;;============
 ;; handle-err 
 ;;============
 
 (defmulti handle-err type)
-(defmethod handle-err java.nio.file.NoSuchFileException
+(defmethod handle-err NoSuchFileException
   [e]
   (println "File not exists")
   (System/exit 1))
-(defmethod handle-err java.io.IOException
+(defmethod handle-err IOException
   [e]
   (println "IO error")
   (System/exit 1))
@@ -26,24 +27,25 @@
 ;; get-content 
 ;;=============
 
-(defmulti get-content (fn [^java.io.File file]
+(defmulti get-content (fn [^File file]
                         (case (fs/directory? file)
                           true :directory
                           false :file)))
 (defmethod get-content :directory
-  ^String [^java.io.File file]
+  ^String [^File file]
   (->> file
        (.listFiles)
        (map str)
        (str/join \newline)))
 (defmethod get-content :file
-  ^String [^java.io.File file]
+  ^String [^File file]
   (String. (fs/read-all-bytes file)))
 
 ;;======
 ;; Main 
 ;;======
 
+; (println *command-line-args*)
 (try
   (let [path (first *command-line-args*)
         real-path (fs/real-path path)
