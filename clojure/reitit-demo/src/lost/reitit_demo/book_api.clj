@@ -6,8 +6,8 @@
                  ^java.time.Instant create-at
                  ^java.time.Instant update-at])
 
-(defonce books
-  (atom (->> ["Programming Clojure" "Clojure in action"]
+(def books-state
+  (atom (->> ["Programming Clojure" "Elements of Clojure"]
              (map
               #(map->Book {:id (util/gen-id) :title % :create-at (java.time.Instant/now)}))
              (into []))))
@@ -15,13 +15,13 @@
 (defn get-book-list
   "get book list"
   [_]
-  (->> @books
+  (->> @books-state
        (assoc {:status 200} :body)))
 
 (defn get-book-by-id
   "get book by id"
   [{{{:keys [id]} :path} :parameters}]
-  (->> @books
+  (->> @books-state
        (filter #(= id (:id %)))
        (first)
        (assoc {:status 200} :body)))
@@ -31,34 +31,32 @@
   [{{{:keys [title]} :body} :parameters}]
   (let [new-book
         (map->Book {:id (util/gen-id) :title title :create-at (java.time.Instant/now)})]
-    (swap! books #(conj % new-book))
+    (swap! books-state #(conj % new-book))
     {:status 200 :body new-book}))
 
 (defn delete-book-by-id
   "delete book by id"
   [{{{:keys [id]} :path} :parameters}]
   (let [deleted (atom nil)]
-    (swap!
-     books
-     (fn [old-books]
-       (let [[a b] ((juxt filter remove) #(not= id (:id %)) old-books)]
-         (reset! deleted (first b))
-         a)))
+    (swap! books-state
+           (fn [old-books-state]
+             (let [[a b] ((juxt filter remove) #(not= id (:id %)) old-books-state)]
+               (reset! deleted (first b))
+               a)))
     {:status 200 :body @deleted}))
 
 (defn edit-book-by-id
   "edit book by id"
   [{{{:keys [id]} :path {:keys [title]} :body} :parameters}]
   (let [updated (atom nil)]
-    (swap!
-     books
-     (fn [old-books]
-       (let [[a b] ((juxt filter remove) #(not= id (:id %)) old-books)
-             found (first b)]
-         (if (nil? found) a
-             (->> (assoc found :title title :update-at (java.time.Instant/now))
-                  (reset! updated)
-                  (conj a))))))
+    (swap! books-state
+           (fn [old-books-state]
+             (let [[a b] ((juxt filter remove) #(not= id (:id %)) old-books-state)
+                   found (first b)]
+               (if (nil? found) a
+                   (->> (assoc found :title title :update-at (java.time.Instant/now))
+                        (reset! updated)
+                        (conj a))))))
     (if-let [r @updated]
       {:status 200 :body r}
       {:status 200 :body (str "NOT FOUND book by id:" id)})))
@@ -76,7 +74,7 @@
 
 ; === routes ===
 
-(def routes-data
+(def routes
   ["/book"
    ["" {:get {:summary "get book list"
               :handler get-book-list}

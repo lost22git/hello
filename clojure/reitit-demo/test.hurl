@@ -71,7 +71,14 @@ HTTP 500
 header "Content-Type" contains "json"
 jsonpath "$.time" != null
 
-GET http://{{HOST}}:{{PORT}}/openapi.json
+## openapi.json
+## curl -ssL -X GET http://{{HOST}}:{{PORT}}/swagger-ui/openapi.json
+GET http://{{HOST}}:{{PORT}}/swagger-ui/openapi.json
 HTTP 200
 [Asserts]
 header "Content-Type" contains "json"
+
+GET http://{{HOST}}:{{PORT}}/hi
+HTTP 200
+[Asserts]
+body == "hi!"

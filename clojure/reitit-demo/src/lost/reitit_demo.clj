@@ -2,23 +2,28 @@
   (:gen-class)
   (:require
    [lost.reitit-demo.book-api :as book-api]
-   [taoensso.telemere :as t]
    [org.httpkit.server :as hk]
-   [reitit.dev.pretty :as pretty]
    [reitit.ring :as ring]
+   ;; logging
+   [taoensso.telemere :as t]
+   ;; dev
+   [reitit.dev.pretty :as pretty]
+   [reitit.ring.middleware.dev :refer [print-request-diffs]]
+   [reitit.ring.spec :as rrs]
+   ;; exception
    [reitit.ring.middleware.exception :as exception]
    ;; content negotiation
    [reitit.ring.middleware.muuntaja :as muuntaja]
    [muuntaja.core :as m]
    ;; coercion and spec
    [reitit.ring.coercion :as coercion]
-   [reitit.coercion.spec :as spec]
+   [reitit.coercion.spec :as coercion-spec]
    ;; openapi
    [reitit.openapi :as openapi]
    [reitit.swagger-ui :as swagger-ui]))
 
-(defn halo [_req]
-  {:status 200 :body "halo!"})
+(defn hi [_req]
+  {:status 200 :body "hi!"})
 
 (defn bug [_req]
   (throw (ex-info "bug!" {:foo "bar"})))
@@ -54,10 +59,12 @@
     {:reitit.coercion/request-coercion coercion-error-handler
      ::exception/default default-error-handler})))
 
-; === routes ===
+;; === openapi and swagger-ui ===
 
-(defonce openapi-route
-  ["/swagger-ui/openapi.json"
+(def swagger-ui-path-prefix "/swagger-ui")
+
+(def openapi-route
+  [(str swagger-ui-path-prefix "/openapi.json")
    {:get {:no-doc true
           :openapi {:info {:title "my-api"
                            :description "openapi3 docs with reitit-ring"
@@ -67,16 +74,30 @@
                                                            :name "Example-Api-Key"}}}}
           :handler (openapi/create-openapi-handler)}}])
 
-(def routes-data
+(def swagger-ui-handler
+  (ring/routes
+   (swagger-ui/create-swagger-ui-handler
+    {:path swagger-ui-path-prefix
+     :config {:validatorUrl nil
+              :urls [{:name "openapi", :url "openapi.json"}]
+              :urls.primaryName "openapi"
+              :operationsSorter "alpha"}})
+   (ring/create-default-handler)))
+
+; === routes ===
+
+(def routes
   [openapi-route
-   ["/halo" {:get halo}]
+   ["/hi" {:get hi}]
    ["/bug" {:get bug}]
-   book-api/routes-data])
+   book-api/routes])
 
 (def routes-options
-  {:exception pretty/exception
+  {:validate rrs/validate
+   :exception pretty/exception
+   :reitit.middleware/transform print-request-diffs
    :data {:muuntaja m/instance
-          :coercion spec/coercion
+          :coercion coercion-spec/coercion
             ;; middleware order: IO -> APP
           :middleware [openapi/openapi-feature
                        muuntaja/format-middleware
@@ -88,17 +109,9 @@
 
 (def ring-handler
   (ring/ring-handler
-   (ring/router routes-data routes-options)
+   (ring/router routes routes-options)
    ;; swagger-ui
-   (ring/routes
-    (swagger-ui/create-swagger-ui-handler
-     {:path "/swagger-ui"
-      :config {:validatorUrl nil
-               :urls [{:name "openapi", :url "openapi.json"}]
-               :urls.primaryName "openapi"
-               :operationsSorter "alpha"}})
-    ;; default handler
-    (ring/create-default-handler))
+   swagger-ui-handler
    ;; redirect slash handler: /halo/ -> 302 Location: /halo
    (ring/redirect-trailing-slash-handler)))
 
@@ -112,18 +125,25 @@
     (reset! server nil)))
 
 (defn start-server []
-  (let
-   [s (hk/run-server #'ring-handler
-                     {:port 8080
-                      :legacy-return-value? false
+  (let [s (hk/run-server #'ring-handler
+                         {:port 8080
+                          :legacy-return-value? false
       ; :worker-pool (java.util.concurrent.Executors/newVirtualThreadPerTaskExecutor)
-                      })]
+                          })]
     (reset! server s)
     (t/log! :info (str "Server is listening on :" (hk/server-port s)))))
 
 (defn restart-server []
   (stop-server)
   (start-server))
+
+(comment
+  (do
+    (start-logging)
+    (restart-server)))
+
+(comment
+  (stop-server))
 
 ; === main ===
 
@@ -134,5 +154,6 @@
   @(promise))
 
 ; TODO: 
-; 1. use integrant
-; 2. request logging
+; 1. integrant
+; 2. repl
+; 3. request logging
