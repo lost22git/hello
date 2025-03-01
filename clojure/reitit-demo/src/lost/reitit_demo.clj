@@ -12,7 +12,10 @@
    [muuntaja.core :as m]
    ;; coercion and spec
    [reitit.ring.coercion :as coercion]
-   [reitit.coercion.spec :as spec]))
+   [reitit.coercion.spec :as spec]
+   ;; openapi
+   [reitit.openapi :as openapi]
+   [reitit.swagger-ui :as swagger-ui]))
 
 (defn halo [_req]
   {:status 200 :body "halo!"})
@@ -20,18 +23,14 @@
 (defn bug [_req]
   (throw (ex-info "bug!" {:foo "bar"})))
 
-;;---------;;
-;; logging ;;
-;;---------;;
+; === logging ===
 
 (defn start-logging []
   (t/set-min-level! :info))
 
-;;---------------;;
-;; error handler ;;
-;;---------------;;
+; === error-handler ===
 
-(defn handle-error [err req]
+(defn default-error-handler [err req]
   (t/error! err)
   {:status 500
    :body {:err.msg (ex-message err)
@@ -40,7 +39,7 @@
           :req.method (:request-method req)
           :req.uri (:uri req)}})
 
-(defn handle-coercion-error [err req]
+(defn coercion-error-handler [err req]
   {:status 500
    :body {:err.msg "coercion error"
           :err.data (:body ((exception/create-coercion-handler 500) err req))
@@ -52,15 +51,25 @@
   (exception/create-exception-middleware
    (merge
     exception/default-handlers
-    {:reitit.coercion/request-coercion handle-coercion-error
-     ::exception/default handle-error})))
+    {:reitit.coercion/request-coercion coercion-error-handler
+     ::exception/default default-error-handler})))
 
-;;--------;;
-;; routes ;;
-;;--------;;
+; === routes ===
+
+(defonce openapi-route
+  ["/swagger-ui/openapi.json"
+   {:get {:no-doc true
+          :openapi {:info {:title "my-api"
+                           :description "openapi3 docs with reitit-ring"
+                           :version "0.0.1"}
+                    :components {:securitySchemes {"auth" {:type :apiKey
+                                                           :in :header
+                                                           :name "Example-Api-Key"}}}}
+          :handler (openapi/create-openapi-handler)}}])
 
 (def routes-data
-  [["/halo" {:get halo}]
+  [openapi-route
+   ["/halo" {:get halo}]
    ["/bug" {:get bug}]
    book-api/routes-data])
 
@@ -69,26 +78,31 @@
    :data {:muuntaja m/instance
           :coercion spec/coercion
             ;; middleware order: IO -> APP
-          :middleware [muuntaja/format-middleware
+          :middleware [openapi/openapi-feature
+                       muuntaja/format-middleware
                        error-middleware
                        coercion/coerce-request-middleware
                        coercion/coerce-response-middleware]}})
 
-;;---------;;
-;; handler ;;
-;;---------;;
+; === ring-handler ===
 
-(def handler
+(def ring-handler
   (ring/ring-handler
    (ring/router routes-data routes-options)
+   ;; swagger-ui
+   (ring/routes
+    (swagger-ui/create-swagger-ui-handler
+     {:path "/swagger-ui"
+      :config {:validatorUrl nil
+               :urls [{:name "openapi", :url "openapi.json"}]
+               :urls.primaryName "openapi"
+               :operationsSorter "alpha"}})
+    ;; default handler
+    (ring/create-default-handler))
    ;; redirect slash handler: /halo/ -> 302 Location: /halo
-   (ring/redirect-trailing-slash-handler)
-   ;; default handler
-   (ring/create-default-handler)))
+   (ring/redirect-trailing-slash-handler)))
 
-;;--------------;;
-;; start-server ;;
-;;--------------;;
+; === start-server ===
 
 (defonce server (atom nil))
 
@@ -99,8 +113,8 @@
 
 (defn start-server []
   (let
-   [s (hk/run-server #'handler
-                     {:port 8000
+   [s (hk/run-server #'ring-handler
+                     {:port 8080
                       :legacy-return-value? false
       ; :worker-pool (java.util.concurrent.Executors/newVirtualThreadPerTaskExecutor)
                       })]
@@ -111,19 +125,14 @@
   (stop-server)
   (start-server))
 
-(comment
-  (do
-    (start-logging)
-    (restart-server)))
-(comment
-  (stop-server))
-
-;;------;;
-;; main ;;
-;;------;;
+; === main ===
 
 (defn -main
   [& args]
   (start-logging)
   (start-server)
   @(promise))
+
+; TODO: 
+; 1. use integrant
+; 2. request logging

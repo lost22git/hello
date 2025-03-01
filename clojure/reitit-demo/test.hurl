@@ -1,16 +1,16 @@
 #!/usr/bin/env hurl
 
 ## get book list
-## curl -sSL -X GET http://localhost:8000/book
-GET http://localhost:8000/book
+## curl -sSL -X GET http://{{HOST}}:{{PORT}}/book
+GET http://{{HOST}}:{{PORT}}/book
 HTTP 200
 [Asserts]
 header "Content-Type" contains "json"
 jsonpath "$" count == 2
 
 ## get book by id
-## curl -sSL -X GET http://localhost:8000/book/1
-GET http://localhost:8000/book/1
+## curl -sSL -X GET http://{{HOST}}:{{PORT}}/book/1
+GET http://{{HOST}}:{{PORT}}/book/1
 HTTP 200
 [Asserts]
 header "Content-Type" contains "json"
@@ -18,8 +18,8 @@ jsonpath "$.id" == 1
 jsonpath "$.title" == "Programming Clojure"
 
 ## add a new book
-## curl -sSL -X POST http://localhost:8000/book -H 'content-type:application/json' -d '{"title":"Getting Clojure"}'
-POST http://localhost:8000/book
+## curl -sSL -X POST http://{{HOST}}:{{PORT}}/book -H 'content-type:application/json' -d '{"title":"Getting Clojure"}'
+POST http://{{HOST}}:{{PORT}}/book
 {
   "title": "Getting Clojure"
 }
@@ -33,8 +33,8 @@ jsonpath "$.create-at" != null
 new-book-id: jsonpath "$.id"
 
 ## delete book by id
-## curl -sSL -X DELETE http://localhost:8000/book/{id}
-DELETE http://localhost:8000/book/{{new-book-id}}
+## curl -sSL -X DELETE http://{{HOST}}:{{PORT}}/book/{id}
+DELETE http://{{HOST}}:{{PORT}}/book/{{new-book-id}}
 HTTP 200
 [Asserts]
 header "Content-Type" contains "json"
@@ -43,8 +43,8 @@ jsonpath "$.title" == "Getting Clojure"
 jsonpath "$.create-at" != null
 
 ## edit book by id
-## curl -sSL -X PUT http://localhost:8000/book/2 -H 'content-type:application/json' -d '{"title":"Clojure in Action"}'
-PUT http://localhost:8000/book/2
+## curl -sSL -X PUT http://{{HOST}}:{{PORT}}/book/2 -H 'content-type:application/json' -d '{"title":"Clojure in Action"}'
+PUT http://{{HOST}}:{{PORT}}/book/2
 {
   "title": "Clojure in Action"
 }
@@ -56,17 +56,22 @@ jsonpath "$.title" == "Clojure in Action"
 jsonpath "$.update-at" != null
 
 ## bug error
-## curl -sSL -X GET http://localhost:8000/bug
-GET http://localhost:8000/bug
+## curl -sSL -X GET http://{{HOST}}:{{PORT}}/bug
+GET http://{{HOST}}:{{PORT}}/bug
 HTTP 500
 [Asserts]
 header "Content-Type" contains "json"
 jsonpath "$.time" != null
 
 ## coercion error
-## curl -ssL -X GET http://localhost:8000/book/sss
-GET http://localhost:8000/book/sss
+## curl -ssL -X GET http://{{HOST}}:{{PORT}}/book/sss
+GET http://{{HOST}}:{{PORT}}/book/sss
 HTTP 500
 [Asserts]
 header "Content-Type" contains "json"
 jsonpath "$.time" != null
+
+GET http://{{HOST}}:{{PORT}}/openapi.json
+HTTP 200
+[Asserts]
+header "Content-Type" contains "json"

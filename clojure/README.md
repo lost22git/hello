@@ -17,6 +17,7 @@ https://clojure.org/guides/install_clojure
 - [news](https://clojure.org/news/news)
 - [quickref](https://clojuredocs.org/quickref)
 - [code guide ](https://grishaev.me/en/clojure-guide/)
+- [elements of clojure](https://elementsofclojure.com)
 
 
 ## New Project

@@ -6,7 +6,6 @@
                  ^java.time.Instant create-at
                  ^java.time.Instant update-at])
 
-;; books state
 (defonce books
   (atom (->> ["Programming Clojure" "Clojure in action"]
              (map
@@ -75,9 +74,7 @@
 (comment
   (edit-book-by-id {:parameters {:path {:id 2} :body {:title "Clojure in Action"}}}))
 
-;;--------;;
-;; routes ;;
-;;--------;;
+; === routes ===
 
 (def routes-data
   ["/book"
