@@ -1,9 +1,11 @@
 (ns lost.reitit-demo
   (:gen-class)
   (:require
-   [lost.reitit-demo.book-api :as book-api]
+   [lost.reitit-demo.user-api :as user-api]
    [org.httpkit.server :as hk]
    [reitit.ring :as ring]
+   ;; integrant
+   [integrant.core :as ig]
    ;; logging
    [taoensso.telemere :as t]
    ;; dev
@@ -21,17 +23,6 @@
    ;; openapi
    [reitit.openapi :as openapi]
    [reitit.swagger-ui :as swagger-ui]))
-
-(defn hi [_req]
-  {:status 200 :body "hi!"})
-
-(defn bug [_req]
-  (throw (ex-info "bug!" {:foo "bar"})))
-
-; === logging ===
-
-(defn start-logging []
-  (t/set-min-level! :info))
 
 ; === error-handler ===
 
@@ -59,101 +50,86 @@
     {:reitit.coercion/request-coercion coercion-error-handler
      ::exception/default default-error-handler})))
 
-;; === openapi and swagger-ui ===
+; === ig config ===
 
-(def swagger-ui-path-prefix "/swagger-ui")
+(def config
+  (ig/read-string (slurp "config.edn")))
 
-(def openapi-route
-  [(str swagger-ui-path-prefix "/openapi.json")
-   {:get {:no-doc true
-          :openapi {:info {:title "my-api"
-                           :description "openapi3 docs with reitit-ring"
-                           :version "0.0.1"}
-                    :components {:securitySchemes {"auth" {:type :apiKey
-                                                           :in :header
-                                                           :name "Example-Api-Key"}}}}
-          :handler (openapi/create-openapi-handler)}}])
+; === ig logging ===
 
-(def swagger-ui-handler
-  (ring/routes
-   (swagger-ui/create-swagger-ui-handler
-    {:path swagger-ui-path-prefix
-     :config {:validatorUrl nil
-              :urls [{:name "openapi", :url "openapi.json"}]
-              :urls.primaryName "openapi"
-              :operationsSorter "alpha"}})
-   (ring/create-default-handler)))
+(defmethod ig/init-key ::logging
+  [_ {:keys [min-level]}]
+  (t/set-min-level! min-level))
 
-; === routes ===
+; === ig server ===
 
-(def routes
-  [openapi-route
-   ["/hi" {:get hi}]
-   ["/bug" {:get bug}]
-   book-api/routes])
+(defmethod ig/init-key ::server
+  [_ {:keys [port handler]}]
+  (let [server (hk/run-server handler
+                              {:port port
+                               :legacy-return-value? false
+      ; :worker-pool (java.util.concurrent.Executors/newVirtualThreadPerTaskExecutor)
+                               })
+        _ (t/log! :info (str "Server is listening on :" (hk/server-port server)))]
+    server))
 
-(def routes-options
-  {:validate rrs/validate
-   :exception pretty/exception
-   :reitit.middleware/transform print-request-diffs
-   :data {:muuntaja m/instance
-          :coercion coercion-spec/coercion
-            ;; middleware order: IO -> APP
-          :middleware [openapi/openapi-feature
-                       muuntaja/format-middleware
-                       error-middleware
-                       coercion/coerce-request-middleware
-                       coercion/coerce-response-middleware]}})
+(defmethod ig/halt-key! ::server
+  [_ server]
+  (do
+    (hk/server-stop! server {:timeout 100})
+    (t/log! :info "Server was stopped")))
 
-; === ring-handler ===
+; === ig ring-handler ===
 
-(def ring-handler
+(defmethod ig/init-key ::ring-handler
+  [_ {:keys [openapi-support]}]
   (ring/ring-handler
-   (ring/router routes routes-options)
+   (ring/router
+    [(:openapi-route openapi-support)
+     ["/hi" {:get (fn [_] {:status 200 :body "hi!"})}]
+     ["/bug" {:get (fn [_] (throw (ex-info "bug!" {:foo "bar"})))}]
+     user-api/routes]
+
+    {:validate rrs/validate
+     :exception pretty/exception
+     ; :reitit.middleware/transform print-request-diffs
+     :data {:muuntaja m/instance
+            :coercion coercion-spec/coercion
+            ;; middleware order: IO -> APP
+            :middleware [openapi/openapi-feature
+                         muuntaja/format-middleware
+                         error-middleware
+                         coercion/coerce-request-middleware
+                         coercion/coerce-response-middleware]}})
+
    ;; swagger-ui
-   swagger-ui-handler
+   (:swagger-ui-handler openapi-support)
    ;; redirect slash handler: /halo/ -> 302 Location: /halo
    (ring/redirect-trailing-slash-handler)))
 
-; === start-server ===
+; === ig openapi-support ===
 
-(defonce server (atom nil))
-
-(defn stop-server []
-  (when-let [s @server]
-    (hk/server-stop! s {:timeout 100})
-    (reset! server nil)))
-
-(defn start-server []
-  (let [s (hk/run-server #'ring-handler
-                         {:port 8080
-                          :legacy-return-value? false
-      ; :worker-pool (java.util.concurrent.Executors/newVirtualThreadPerTaskExecutor)
-                          })]
-    (reset! server s)
-    (t/log! :info (str "Server is listening on :" (hk/server-port s)))))
-
-(defn restart-server []
-  (stop-server)
-  (start-server))
-
-(comment
-  (do
-    (start-logging)
-    (restart-server)))
-
-(comment
-  (stop-server))
+(defmethod ig/init-key ::openapi-support
+  [_ {:keys [swagger-ui openapi]}]
+  {:swagger-ui-handler
+   (ring/routes
+    (swagger-ui/create-swagger-ui-handler swagger-ui)
+    (ring/create-default-handler))
+   :openapi-route
+   [(str (:path swagger-ui) "/openapi.json")
+    {:get {:no-doc true
+           :openapi openapi
+           :handler (openapi/create-openapi-handler)}}]})
 
 ; === main ===
 
 (defn -main
   [& args]
-  (start-logging)
-  (start-server)
-  @(promise))
+  (ig/init config))
 
 ; TODO: 
-; 1. integrant
-; 2. repl
-; 3. request logging
+; - [ ] bb.edn
+; - [ ] profiles
+; - [ ] request logging
+; - [ ] auth
+

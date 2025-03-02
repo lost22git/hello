@@ -1,0 +1,32 @@
+@BASE_URI = "http://localhost:8080"
+
+###
+# @name OPENAPI_JSON
+GET {{BASE_URI}}/swagger-ui/openapi.json
+
+###
+# @name USER_LIST
+GET {{BASE_URI}}/users
+
+###
+# @name USER_GET_BY_ID
+GET {{BASE_URI}}/users/1
+
+###
+# @name USER_CREATE
+POST {{BASE_URI}}/users
+content-type: application/json
+
+{"name": "Rich"}
+
+###
+# @name USER_DELETE_BY_ID
+DELETE {{BASE_URI}}/users/11
+
+###
+# @name USER_UPDATE
+PUT {{BASE_URI}}/users/2
+content-type: application/json
+
+{"name": "Bill"}
+

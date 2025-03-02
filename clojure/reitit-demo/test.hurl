@@ -1,62 +1,62 @@
 #!/usr/bin/env hurl
 
-## get book list
-## curl -sSL -X GET http://{{HOST}}:{{PORT}}/book
-GET http://{{HOST}}:{{PORT}}/book
+## openapi.json
+GET http://{{HOST}}:{{PORT}}/swagger-ui/openapi.json
+HTTP 200
+[Asserts]
+header "Content-Type" contains "json"
+
+## get user list
+GET http://{{HOST}}:{{PORT}}/users
 HTTP 200
 [Asserts]
 header "Content-Type" contains "json"
 jsonpath "$" count == 2
 
-## get book by id
-## curl -sSL -X GET http://{{HOST}}:{{PORT}}/book/1
-GET http://{{HOST}}:{{PORT}}/book/1
+## get user by id
+GET http://{{HOST}}:{{PORT}}/users/1
 HTTP 200
 [Asserts]
 header "Content-Type" contains "json"
 jsonpath "$.id" == 1
-jsonpath "$.title" == "Programming Clojure"
+jsonpath "$.name" == "Alex"
 
-## add a new book
-## curl -sSL -X POST http://{{HOST}}:{{PORT}}/book -H 'content-type:application/json' -d '{"title":"Getting Clojure"}'
-POST http://{{HOST}}:{{PORT}}/book
+## add a new user
+POST http://{{HOST}}:{{PORT}}/users
 {
-  "title": "Getting Clojure"
+  "name": "Rich"
 }
 HTTP 200
 [Asserts]
 header "Content-Type" contains "json"
 jsonpath "$.id" != null
-jsonpath "$.title" == "Getting Clojure"
+jsonpath "$.name" == "Rich"
 jsonpath "$.create-at" != null
 [Captures]
-new-book-id: jsonpath "$.id"
+new-user-id: jsonpath "$.id"
 
-## delete book by id
-## curl -sSL -X DELETE http://{{HOST}}:{{PORT}}/book/{id}
-DELETE http://{{HOST}}:{{PORT}}/book/{{new-book-id}}
+## delete user by id
+DELETE http://{{HOST}}:{{PORT}}/users/{{new-user-id}}
 HTTP 200
 [Asserts]
 header "Content-Type" contains "json"
-jsonpath "$.id" == {{new-book-id}}
-jsonpath "$.title" == "Getting Clojure"
+jsonpath "$.id" == {{new-user-id}}
+jsonpath "$.name" == "Rich"
 jsonpath "$.create-at" != null
 
-## edit book by id
-## curl -sSL -X PUT http://{{HOST}}:{{PORT}}/book/2 -H 'content-type:application/json' -d '{"title":"Clojure in Action"}'
-PUT http://{{HOST}}:{{PORT}}/book/2
+## edit user by id
+PUT http://{{HOST}}:{{PORT}}/users/2
 {
-  "title": "Clojure in Action"
+  "name": "Bill"
 }
 HTTP 200
 [Asserts]
 header "Content-Type" contains "json"
 jsonpath "$.id" == 2
-jsonpath "$.title" == "Clojure in Action"
+jsonpath "$.name" == "Bill"
 jsonpath "$.update-at" != null
 
 ## bug error
-## curl -sSL -X GET http://{{HOST}}:{{PORT}}/bug
 GET http://{{HOST}}:{{PORT}}/bug
 HTTP 500
 [Asserts]
@@ -64,21 +64,8 @@ header "Content-Type" contains "json"
 jsonpath "$.time" != null
 
 ## coercion error
-## curl -ssL -X GET http://{{HOST}}:{{PORT}}/book/sss
-GET http://{{HOST}}:{{PORT}}/book/sss
+GET http://{{HOST}}:{{PORT}}/users/sss
 HTTP 500
 [Asserts]
 header "Content-Type" contains "json"
 jsonpath "$.time" != null
-
-## openapi.json
-## curl -ssL -X GET http://{{HOST}}:{{PORT}}/swagger-ui/openapi.json
-GET http://{{HOST}}:{{PORT}}/swagger-ui/openapi.json
-HTTP 200
-[Asserts]
-header "Content-Type" contains "json"
-
-GET http://{{HOST}}:{{PORT}}/hi
-HTTP 200
-[Asserts]
-body == "hi!"

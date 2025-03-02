@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [test])
   (:require [clojure.tools.build.api :as b]))
 
-(def lib 'net.clojars.lost/reitit-demo)
+(def lib 'lost/reitit-demo)
 (def version "0.1.0-SNAPSHOT")
 (def main 'lost.reitit-demo)
 (def class-dir "target/classes")
