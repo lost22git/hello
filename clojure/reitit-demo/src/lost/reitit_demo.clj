@@ -1,6 +1,7 @@
 (ns lost.reitit-demo
   (:gen-class)
   (:require
+   [clojure.java.io :as io]
    [lost.reitit-demo.user-api :as user-api]
    [org.httpkit.server :as hk]
    [reitit.ring :as ring]
@@ -23,6 +24,8 @@
    ;; openapi
    [reitit.openapi :as openapi]
    [reitit.swagger-ui :as swagger-ui]))
+
+(set! *warn-on-reflection* true)
 
 ; === error-handler ===
 
@@ -53,7 +56,16 @@
 ; === ig config ===
 
 (def config
-  (ig/read-string (slurp "config.edn")))
+  "read config in these order
+  1. config.edn in local fs
+  2. config.edn in jar fs
+  "
+  (ig/read-string
+   (try
+     (slurp "config.edn")
+     (catch Exception e
+       (println "Read config from config.edn in jar")
+       (slurp (io/resource "config.edn"))))))
 
 ; === ig logging ===
 
@@ -132,4 +144,5 @@
 ; - [ ] profiles
 ; - [ ] request logging
 ; - [ ] auth
+
 
