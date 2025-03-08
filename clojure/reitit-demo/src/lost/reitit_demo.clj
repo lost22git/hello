@@ -11,7 +11,7 @@
    [taoensso.telemere :as t]
    ;; dev
    [reitit.dev.pretty :as pretty]
-   [reitit.ring.middleware.dev :refer [print-request-diffs]]
+   ; [reitit.ring.middleware.dev :refer [print-request-diffs]]
    [reitit.ring.spec :as rrs]
    ;; exception
    [reitit.ring.middleware.exception :as exception]
@@ -63,7 +63,7 @@
   (ig/read-string
    (try
      (slurp "config.edn")
-     (catch Exception e
+     (catch Exception _e
        (println "Read config from config.edn in jar")
        (slurp (io/resource "config.edn"))))))
 
@@ -96,37 +96,37 @@
 (defmethod ig/init-key ::ring-handler
   [_ {:keys [openapi-support]}]
   (ring/ring-handler
+   ; router
    (ring/router
     [(:openapi-route openapi-support)
      ["/hi" {:get (fn [_] {:status 200 :body "hi!"})}]
      ["/bug" {:get (fn [_] (throw (ex-info "bug!" {:foo "bar"})))}]
      user-api/routes]
-
     {:validate rrs/validate
      :exception pretty/exception
      ; :reitit.middleware/transform print-request-diffs
      :data {:muuntaja m/instance
             :coercion coercion-spec/coercion
-            ;; middleware order: IO -> APP
+            ; middleware order: IO -> APP
             :middleware [openapi/openapi-feature
                          muuntaja/format-middleware
                          error-middleware
                          coercion/coerce-request-middleware
                          coercion/coerce-response-middleware]}})
 
-   ;; swagger-ui
-   (:swagger-ui-handler openapi-support)
-   ;; redirect slash handler: /halo/ -> 302 Location: /halo
-   (ring/redirect-trailing-slash-handler)))
+   ; default handler
+   (ring/routes
+    (:swagger-ui-handler openapi-support)
+    ; redirect slash handler: /halo/ -> 302 Location: /halo
+    (ring/redirect-trailing-slash-handler)
+    (ring/create-default-handler))))
 
 ; === ig openapi-support ===
 
 (defmethod ig/init-key ::openapi-support
   [_ {:keys [swagger-ui openapi]}]
   {:swagger-ui-handler
-   (ring/routes
-    (swagger-ui/create-swagger-ui-handler swagger-ui)
-    (ring/create-default-handler))
+   (swagger-ui/create-swagger-ui-handler swagger-ui)
    :openapi-route
    [(str (:path swagger-ui) "/openapi.json")
     {:get {:no-doc true
@@ -136,13 +136,11 @@
 ; === main ===
 
 (defn -main
-  [& args]
+  [& _args]
   (ig/init config))
 
 ; TODO: 
-; - [ ] bb.edn
 ; - [ ] profiles
 ; - [ ] request logging
 ; - [ ] auth
-
 
