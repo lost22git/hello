@@ -3,6 +3,7 @@
   (:require
    [clojure.java.io :as io]
    [lost.reitit-demo.user-api :as user-api]
+   [lost.reitit-demo.error :as error]
    [org.httpkit.server :as hk]
    [reitit.ring :as ring]
    ;; integrant
@@ -13,8 +14,6 @@
    [reitit.dev.pretty :as pretty]
    ; [reitit.ring.middleware.dev :refer [print-request-diffs]]
    [reitit.ring.spec :as rrs]
-   ;; exception
-   [reitit.ring.middleware.exception :as exception]
    ;; content negotiation
    [reitit.ring.middleware.muuntaja :as muuntaja]
    [muuntaja.core :as m]
@@ -26,32 +25,6 @@
    [reitit.swagger-ui :as swagger-ui]))
 
 (set! *warn-on-reflection* true)
-
-; === error-handler ===
-
-(defn default-error-handler [err req]
-  (t/error! err)
-  {:status 500
-   :body {:err.msg (ex-message err)
-          :err.data (ex-data err)
-          :time (java.time.Instant/now)
-          :req.method (:request-method req)
-          :req.uri (:uri req)}})
-
-(defn coercion-error-handler [err req]
-  {:status 500
-   :body {:err.msg "coercion error"
-          :err.data (:body ((exception/create-coercion-handler 500) err req))
-          :time (java.time.Instant/now)
-          :req.method (:request-method req)
-          :req.uri (:uri req)}})
-
-(def error-middleware
-  (exception/create-exception-middleware
-   (merge
-    exception/default-handlers
-    {:reitit.coercion/request-coercion coercion-error-handler
-     ::exception/default default-error-handler})))
 
 ; === ig config ===
 
@@ -71,6 +44,7 @@
 
 (defmethod ig/init-key ::logging
   [_ {:keys [min-level]}]
+  #_{:clj-kondo/ignore [:unresolved-var]}
   (t/set-min-level! min-level))
 
 ; === ig server ===
@@ -110,14 +84,14 @@
             ; middleware order: IO -> APP
             :middleware [openapi/openapi-feature
                          muuntaja/format-middleware
-                         error-middleware
+                         error/error-middleware
                          coercion/coerce-request-middleware
                          coercion/coerce-response-middleware]}})
 
    ; default handler
    (ring/routes
     (:swagger-ui-handler openapi-support)
-    ; redirect slash handler: /halo/ -> 302 Location: /halo
+    ; redirect slash handler: /users/ -> 301 Moved Permanently - Location: /users
     (ring/redirect-trailing-slash-handler)
     (ring/create-default-handler))))
 
