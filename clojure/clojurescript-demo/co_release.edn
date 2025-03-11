@@ -1,0 +1,5 @@
+;; Compiler Options for Build Release Mode
+{:main clojurescript-demo.core
+ :verbose true
+ :optimizations :advanced
+ :parallel-build true}

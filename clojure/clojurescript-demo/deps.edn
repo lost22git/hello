@@ -1,0 +1,21 @@
+{:deps {org.clojure/clojurescript {:mvn/version "1.11.54"}}
+ :aliases
+ {;; Build Release
+  :release {:main-opts ["-m" "cljs.main" "-co" "co_release.edn" "-c"]}
+
+  ;; Build Release target to NodeJS
+  ;; NOTE: pre-requirement: `npm install source-map-support`
+  :release-node {:main-opts ["-m" "cljs.main" "-co" "co_release.edn" "-t" "node" "-o" "main.js" "-c"]}
+
+  ;; REPL
+  :repl {:main-opts ["-m" "cljs.main" "-co" "co_dev.edn" "-c" "-r"]}
+
+  ;; Watching and Compiling
+  :dev {:main-opts ["-m" "cljs.main" "-w" "src" "-co" "co_dev.edn" "-c"]}
+
+  ;; Start http server for serving current directory
+  :server {:main-opts ["-m" "cljs.main" "-s"]}
+
+  ;; Help 
+  :help {:main-opts ["-m" "cljs.main" "--help"]}}}
+

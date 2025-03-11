@@ -1,0 +1,5 @@
+;; Compiler Options for Build Dev Mode
+{:main clojurescript-demo.core
+ :verbose true
+ :optimizations :none
+ :parallel-build true}
