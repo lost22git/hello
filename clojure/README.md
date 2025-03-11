@@ -16,7 +16,7 @@ https://clojure.org/guides/install_clojure
 - [contrib_libs](https://clojure.org/dev/contrib_libs)
 - [news](https://clojure.org/news/news)
 - [quickref](https://clojuredocs.org/quickref)
-- [code guide ](https://grishaev.me/en/clojure-guide/)
+- [clojure guide](https://clojure-doc.org)
 - [elements of clojure](https://elementsofclojure.com)
 
 

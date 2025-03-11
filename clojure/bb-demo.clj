@@ -7,9 +7,7 @@
 
 (set! *warn-on-reflection* true)
 
-;============
-; handle-err 
-;============
+; === handle-err ===
 
 (defmulti handle-err type)
 (defmethod handle-err NoSuchFileException
@@ -25,9 +23,7 @@
   (println "Unknown error")
   (System/exit 1))
 
-;=============
-; get-content 
-;=============
+; === get-content ===
 
 (defmulti get-content (fn [^File file]
                         (case (fs/directory? file)
@@ -43,9 +39,7 @@
   ^String [^File file]
   (String. (fs/read-all-bytes file)))
 
-;=====
-; cli 
-;=====
+; === cli ===
 
 (def cli-spec
   {:spec
@@ -92,9 +86,7 @@ Print content of given path
 (comment
   (print-help))
 
-;======
-; Main 
-;======
+; === Main ===
 
 (defn- run
   [{:keys [args opts]}]
