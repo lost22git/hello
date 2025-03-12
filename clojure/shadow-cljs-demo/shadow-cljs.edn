@@ -1,0 +1,28 @@
+;; shadow-cljs configuration
+{:source-paths
+ ["src/dev"
+  "src/main"
+  "src/test"]
+
+ :dependencies
+;; shadow-cljs would add it as middleware into built-in nREPL server 
+;; More info see: https://shadow-cljs.github.io/docs/UsersGuide.html#nREPL
+ [[cider/cider-nrepl "0.52.0"]]
+
+ :dev-http {8080 "public"} ;; dev http server for Browser target
+
+ ;; Build configuration
+ ;; More info see: https://shadow-cljs.github.io/docs/UsersGuide.html#_build_configuration
+ :builds
+ {;; Target: browser
+  ;; More info see: https://shadow-cljs.github.io/docs/UsersGuide.html#target-browser
+  :app {:target :browser
+        :output-dir "public/app/js"
+        :asset-path "/app/js"
+        :modules {:main {:entries [lost.shadow-cljs-demo]}}}
+
+  ;; Target: node-script
+  ;; More info see: https://shadow-cljs.github.io/docs/UsersGuide.html#target-node-script
+  :app-node {:target :node-script
+             :main lost.shadow-cljs-demo/main
+             :output-to "main.js"}}}
