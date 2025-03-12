@@ -1,5 +1,5 @@
-;; Compiler Options for Build Dev Mode
+;; Compiler Options for Browser target
 {:main clojurescript-demo.core
  :verbose true
- :optimizations :none
+ :target :browser
  :parallel-build true}

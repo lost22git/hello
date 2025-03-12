@@ -1,0 +1,6 @@
+;; Compiler Options for NodeJS target
+{:main clojurescript-demo.core
+ :verbose true
+ :target :nodejs
+ :output-to "main.js"
+ :parallel-build true}

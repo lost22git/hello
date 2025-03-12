@@ -1,30 +1,29 @@
 {:deps {org.clojure/clojurescript {:mvn/version "1.11.54"}}
  :aliases
  {;; Build Release for Browser
-  :release {:main-opts ["-m" "cljs.main" "-co" "co_release.edn" "-c"]}
+  :release {:main-opts ["-m" "cljs.main" "-co" "co.edn" "-O" "advanced" "-c"]}
 
   ;; Build Release for NodeJS
   ;; Pre-requirement: `npm i --save-dev source-map-support`
-  :release-node {:main-opts ["-m" "cljs.main" "-co" "co_release.edn" "-t" "node" "-o" "main.js" "-c"]}
+  :release-node {:main-opts ["-m" "cljs.main" "-co" "co_node.edn" "-O" "advanced" "-c"]}
 
   ;; REPL for Browser (NOT REPL SERVER !!!)
-  :repl {:main-opts ["-m" "cljs.main" "-co" "co_dev.edn" "-c" "-r"]}
+  :repl {:main-opts ["-m" "cljs.main" "-co" "co.edn" "-c" "-r"]}
 
   ;;REPL for NodeJS (NOT REPL SERVER !!!)
   ;; Pre-requirement: `npm i --save-dev source-map-support`
-  :repl-node {:main-opts ["-m" "cljs.main" "-co" "co_dev.edn" "-t" "node" "-c" "-r"]}
+  :repl-node {:main-opts ["-m" "cljs.main" "-co" "co_node.edn" "-c" "-r"]}
 
   ;; Watching and Compiling for Browser
   ;; Not allow to add `-s` to start web server when given `-w` to watch
-  :watch {:main-opts ["-m" "cljs.main" "-w" "src" "-co" "co_dev.edn" "-c"]}
+  :watch {:main-opts ["-m" "cljs.main" "-w" "src" "-co" "co.edn" "-c"]}
 
   ;; Watching and Compiling for NodeJS
   ;; Not allow to add `-s` to start web server when given `-w` to watch
-  :watch-node {:main-opts ["-m" "cljs.main" "-w" "src" "-co" "co_dev.edn" "-t" "node" "-c"]}
+  :watch-node {:main-opts ["-m" "cljs.main" "-w" "src" "-co" "co_node.edn" "-c"]}
 
   ;; Start web server for serving current directory
   :server {:main-opts ["-m" "cljs.main" "-s"]}
 
   ;; Help 
   :help {:main-opts ["-m" "cljs.main" "--help"]}}}
-
