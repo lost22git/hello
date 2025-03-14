@@ -2,8 +2,7 @@
   (:require [reagent.dom.client :as rdom]
             [re-frame.core :as rf]
             [day8.re-frame.http-fx]
-            [ajax.core :as ajax]
-            [cljs.core :as c]))
+            [ajax.core :as ajax]))
 
 ; (defn -main [& _]
 ;   (println "Hello NodeJS, Love from Shadow-cljs")
@@ -24,11 +23,11 @@
 
 (rf/reg-event-db ::fetch-cat-ok
                  (fn [db [_ data]]
-                   (c/update db :cats c/into data)))
+                   (update db :cats into data)))
 
 (rf/reg-event-db ::dec-count
                  (fn [db _]
-                   (c/update db :cats c/pop)))
+                   (update db :cats pop)))
 
 ;; === Subscrition ===
 
@@ -59,10 +58,11 @@
        [:img {:src url :width 400 :height 400}])]))
 
 (defn ui []
-  [:div
-   [:h1 "Hello Browser, Love from Shadow-cljs"]
-   [cat-count-view]
-   [cat-list-view]])
+  [:center
+   [:div
+    [:h2 "Hello 🐱, 💖 from Shadow-cljs"]
+    [cat-count-view]
+    [cat-list-view]]])
 
 ;; === EntryPoint ===
 

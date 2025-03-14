@@ -12,6 +12,14 @@
 npx create-cljs-project shadow-cljs-demo
 ```
 
+### Instal shadow-cljs
+
+```sh
+npm install -g shadow-cljs
+
+npm install --save-dev shadow-cljs
+```
+
 ### Configure `shadow-cljs.edn`
 
 #### Add `cider/cider-nrepl`
@@ -31,7 +39,7 @@ npx create-cljs-project shadow-cljs-demo
 {;; Target: browser
  ;; More info see: https://shadow-cljs.github.io/docs/UsersGuide.html#target-browser
  :app {:target :browser
-       :output-dir "public/app/js"
+       :output-dir "resources/public/app/js"
        :asset-path "/app/js"
        :modules {:main {:entries [lost.shadow-cljs-demo]}}}
 ...
@@ -41,7 +49,7 @@ npx create-cljs-project shadow-cljs-demo
 #### Add dev-http (for Browser target)
 
 ```edn
-:dev-http {8080 "public"} ;; dev http server for Browser target
+:dev-http {8080 "resources/public"} ;; dev http server for Browser target
 ```
 
 ### Start shadow-cljs server mode

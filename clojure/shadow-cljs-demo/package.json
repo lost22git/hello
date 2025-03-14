@@ -3,10 +3,14 @@
   "version": "0.0.1",
   "private": true,
   "devDependencies": {
-    "shadow-cljs": "2.28.21"
+    "shadow-cljs": "^2.28.21"
   },
   "dependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
+  },
+  "scripts": {
+    "shadow:watch": "shadow-cljs watch",
+    "shadow:release": "shadow-cljs release"
   }
 }
