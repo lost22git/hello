@@ -1,0 +1,23 @@
+{
+  "name": "squint-demo",
+  "version": "1.0.0",
+  "scripts": {
+    "dev:squint": "squint watch",
+    "dev:vite": "vite resources/public --config=vite.config.js --host 0.0.0.0 --port 8080",
+    "release:squint": "squint compile",
+    "release:vite": "vite build resources/public --config=vite.config.js"
+  },
+  "keywords": [],
+  "author": "lost",
+  "license": "ISC",
+  "description": "squint-demo",
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "squint-cljs": "^0.8.141"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.2.2"
+  }
+}
