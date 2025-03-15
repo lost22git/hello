@@ -15,7 +15,7 @@
 (defn dec-count [setState]
   (setState #(update % :cats pop)))
 
-(defn ui []
+(defn UI []
   (let [[state setState] (useState {:cats []})
         cat-list (:cats state)
         cat-count (count cat-list)]
@@ -33,4 +33,4 @@
 (defonce root
   (rdom/createRoot (js/document.getElementById "app")))
 
-(.render root #jsx [ui])
+(.render root #jsx [UI])
