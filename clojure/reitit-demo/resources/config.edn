@@ -1,0 +1,15 @@
+#:lost.reitit-demo{:logging {:min-level :info}
+                   :server {:port 8080
+                            :handler #ig/ref :lost.reitit-demo/ring-handler}
+                   :ring-handler {:openapi-support #ig/ref :lost.reitit-demo/openapi-support}
+                   :openapi-support {:swagger-ui {:path "/swagger-ui"
+                                                  :config {:validatorUrl nil
+                                                           :urls [{:name "openapi", :url "openapi.json"}]
+                                                           :urls.primaryName "openapi"
+                                                           :operationsSorter "alpha"}}
+                                     :openapi {:info {:title "reitit-demo"
+                                                      :description "openapi3 docs for reitit-demo"
+                                                      :version "0.0.1"}
+                                               :components {:securitySchemes {"auth" {:type :apiKey
+                                                                                      :in :header
+                                                                                      :name "Example-Api-Key"}}}}}}

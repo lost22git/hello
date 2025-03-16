@@ -800,4 +800,3 @@
                  false (m/ThemeMode.light)
                  true (m/ThemeMode.dark))
     .routerConfig router)))
-

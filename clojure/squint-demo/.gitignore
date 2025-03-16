@@ -1,2 +1,8 @@
+.clj-kondo
+.lsp
 node_modules/
 .nrepl-port
+
+!resources/public/index.html
+resources/public/
+

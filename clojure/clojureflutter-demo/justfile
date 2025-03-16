@@ -6,23 +6,31 @@ _default:
 # list used flutter widgets
 [unix]
 widget:
-    rg -g '*.cljd' '[\[\(\s](m/[A-Z]\w+)' . -oIN -r '$1' | sort | uniq -c | sort -k3n | tee /dev/tty | wc -l
+    rg -g '*.cljd' '[\[\(\s](m/[A-Z]\w+)' {{ justfile_directory() }} -oIN -r '$1' | sort | uniq -c | sort -k3n | tee /dev/tty | wc -l
 
 # list used flutter widgets
 [windows]
 widget:
-    rg -g '*.cljd' '[\[\(\s](m/[A-Z]\w+)' . -oIN -r '$1' | group -noelement | sort count | tee -variable $output | measure -line
+    rg -g '*.cljd' '[\[\(\s](m/[A-Z]\w+)' {{ justfile_directory() }} -oIN -r '$1' | group -noelement | sort count | tee -variable $output | measure -line
 
 # show hard-coded numbers
 num:
-    rg -g '*.cljd' '[\s\(\[]\d+(\.\d+)?' .
+    rg -g '*.cljd' '[\s\(\[]\d+(\.\d+)?' {{ justfile_directory() }}
 
 # show hard-coded strings
 str:
     # `\s\s*` - remove fn description
-    rg -g '*.cljd' '\S\s*".+"' . | rg log -v
+    rg -g '*.cljd' '\S\s*".+"' {{ justfile_directory() }} | rg log -v
 
 # show states
 state:
     # `:managed state` or `defonce state`
-    rg -g '*.cljd' '(managed.+[\w\-]+state|defonce\s+[\w\-]+state)'
+    rg -g '*.cljd' '(managed.+[\w\-]+state|defonce\s+[\w\-]+state)' {{ justfile_directory() }}
+
+# build apk
+apk:
+    flutter build apk --debug
+
+# start file server
+fs:
+    jwebserver -b 0.0.0.0 -p 8081 -d {{ justfile_directory() }}/build/app/outputs/apk/debug/
