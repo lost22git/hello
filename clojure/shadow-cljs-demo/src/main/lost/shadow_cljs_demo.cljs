@@ -72,14 +72,11 @@
 (defn render-ui []
   (rdom/render root [ui]))
 
-(defn run []
-  (render-ui))
-
 (defn ^:dev/after-load clear-cache-and-render! []
   (rf/clear-subscription-cache!)
   (render-ui))
 
-(defn ^:export init []
+(defn init []
   (rf/dispatch-sync [::init])
-  (run))
+  (render-ui))
 

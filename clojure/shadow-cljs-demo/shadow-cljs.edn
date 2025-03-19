@@ -24,10 +24,5 @@
   :app {:target :browser
         :output-dir "resources/public/app/js"
         :asset-path "/app/js"
-        :modules {:main {:init-fn lost.shadow-cljs-demo/init}}}
-
-  ;; Target: node-script
-  ;; More info see: https://shadow-cljs.github.io/docs/UsersGuide.html#target-node-script
-  :app-node {:target :node-script
-             :main lost.shadow-cljs-demo/-main
-             :output-to "main.js"}}}
+        :modules {:main {:init-fn lost.shadow-cljs-demo/init}}
+        :build-hooks [(shadow.cljs.build-report/hook)]}}}
