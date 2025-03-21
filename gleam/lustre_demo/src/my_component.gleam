@@ -16,7 +16,7 @@ pub fn register(name: String) -> Result(Nil, lustre.Error) {
   |> lustre.register(name)
 }
 
-// model //
+// === model ===
 
 pub type Model {
   Model(count: Int, cats: List(Cat))
@@ -36,15 +36,14 @@ pub type Msg {
   ApiReturnedCats(Result(List(Cat), lustre_http.HttpError))
 }
 
-// update //
+// === update ===
 
 pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
   case msg {
-    ApiReturnedCats(Ok(api_cats)) -> {
-      let assert [cat, ..] = api_cats
-      #(Model(..model, cats: [cat, ..model.cats]), effect.none())
-    }
-    ApiReturnedCats(Error(_)) -> #(model, effect.none())
+    UserIncrementedCount -> #(
+      Model(..model, count: model.count + 1),
+      get_cats(),
+    )
     UserDecrementedCount ->
       case model.count == 0 {
         True -> #(model, effect.none())
@@ -53,10 +52,11 @@ pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
           effect.none(),
         )
       }
-    UserIncrementedCount -> #(
-      Model(..model, count: model.count + 1),
-      get_cats(),
-    )
+    ApiReturnedCats(Ok(api_cats)) -> {
+      let assert [cat, ..] = api_cats
+      #(Model(..model, cats: [cat, ..model.cats]), effect.none())
+    }
+    ApiReturnedCats(Error(_)) -> #(model, effect.none())
   }
 }
 
@@ -72,7 +72,7 @@ fn get_cats() -> effect.Effect(Msg) {
   lustre_http.get("https://api.thecatapi.com/v1/images/search", expect)
 }
 
-//  view  //
+// === view ===
 
 pub fn view(model: Model) -> element.Element(Msg) {
   let count = int.to_string(model.count)
@@ -82,8 +82,8 @@ pub fn view(model: Model) -> element.Element(Msg) {
     html.text(count),
     html.button(
       [
-        event.on_click(UserDecrementedCount),
         attribute.disabled(model.count <= 0),
+        event.on_click(UserDecrementedCount),
       ],
       [element.text("-")],
     ),

@@ -4055,13 +4055,31 @@ function get_cats() {
   return get("https://api.thecatapi.com/v1/images/search", expect);
 }
 function update(model, msg) {
-  if (msg instanceof ApiReturnedCats && msg[0].isOk()) {
+  if (msg instanceof UserIncrementedCount) {
+    return [
+      (() => {
+        let _record = model;
+        return new Model2(model.count + 1, _record.cats);
+      })(),
+      get_cats()
+    ];
+  } else if (msg instanceof UserDecrementedCount) {
+    let $ = model.count === 0;
+    if ($) {
+      return [model, none()];
+    } else {
+      return [
+        new Model2(model.count - 1, drop(model.cats, 1)),
+        none()
+      ];
+    }
+  } else if (msg instanceof ApiReturnedCats && msg[0].isOk()) {
     let api_cats = msg[0][0];
     if (!api_cats.atLeastLength(1)) {
       throw makeError(
         "let_assert",
         "my_component",
-        44,
+        56,
         "update",
         "Pattern match failed, no pattern matched the value.",
         { value: api_cats }
@@ -4075,26 +4093,8 @@ function update(model, msg) {
       })(),
       none()
     ];
-  } else if (msg instanceof ApiReturnedCats && !msg[0].isOk()) {
-    return [model, none()];
-  } else if (msg instanceof UserDecrementedCount) {
-    let $ = model.count === 0;
-    if ($) {
-      return [model, none()];
-    } else {
-      return [
-        new Model2(model.count - 1, drop(model.cats, 1)),
-        none()
-      ];
-    }
   } else {
-    return [
-      (() => {
-        let _record = model;
-        return new Model2(model.count + 1, _record.cats);
-      })(),
-      get_cats()
-    ];
+    return [model, none()];
   }
 }
 function view(model) {
@@ -4109,8 +4109,8 @@ function view(model) {
       text2(count),
       button(
         toList([
-          on_click(new UserDecrementedCount()),
-          disabled(model.count <= 0)
+          disabled(model.count <= 0),
+          on_click(new UserDecrementedCount())
         ]),
         toList([text("-")])
       ),
