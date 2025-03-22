@@ -23,28 +23,27 @@ var List = class {
   }
   // @internal
   atLeastLength(desired) {
-    for (let _ of this) {
-      if (desired <= 0)
-        return true;
-      desired--;
-    }
-    return desired <= 0;
+    let current = this;
+    while (desired-- > 0 && current)
+      current = current.tail;
+    return current !== void 0;
   }
   // @internal
   hasLength(desired) {
-    for (let _ of this) {
-      if (desired <= 0)
-        return false;
-      desired--;
-    }
-    return desired === 0;
+    let current = this;
+    while (desired-- > 0 && current)
+      current = current.tail;
+    return desired === -1 && current instanceof Empty;
   }
   // @internal
   countLength() {
+    let current = this;
     let length4 = 0;
-    for (let _ of this)
+    while (current) {
+      current = current.tail;
       length4++;
-    return length4;
+    }
+    return length4 - 1;
   }
 };
 function prepend(element3, tail) {
@@ -77,99 +76,198 @@ var NonEmpty = class extends List {
     this.tail = tail;
   }
 };
-var BitArray = class _BitArray {
-  constructor(buffer) {
+var BitArray = class {
+  /**
+   * The size in bits of this bit array's data.
+   *
+   * @type {number}
+   */
+  bitSize;
+  /**
+   * The size in bytes of this bit array's data. If this bit array doesn't store
+   * a whole number of bytes then this value is rounded up.
+   *
+   * @type {number}
+   */
+  byteSize;
+  /**
+   * The number of unused high bits in the first byte of this bit array's
+   * buffer prior to the start of its data. The value of any unused high bits is
+   * undefined.
+   *
+   * The bit offset will be in the range 0-7.
+   *
+   * @type {number}
+   */
+  bitOffset;
+  /**
+   * The raw bytes that hold this bit array's data.
+   *
+   * If `bitOffset` is not zero then there are unused high bits in the first
+   * byte of this buffer.
+   *
+   * If `bitOffset + bitSize` is not a multiple of 8 then there are unused low
+   * bits in the last byte of this buffer.
+   *
+   * @type {Uint8Array}
+   */
+  rawBuffer;
+  /**
+   * Constructs a new bit array from a `Uint8Array`, an optional size in
+   * bits, and an optional bit offset.
+   *
+   * If no bit size is specified it is taken as `buffer.length * 8`, i.e. all
+   * bytes in the buffer make up the new bit array's data.
+   *
+   * If no bit offset is specified it defaults to zero, i.e. there are no unused
+   * high bits in the first byte of the buffer.
+   *
+   * @param {Uint8Array} buffer
+   * @param {number} [bitSize]
+   * @param {number} [bitOffset]
+   */
+  constructor(buffer, bitSize, bitOffset) {
     if (!(buffer instanceof Uint8Array)) {
-      throw "BitArray can only be constructed from a Uint8Array";
+      throw globalThis.Error(
+        "BitArray can only be constructed from a Uint8Array"
+      );
     }
-    this.buffer = buffer;
+    this.bitSize = bitSize ?? buffer.length * 8;
+    this.byteSize = Math.trunc((this.bitSize + 7) / 8);
+    this.bitOffset = bitOffset ?? 0;
+    if (this.bitSize < 0) {
+      throw globalThis.Error(`BitArray bit size is invalid: ${this.bitSize}`);
+    }
+    if (this.bitOffset < 0 || this.bitOffset > 7) {
+      throw globalThis.Error(
+        `BitArray bit offset is invalid: ${this.bitOffset}`
+      );
+    }
+    if (buffer.length !== Math.trunc((this.bitOffset + this.bitSize + 7) / 8)) {
+      throw globalThis.Error("BitArray buffer length is invalid");
+    }
+    this.rawBuffer = buffer;
   }
-  // @internal
+  /**
+   * Returns a specific byte in this bit array. If the byte index is out of
+   * range then `undefined` is returned.
+   *
+   * When returning the final byte of a bit array with a bit size that's not a
+   * multiple of 8, the content of the unused low bits are undefined.
+   *
+   * @param {number} index
+   * @returns {number | undefined}
+   */
+  byteAt(index5) {
+    if (index5 < 0 || index5 >= this.byteSize) {
+      return void 0;
+    }
+    return bitArrayByteAt(this.rawBuffer, this.bitOffset, index5);
+  }
+  /** @internal */
+  equals(other) {
+    if (this.bitSize !== other.bitSize) {
+      return false;
+    }
+    const wholeByteCount = Math.trunc(this.bitSize / 8);
+    if (this.bitOffset === 0 && other.bitOffset === 0) {
+      for (let i = 0; i < wholeByteCount; i++) {
+        if (this.rawBuffer[i] !== other.rawBuffer[i]) {
+          return false;
+        }
+      }
+      const trailingBitsCount = this.bitSize % 8;
+      if (trailingBitsCount) {
+        const unusedLowBitCount = 8 - trailingBitsCount;
+        if (this.rawBuffer[wholeByteCount] >> unusedLowBitCount !== other.rawBuffer[wholeByteCount] >> unusedLowBitCount) {
+          return false;
+        }
+      }
+    } else {
+      for (let i = 0; i < wholeByteCount; i++) {
+        const a = bitArrayByteAt(this.rawBuffer, this.bitOffset, i);
+        const b = bitArrayByteAt(other.rawBuffer, other.bitOffset, i);
+        if (a !== b) {
+          return false;
+        }
+      }
+      const trailingBitsCount = this.bitSize % 8;
+      if (trailingBitsCount) {
+        const a = bitArrayByteAt(
+          this.rawBuffer,
+          this.bitOffset,
+          wholeByteCount
+        );
+        const b = bitArrayByteAt(
+          other.rawBuffer,
+          other.bitOffset,
+          wholeByteCount
+        );
+        const unusedLowBitCount = 8 - trailingBitsCount;
+        if (a >> unusedLowBitCount !== b >> unusedLowBitCount) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  /**
+   * Returns this bit array's internal buffer.
+   *
+   * @deprecated Use `BitArray.byteAt()` or `BitArray.rawBuffer` instead.
+   *
+   * @returns {Uint8Array}
+   */
+  get buffer() {
+    bitArrayPrintDeprecationWarning(
+      "buffer",
+      "Use BitArray.byteAt() or BitArray.rawBuffer instead"
+    );
+    if (this.bitOffset !== 0 || this.bitSize % 8 !== 0) {
+      throw new globalThis.Error(
+        "BitArray.buffer does not support unaligned bit arrays"
+      );
+    }
+    return this.rawBuffer;
+  }
+  /**
+   * Returns the length in bytes of this bit array's internal buffer.
+   *
+   * @deprecated Use `BitArray.bitSize` or `BitArray.byteSize` instead.
+   *
+   * @returns {number}
+   */
   get length() {
-    return this.buffer.length;
-  }
-  // @internal
-  byteAt(index3) {
-    return this.buffer[index3];
-  }
-  // @internal
-  floatFromSlice(start3, end, isBigEndian) {
-    return byteArrayToFloat(this.buffer, start3, end, isBigEndian);
-  }
-  // @internal
-  intFromSlice(start3, end, isBigEndian, isSigned) {
-    return byteArrayToInt(this.buffer, start3, end, isBigEndian, isSigned);
-  }
-  // @internal
-  binaryFromSlice(start3, end) {
-    const buffer = new Uint8Array(
-      this.buffer.buffer,
-      this.buffer.byteOffset + start3,
-      end - start3
+    bitArrayPrintDeprecationWarning(
+      "length",
+      "Use BitArray.bitSize or BitArray.byteSize instead"
     );
-    return new _BitArray(buffer);
-  }
-  // @internal
-  sliceAfter(index3) {
-    const buffer = new Uint8Array(
-      this.buffer.buffer,
-      this.buffer.byteOffset + index3,
-      this.buffer.byteLength - index3
-    );
-    return new _BitArray(buffer);
+    if (this.bitOffset !== 0 || this.bitSize % 8 !== 0) {
+      throw new globalThis.Error(
+        "BitArray.length does not support unaligned bit arrays"
+      );
+    }
+    return this.rawBuffer.length;
   }
 };
-function byteArrayToInt(byteArray, start3, end, isBigEndian, isSigned) {
-  const byteSize = end - start3;
-  if (byteSize <= 6) {
-    let value = 0;
-    if (isBigEndian) {
-      for (let i = start3; i < end; i++) {
-        value = value * 256 + byteArray[i];
-      }
-    } else {
-      for (let i = end - 1; i >= start3; i--) {
-        value = value * 256 + byteArray[i];
-      }
-    }
-    if (isSigned) {
-      const highBit = 2 ** (byteSize * 8 - 1);
-      if (value >= highBit) {
-        value -= highBit * 2;
-      }
-    }
-    return value;
+function bitArrayByteAt(buffer, bitOffset, index5) {
+  if (bitOffset === 0) {
+    return buffer[index5] ?? 0;
   } else {
-    let value = 0n;
-    if (isBigEndian) {
-      for (let i = start3; i < end; i++) {
-        value = (value << 8n) + BigInt(byteArray[i]);
-      }
-    } else {
-      for (let i = end - 1; i >= start3; i--) {
-        value = (value << 8n) + BigInt(byteArray[i]);
-      }
-    }
-    if (isSigned) {
-      const highBit = 1n << BigInt(byteSize * 8 - 1);
-      if (value >= highBit) {
-        value -= highBit * 2n;
-      }
-    }
-    return Number(value);
+    const a = buffer[index5] << bitOffset & 255;
+    const b = buffer[index5 + 1] >> 8 - bitOffset;
+    return a | b;
   }
 }
-function byteArrayToFloat(byteArray, start3, end, isBigEndian) {
-  const view2 = new DataView(byteArray.buffer);
-  const byteSize = end - start3;
-  if (byteSize === 8) {
-    return view2.getFloat64(start3, !isBigEndian);
-  } else if (byteSize === 4) {
-    return view2.getFloat32(start3, !isBigEndian);
-  } else {
-    const msg = `Sized floats must be 32-bit or 64-bit on JavaScript, got size of ${byteSize * 8} bits`;
-    throw new globalThis.Error(msg);
+var isBitArrayDeprecationMessagePrinted = {};
+function bitArrayPrintDeprecationWarning(name, message) {
+  if (isBitArrayDeprecationMessagePrinted[name]) {
+    return;
   }
+  console.warn(
+    `Deprecated BitArray.${name} property used in JavaScript FFI code. ${message}.`
+  );
+  isBitArrayDeprecationMessagePrinted[name] = true;
 }
 var Result = class _Result extends CustomType {
   // @internal
@@ -238,7 +336,7 @@ function unequalDates(a, b) {
   return a instanceof Date && (a > b || a < b);
 }
 function unequalBuffers(a, b) {
-  return a.buffer instanceof ArrayBuffer && a.BYTES_PER_ELEMENT && !(a.byteLength === b.byteLength && a.every((n, i) => n === b[i]));
+  return !(a instanceof BitArray) && a.buffer instanceof ArrayBuffer && a.BYTES_PER_ELEMENT && !(a.byteLength === b.byteLength && a.every((n, i) => n === b[i]));
 }
 function unequalArrays(a, b) {
   return Array.isArray(a) && a.length !== b.length;
@@ -1009,7 +1107,6 @@ var unequalDictSymbol = Symbol();
 
 // build/dev/javascript/gleam_stdlib/gleam_stdlib.mjs
 var Nil = void 0;
-var NOT_FOUND = {};
 function identity(x) {
   return x;
 }
@@ -1017,22 +1114,22 @@ function to_string(term) {
   return term.toString();
 }
 var segmenter = void 0;
-function graphemes_iterator(string2) {
+function graphemes_iterator(string5) {
   if (globalThis.Intl && Intl.Segmenter) {
     segmenter ||= new Intl.Segmenter();
-    return segmenter.segment(string2)[Symbol.iterator]();
+    return segmenter.segment(string5)[Symbol.iterator]();
   }
 }
-function pop_grapheme(string2) {
+function pop_grapheme(string5) {
   let first2;
-  const iterator = graphemes_iterator(string2);
+  const iterator = graphemes_iterator(string5);
   if (iterator) {
     first2 = iterator.next().value?.segment;
   } else {
-    first2 = string2.match(/./su)?.[0];
+    first2 = string5.match(/./su)?.[0];
   }
   if (first2) {
-    return new Ok([first2, string2.slice(first2.length)]);
+    return new Ok([first2, string5.slice(first2.length)]);
   } else {
     return new Error(Nil);
   }
@@ -1040,8 +1137,8 @@ function pop_grapheme(string2) {
 function pop_codeunit(str) {
   return [str.charCodeAt(0) | 0, str.slice(1)];
 }
-function lowercase(string2) {
-  return string2.toLowerCase();
+function lowercase(string5) {
+  return string5.toLowerCase();
 }
 function concat(xs) {
   let result = "";
@@ -1081,18 +1178,11 @@ var trim_end_regex = new RegExp(`[${unicode_whitespaces}]*$`);
 function new_map() {
   return Dict.new();
 }
-function map_to_list(map6) {
-  return List.fromArray(map6.entries());
+function map_to_list(map7) {
+  return List.fromArray(map7.entries());
 }
-function map_get(map6, key) {
-  const value = map6.get(key, NOT_FOUND);
-  if (value === NOT_FOUND) {
-    return new Error(Nil);
-  }
-  return new Ok(value);
-}
-function map_insert(key, value, map6) {
-  return map6.set(key, value);
+function map_insert(key, value, map7) {
+  return map7.set(key, value);
 }
 function classify_dynamic(data) {
   if (typeof data === "string") {
@@ -1122,46 +1212,6 @@ function classify_dynamic(data) {
     return type.charAt(0).toUpperCase() + type.slice(1);
   }
 }
-function decoder_error(expected, got) {
-  return decoder_error_no_classify(expected, classify_dynamic(got));
-}
-function decoder_error_no_classify(expected, got) {
-  return new Error(
-    List.fromArray([new DecodeError(expected, got, List.fromArray([]))])
-  );
-}
-function decode_string(data) {
-  return typeof data === "string" ? new Ok(data) : decoder_error("String", data);
-}
-function decode_int(data) {
-  return Number.isInteger(data) ? new Ok(data) : decoder_error("Int", data);
-}
-function decode_list(data) {
-  if (Array.isArray(data)) {
-    return new Ok(List.fromArray(data));
-  }
-  return data instanceof List ? new Ok(data) : decoder_error("List", data);
-}
-function decode_field(value, name) {
-  const not_a_map_error = () => decoder_error("Dict", value);
-  if (value instanceof Dict || value instanceof WeakMap || value instanceof Map) {
-    const entry = map_get(value, name);
-    return new Ok(entry.isOk() ? new Some(entry[0]) : new None());
-  } else if (value === null) {
-    return not_a_map_error();
-  } else if (Object.getPrototypeOf(value) == Object.prototype) {
-    return try_get_field(value, name, () => new Ok(new None()));
-  } else {
-    return try_get_field(value, name, not_a_map_error);
-  }
-}
-function try_get_field(value, field2, or_else) {
-  try {
-    return field2 in value ? new Ok(new Some(value[field2])) : or_else();
-  } catch {
-    return or_else();
-  }
-}
 
 // build/dev/javascript/gleam_stdlib/gleam/dict.mjs
 function insert(dict2, key, value) {
@@ -1174,10 +1224,10 @@ function reverse_and_concat(loop$remaining, loop$accumulator) {
     if (remaining.hasLength(0)) {
       return accumulator;
     } else {
-      let item = remaining.head;
+      let first2 = remaining.head;
       let rest = remaining.tail;
       loop$remaining = rest;
-      loop$accumulator = prepend(item, accumulator);
+      loop$accumulator = prepend(first2, accumulator);
     }
   }
 }
@@ -1188,35 +1238,34 @@ function do_keys_loop(loop$list, loop$acc) {
     if (list3.hasLength(0)) {
       return reverse_and_concat(acc, toList([]));
     } else {
-      let first2 = list3.head;
+      let key = list3.head[0];
       let rest = list3.tail;
       loop$list = rest;
-      loop$acc = prepend(first2[0], acc);
+      loop$acc = prepend(key, acc);
     }
   }
 }
 function keys(dict2) {
-  let list_of_pairs = map_to_list(dict2);
-  return do_keys_loop(list_of_pairs, toList([]));
+  return do_keys_loop(map_to_list(dict2), toList([]));
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/list.mjs
-function reverse_loop(loop$remaining, loop$accumulator) {
+function reverse_and_prepend(loop$prefix, loop$suffix) {
   while (true) {
-    let remaining = loop$remaining;
-    let accumulator = loop$accumulator;
-    if (remaining.hasLength(0)) {
-      return accumulator;
+    let prefix = loop$prefix;
+    let suffix = loop$suffix;
+    if (prefix.hasLength(0)) {
+      return suffix;
     } else {
-      let item = remaining.head;
-      let rest$1 = remaining.tail;
-      loop$remaining = rest$1;
-      loop$accumulator = prepend(item, accumulator);
+      let first$1 = prefix.head;
+      let rest$1 = prefix.tail;
+      loop$prefix = rest$1;
+      loop$suffix = prepend(first$1, suffix);
     }
   }
 }
 function reverse(list3) {
-  return reverse_loop(list3, toList([]));
+  return reverse_and_prepend(list3, toList([]));
 }
 function map_loop(loop$list, loop$fun, loop$acc) {
   while (true) {
@@ -1237,32 +1286,6 @@ function map_loop(loop$list, loop$fun, loop$acc) {
 function map(list3, fun) {
   return map_loop(list3, fun, toList([]));
 }
-function try_map_loop(loop$list, loop$fun, loop$acc) {
-  while (true) {
-    let list3 = loop$list;
-    let fun = loop$fun;
-    let acc = loop$acc;
-    if (list3.hasLength(0)) {
-      return new Ok(reverse(acc));
-    } else {
-      let first$1 = list3.head;
-      let rest$1 = list3.tail;
-      let $ = fun(first$1);
-      if ($.isOk()) {
-        let first$2 = $[0];
-        loop$list = rest$1;
-        loop$fun = fun;
-        loop$acc = prepend(first$2, acc);
-      } else {
-        let error = $[0];
-        return new Error(error);
-      }
-    }
-  }
-}
-function try_map(list3, fun) {
-  return try_map_loop(list3, fun, toList([]));
-}
 function drop(loop$list, loop$n) {
   while (true) {
     let list3 = loop$list;
@@ -1281,36 +1304,22 @@ function drop(loop$list, loop$n) {
     }
   }
 }
-function reverse_and_prepend(loop$prefix, loop$suffix) {
+function append_loop(loop$first, loop$second) {
   while (true) {
-    let prefix = loop$prefix;
-    let suffix = loop$suffix;
-    if (prefix.hasLength(0)) {
-      return suffix;
+    let first2 = loop$first;
+    let second = loop$second;
+    if (first2.hasLength(0)) {
+      return second;
     } else {
-      let first$1 = prefix.head;
-      let rest$1 = prefix.tail;
-      loop$prefix = rest$1;
-      loop$suffix = prepend(first$1, suffix);
+      let first$1 = first2.head;
+      let rest$1 = first2.tail;
+      loop$first = rest$1;
+      loop$second = prepend(first$1, second);
     }
   }
 }
-function flatten_loop(loop$lists, loop$acc) {
-  while (true) {
-    let lists = loop$lists;
-    let acc = loop$acc;
-    if (lists.hasLength(0)) {
-      return reverse(acc);
-    } else {
-      let list3 = lists.head;
-      let further_lists = lists.tail;
-      loop$lists = further_lists;
-      loop$acc = reverse_and_prepend(list3, acc);
-    }
-  }
-}
-function flatten(lists) {
-  return flatten_loop(lists, toList([]));
+function append(first2, second) {
+  return append_loop(reverse(first2), second);
 }
 function fold(loop$list, loop$initial, loop$fun) {
   while (true) {
@@ -1320,10 +1329,10 @@ function fold(loop$list, loop$initial, loop$fun) {
     if (list3.hasLength(0)) {
       return initial;
     } else {
-      let x = list3.head;
+      let first$1 = list3.head;
       let rest$1 = list3.tail;
       loop$list = rest$1;
-      loop$initial = fun(initial, x);
+      loop$initial = fun(initial, first$1);
       loop$fun = fun;
     }
   }
@@ -1333,16 +1342,16 @@ function index_fold_loop(loop$over, loop$acc, loop$with, loop$index) {
     let over = loop$over;
     let acc = loop$acc;
     let with$ = loop$with;
-    let index3 = loop$index;
+    let index5 = loop$index;
     if (over.hasLength(0)) {
       return acc;
     } else {
       let first$1 = over.head;
       let rest$1 = over.tail;
       loop$over = rest$1;
-      loop$acc = with$(acc, first$1, index3);
+      loop$acc = with$(acc, first$1, index5);
       loop$with = with$;
-      loop$index = index3 + 1;
+      loop$index = index5 + 1;
     }
   }
 }
@@ -1358,34 +1367,25 @@ function concat2(strings) {
 }
 function drop_start(loop$string, loop$num_graphemes) {
   while (true) {
-    let string2 = loop$string;
+    let string5 = loop$string;
     let num_graphemes = loop$num_graphemes;
     let $ = num_graphemes > 0;
     if (!$) {
-      return string2;
+      return string5;
     } else {
-      let $1 = pop_grapheme(string2);
+      let $1 = pop_grapheme(string5);
       if ($1.isOk()) {
         let string$1 = $1[0][1];
         loop$string = string$1;
         loop$num_graphemes = num_graphemes - 1;
       } else {
-        return string2;
+        return string5;
       }
     }
   }
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/result.mjs
-function map2(result, fun) {
-  if (result.isOk()) {
-    let x = result[0];
-    return new Ok(fun(x));
-  } else {
-    let e = result[0];
-    return new Error(e);
-  }
-}
 function map_error(result, fun) {
   if (result.isOk()) {
     let x = result[0];
@@ -1408,8 +1408,63 @@ function then$(result, fun) {
   return try$(result, fun);
 }
 
-// build/dev/javascript/gleam_stdlib/gleam/dynamic.mjs
-var DecodeError = class extends CustomType {
+// build/dev/javascript/gleam_stdlib/gleam_stdlib_decode_ffi.mjs
+function index2(data, key) {
+  if (data instanceof Dict || data instanceof WeakMap || data instanceof Map) {
+    const token = {};
+    const entry = data.get(key, token);
+    if (entry === token)
+      return new Ok(new None());
+    return new Ok(new Some(entry));
+  }
+  const key_is_int = Number.isInteger(key);
+  if (key_is_int && key >= 0 && key < 8 && data instanceof List) {
+    let i = 0;
+    for (const value of data) {
+      if (i === key)
+        return new Ok(new Some(value));
+      i++;
+    }
+    return new Error("Indexable");
+  }
+  if (key_is_int && Array.isArray(data) || data && typeof data === "object" || data && Object.getPrototypeOf(data) === Object.prototype) {
+    if (key in data)
+      return new Ok(new Some(data[key]));
+    return new Ok(new None());
+  }
+  return new Error(key_is_int ? "Indexable" : "Dict");
+}
+function list(data, decode2, pushPath, index5, emptyList) {
+  if (!(data instanceof List || Array.isArray(data))) {
+    let error = new DecodeError2("List", classify_dynamic(data), emptyList);
+    return [emptyList, List.fromArray([error])];
+  }
+  const decoded = [];
+  for (const element3 of data) {
+    const layer = decode2(element3);
+    const [out, errors] = layer;
+    if (errors instanceof NonEmpty) {
+      const [_, errors2] = pushPath(layer, index5.toString());
+      return [emptyList, errors2];
+    }
+    decoded.push(out);
+    index5++;
+  }
+  return [List.fromArray(decoded), emptyList];
+}
+function int(data) {
+  if (Number.isInteger(data))
+    return new Ok(data);
+  return new Error(0);
+}
+function string(data) {
+  if (typeof data === "string")
+    return new Ok(data);
+  return new Error(0);
+}
+
+// build/dev/javascript/gleam_stdlib/gleam/dynamic/decode.mjs
+var DecodeError2 = class extends CustomType {
   constructor(expected, found, path) {
     super();
     this.expected = expected;
@@ -1417,122 +1472,211 @@ var DecodeError = class extends CustomType {
     this.path = path;
   }
 };
-function int(data) {
-  return decode_int(data);
+var Decoder = class extends CustomType {
+  constructor(function$) {
+    super();
+    this.function = function$;
+  }
+};
+function run(data, decoder) {
+  let $ = decoder.function(data);
+  let maybe_invalid_data = $[0];
+  let errors = $[1];
+  if (errors.hasLength(0)) {
+    return new Ok(maybe_invalid_data);
+  } else {
+    return new Error(errors);
+  }
 }
-function shallow_list(value) {
-  return decode_list(value);
+function success(data) {
+  return new Decoder((_) => {
+    return [data, toList([])];
+  });
 }
-function any(decoders) {
-  return (data) => {
+function map3(decoder, transformer) {
+  return new Decoder(
+    (d) => {
+      let $ = decoder.function(d);
+      let data = $[0];
+      let errors = $[1];
+      return [transformer(data), errors];
+    }
+  );
+}
+function run_decoders(loop$data, loop$failure, loop$decoders) {
+  while (true) {
+    let data = loop$data;
+    let failure = loop$failure;
+    let decoders = loop$decoders;
     if (decoders.hasLength(0)) {
-      return new Error(
-        toList([new DecodeError("another type", classify_dynamic(data), toList([]))])
-      );
+      return failure;
     } else {
       let decoder = decoders.head;
       let decoders$1 = decoders.tail;
-      let $ = decoder(data);
-      if ($.isOk()) {
-        let decoded = $[0];
-        return new Ok(decoded);
+      let $ = decoder.function(data);
+      let layer = $;
+      let errors = $[1];
+      if (errors.hasLength(0)) {
+        return layer;
       } else {
-        return any(decoders$1)(data);
+        loop$data = data;
+        loop$failure = failure;
+        loop$decoders = decoders$1;
       }
     }
-  };
-}
-function all_errors(result) {
-  if (result.isOk()) {
-    return toList([]);
-  } else {
-    let errors = result[0];
-    return errors;
   }
 }
-function push_path(error, name) {
-  let name$1 = identity(name);
-  let decoder = any(
-    toList([decode_string, (x) => {
-      return map2(int(x), to_string);
-    }])
-  );
-  let name$2 = (() => {
-    let $ = decoder(name$1);
-    if ($.isOk()) {
-      let name$22 = $[0];
-      return name$22;
-    } else {
-      let _pipe = toList(["<", classify_dynamic(name$1), ">"]);
-      let _pipe$1 = concat(_pipe);
-      return identity(_pipe$1);
-    }
-  })();
-  let _record = error;
-  return new DecodeError(
-    _record.expected,
-    _record.found,
-    prepend(name$2, error.path)
-  );
-}
-function list(decoder_type) {
-  return (dynamic) => {
-    return try$(
-      shallow_list(dynamic),
-      (list3) => {
-        let _pipe = list3;
-        let _pipe$1 = try_map(_pipe, decoder_type);
-        return map_errors(
-          _pipe$1,
-          (_capture) => {
-            return push_path(_capture, "*");
-          }
-        );
+function one_of(first2, alternatives) {
+  return new Decoder(
+    (dynamic_data) => {
+      let $ = first2.function(dynamic_data);
+      let layer = $;
+      let errors = $[1];
+      if (errors.hasLength(0)) {
+        return layer;
+      } else {
+        return run_decoders(dynamic_data, layer, alternatives);
       }
-    );
-  };
-}
-function map_errors(result, f) {
-  return map_error(
-    result,
-    (_capture) => {
-      return map(_capture, f);
     }
   );
 }
-function field(name, inner_type) {
-  return (value) => {
-    let missing_field_error = new DecodeError("field", "nothing", toList([]));
-    return try$(
-      decode_field(value, name),
-      (maybe_inner) => {
-        let _pipe = maybe_inner;
-        let _pipe$1 = to_result(_pipe, toList([missing_field_error]));
-        let _pipe$2 = try$(_pipe$1, inner_type);
-        return map_errors(
-          _pipe$2,
-          (_capture) => {
-            return push_path(_capture, name);
-          }
-        );
-      }
-    );
-  };
+function run_dynamic_function(data, name, f) {
+  let $ = f(data);
+  if ($.isOk()) {
+    let data$1 = $[0];
+    return [data$1, toList([])];
+  } else {
+    let zero = $[0];
+    return [
+      zero,
+      toList([new DecodeError2(name, classify_dynamic(data), toList([]))])
+    ];
+  }
 }
-function decode2(constructor, t1, t2) {
-  return (value) => {
-    let $ = t1(value);
-    let $1 = t2(value);
-    if ($.isOk() && $1.isOk()) {
-      let a = $[0];
-      let b = $1[0];
-      return new Ok(constructor(a, b));
-    } else {
-      let a = $;
-      let b = $1;
-      return new Error(flatten(toList([all_errors(a), all_errors(b)])));
+function decode_int2(data) {
+  return run_dynamic_function(data, "Int", int);
+}
+var int2 = /* @__PURE__ */ new Decoder(decode_int2);
+function decode_string2(data) {
+  return run_dynamic_function(data, "String", string);
+}
+var string2 = /* @__PURE__ */ new Decoder(decode_string2);
+function list2(inner) {
+  return new Decoder(
+    (data) => {
+      return list(
+        data,
+        inner.function,
+        (p, k) => {
+          return push_path(p, toList([k]));
+        },
+        0,
+        toList([])
+      );
     }
-  };
+  );
+}
+function push_path(layer, path) {
+  let decoder = one_of(
+    string2,
+    toList([
+      (() => {
+        let _pipe = int2;
+        return map3(_pipe, to_string);
+      })()
+    ])
+  );
+  let path$1 = map(
+    path,
+    (key) => {
+      let key$1 = identity(key);
+      let $ = run(key$1, decoder);
+      if ($.isOk()) {
+        let key$2 = $[0];
+        return key$2;
+      } else {
+        return "<" + classify_dynamic(key$1) + ">";
+      }
+    }
+  );
+  let errors = map(
+    layer[1],
+    (error) => {
+      let _record = error;
+      return new DecodeError2(
+        _record.expected,
+        _record.found,
+        append(path$1, error.path)
+      );
+    }
+  );
+  return [layer[0], errors];
+}
+function index3(loop$path, loop$position, loop$inner, loop$data, loop$handle_miss) {
+  while (true) {
+    let path = loop$path;
+    let position = loop$position;
+    let inner = loop$inner;
+    let data = loop$data;
+    let handle_miss = loop$handle_miss;
+    if (path.hasLength(0)) {
+      let _pipe = inner(data);
+      return push_path(_pipe, reverse(position));
+    } else {
+      let key = path.head;
+      let path$1 = path.tail;
+      let $ = index2(data, key);
+      if ($.isOk() && $[0] instanceof Some) {
+        let data$1 = $[0][0];
+        loop$path = path$1;
+        loop$position = prepend(key, position);
+        loop$inner = inner;
+        loop$data = data$1;
+        loop$handle_miss = handle_miss;
+      } else if ($.isOk() && $[0] instanceof None) {
+        return handle_miss(data, prepend(key, position));
+      } else {
+        let kind = $[0];
+        let $1 = inner(data);
+        let default$ = $1[0];
+        let _pipe = [
+          default$,
+          toList([new DecodeError2(kind, classify_dynamic(data), toList([]))])
+        ];
+        return push_path(_pipe, reverse(position));
+      }
+    }
+  }
+}
+function subfield(field_path, field_decoder, next) {
+  return new Decoder(
+    (data) => {
+      let $ = index3(
+        field_path,
+        toList([]),
+        field_decoder.function,
+        data,
+        (data2, position) => {
+          let $12 = field_decoder.function(data2);
+          let default$ = $12[0];
+          let _pipe = [
+            default$,
+            toList([new DecodeError2("Field", "Nothing", toList([]))])
+          ];
+          return push_path(_pipe, reverse(position));
+        }
+      );
+      let out = $[0];
+      let errors1 = $[1];
+      let $1 = next(out).function(data);
+      let out$1 = $1[0];
+      let errors2 = $1[1];
+      return [out$1, append(errors1, errors2)];
+    }
+  );
+}
+function field(field_name, field_decoder, next) {
+  return subfield(toList([field_name]), field_decoder, next);
 }
 
 // build/dev/javascript/gleam_stdlib/gleam/bool.mjs
@@ -1545,12 +1689,12 @@ function guard(requirement, consequence, alternative) {
 }
 
 // build/dev/javascript/gleam_json/gleam_json_ffi.mjs
-function decode(string2) {
+function decode(string5) {
   try {
-    const result = JSON.parse(string2);
+    const result = JSON.parse(string5);
     return new Ok(result);
   } catch (err) {
-    return new Error(getJsonDecodeError(err, string2));
+    return new Error(getJsonDecodeError(err, string5));
   }
 }
 function getJsonDecodeError(stdErr, json) {
@@ -1615,12 +1759,12 @@ function jsCoreUnexpectedByteError(err) {
 function toHex(char) {
   return "0x" + char.charCodeAt(0).toString(16).toUpperCase();
 }
-function getPositionFromMultiline(line, column, string2) {
+function getPositionFromMultiline(line, column, string5) {
   if (line === 1)
     return column - 1;
   let currentLn = 1;
   let position = 0;
-  string2.split("").find((char, idx) => {
+  string5.split("").find((char, idx) => {
     if (char === "\n")
       currentLn += 1;
     if (currentLn === line) {
@@ -1641,28 +1785,28 @@ var UnexpectedByte = class extends CustomType {
     this[0] = x0;
   }
 };
-var UnexpectedFormat = class extends CustomType {
+var UnableToDecode = class extends CustomType {
   constructor(x0) {
     super();
     this[0] = x0;
   }
 };
-function do_decode(json, decoder) {
+function do_parse(json, decoder) {
   return then$(
     decode(json),
     (dynamic_value) => {
-      let _pipe = decoder(dynamic_value);
+      let _pipe = run(dynamic_value, decoder);
       return map_error(
         _pipe,
         (var0) => {
-          return new UnexpectedFormat(var0);
+          return new UnableToDecode(var0);
         }
       );
     }
   );
 }
-function decode3(json, decoder) {
-  return do_decode(json, decoder);
+function parse(json, decoder) {
+  return do_parse(json, decoder);
 }
 
 // build/dev/javascript/lustre/lustre/effect.mjs
@@ -1744,8 +1888,8 @@ function do_element_list_handlers(elements2, handlers2, key) {
   return index_fold(
     elements2,
     handlers2,
-    (handlers3, element3, index3) => {
-      let key$1 = key + "-" + to_string(index3);
+    (handlers3, element3, index5) => {
+      let key$1 = key + "-" + to_string(index5);
       return do_handlers(element3, handlers3, key$1);
     }
   );
@@ -2281,8 +2425,9 @@ var LustreClientApplication = class _LustreClientApplication {
     this.#model = init3;
     this.#update = update2;
     this.#view = view2;
-    this.#tickScheduled = window.requestAnimationFrame(
-      () => this.#tick(effects.all.toArray(), true)
+    this.#tickScheduled = window.setTimeout(
+      () => this.#tick(effects.all.toArray(), true),
+      0
     );
   }
   /** @type {Element} */
@@ -2295,7 +2440,7 @@ var LustreClientApplication = class _LustreClientApplication {
   send(action) {
     if (action instanceof Debug) {
       if (action[0] instanceof ForceModel) {
-        this.#tickScheduled = window.cancelAnimationFrame(this.#tickScheduled);
+        this.#tickScheduled = window.clearTimeout(this.#tickScheduled);
         this.#queue = [];
         this.#model = action[0][0];
         const vdom = this.#view(this.#model);
@@ -2313,10 +2458,10 @@ var LustreClientApplication = class _LustreClientApplication {
       const immediate = action[1] ?? false;
       this.#queue.push(msg);
       if (immediate) {
-        this.#tickScheduled = window.cancelAnimationFrame(this.#tickScheduled);
+        this.#tickScheduled = window.clearTimeout(this.#tickScheduled);
         this.#tick();
       } else if (!this.#tickScheduled) {
-        this.#tickScheduled = window.requestAnimationFrame(() => this.#tick());
+        this.#tickScheduled = window.setTimeout(() => this.#tick());
       }
     } else if (action instanceof Emit2) {
       const event2 = action[0];
@@ -2329,7 +2474,7 @@ var LustreClientApplication = class _LustreClientApplication {
         })
       );
     } else if (action instanceof Shutdown) {
-      this.#tickScheduled = window.cancelAnimationFrame(this.#tickScheduled);
+      this.#tickScheduled = window.clearTimeout(this.#tickScheduled);
       this.#model = null;
       this.#update = null;
       this.#view = null;
@@ -2423,15 +2568,16 @@ var make_lustre_client_component = ({ init: init3, update: update2, view: view2,
       this.internals = this.attachInternals();
       if (hasAttributes) {
         on_attribute_change[0].forEach((decoder, name2) => {
+          const key = `__mirrored__${name2}`;
           Object.defineProperty(this, name2, {
             get() {
-              return this[`__mirrored__${name2}`];
+              return this[key];
             },
             set(value) {
-              const prev = this[`__mirrored__${name2}`];
+              const prev = this[key];
               if (this.#connected && isEqual(prev, value))
                 return;
-              this[`__mirrorred__${name2}`] = value;
+              this[key] = value;
               const decoded = decoder(value);
               if (decoded instanceof Error)
                 return;
@@ -2793,6 +2939,9 @@ function start2(app, selector, flags) {
 // build/dev/javascript/lustre/lustre/element/html.mjs
 function text2(content) {
   return text(content);
+}
+function h2(attrs, children2) {
+  return element("h2", attrs, children2);
 }
 function div(attrs, children2) {
   return element("div", attrs, children2);
@@ -3425,8 +3574,8 @@ function parse_userinfo_loop(loop$original, loop$uri_string, loop$pieces, loop$s
     }
   }
 }
-function parse_authority_pieces(string2, pieces) {
-  return parse_userinfo_loop(string2, string2, pieces, 0);
+function parse_authority_pieces(string5, pieces) {
+  return parse_userinfo_loop(string5, string5, pieces, 0);
 }
 function parse_authority_with_slashes(uri_string, pieces) {
   if (uri_string === "//") {
@@ -3555,18 +3704,6 @@ function parse_scheme_loop(loop$original, loop$uri_string, loop$pieces, loop$siz
     }
   }
 }
-function parse(uri_string) {
-  let default_pieces = new Uri(
-    new None(),
-    new None(),
-    new None(),
-    new None(),
-    "",
-    new None(),
-    new None()
-  );
-  return parse_scheme_loop(uri_string, uri_string, default_pieces, 0);
-}
 function to_string2(uri) {
   let parts = (() => {
     let $ = uri.fragment;
@@ -3640,6 +3777,18 @@ function to_string2(uri) {
     }
   })();
   return concat2(parts$5);
+}
+var empty = /* @__PURE__ */ new Uri(
+  /* @__PURE__ */ new None(),
+  /* @__PURE__ */ new None(),
+  /* @__PURE__ */ new None(),
+  /* @__PURE__ */ new None(),
+  "",
+  /* @__PURE__ */ new None(),
+  /* @__PURE__ */ new None()
+);
+function parse2(uri_string) {
+  return parse_scheme_loop(uri_string, uri_string, empty, 0);
 }
 
 // build/dev/javascript/gleam_http/gleam/http.mjs
@@ -3764,7 +3913,7 @@ function from_uri(uri) {
 }
 function to(url) {
   let _pipe = url;
-  let _pipe$1 = parse(_pipe);
+  let _pipe$1 = parse2(_pipe);
   return then$(_pipe$1, from_uri);
 }
 
@@ -3995,7 +4144,7 @@ function expect_json(decoder, to_msg) {
       let _pipe$2 = then$(
         _pipe$1,
         (body) => {
-          let $ = decode3(body, decoder);
+          let $ = parse(body, decoder);
           if ($.isOk()) {
             let json = $[0];
             return new Ok(json);
@@ -4039,15 +4188,21 @@ function init2(_) {
   return [new Model2(0, toList([])), none()];
 }
 function get_cats() {
-  let decoder = decode2(
-    (var0, var1) => {
-      return new Cat(var0, var1);
-    },
-    field("id", decode_string),
-    field("url", decode_string)
+  let decoder = field(
+    "id",
+    string2,
+    (id) => {
+      return field(
+        "url",
+        string2,
+        (url) => {
+          return success(new Cat(id, url));
+        }
+      );
+    }
   );
   let expect = expect_json(
-    list(decoder),
+    list2(decoder),
     (var0) => {
       return new ApiReturnedCats(var0);
     }
@@ -4102,17 +4257,23 @@ function view(model) {
   return div(
     toList([]),
     toList([
-      button(
-        toList([on_click(new UserIncrementedCount())]),
-        toList([text("+")])
-      ),
-      text2(count),
-      button(
+      h2(toList([]), toList([text("Hello \u{1F431}, \u{1F496} from Lustre")])),
+      div(
+        toList([]),
         toList([
-          disabled(model.count <= 0),
-          on_click(new UserDecrementedCount())
-        ]),
-        toList([text("-")])
+          button(
+            toList([on_click(new UserIncrementedCount())]),
+            toList([text("+")])
+          ),
+          text2(count),
+          button(
+            toList([
+              disabled(model.count <= 0),
+              on_click(new UserDecrementedCount())
+            ]),
+            toList([text("-")])
+          )
+        ])
       ),
       div(
         toList([]),

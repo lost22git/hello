@@ -1,4 +1,4 @@
-import gleam/dynamic
+import gleam/dynamic/decode
 import gleam/int
 import gleam/list
 import lustre
@@ -61,14 +61,12 @@ pub fn update(model: Model, msg: Msg) -> #(Model, effect.Effect(Msg)) {
 }
 
 fn get_cats() -> effect.Effect(Msg) {
-  let decoder =
-    dynamic.decode2(
-      Cat,
-      dynamic.field("id", dynamic.string),
-      dynamic.field("url", dynamic.string),
-    )
-
-  let expect = lustre_http.expect_json(dynamic.list(decoder), ApiReturnedCats)
+  let decoder = {
+    use id <- decode.field("id", decode.string)
+    use url <- decode.field("url", decode.string)
+    decode.success(Cat(id:, url:))
+  }
+  let expect = lustre_http.expect_json(decode.list(decoder), ApiReturnedCats)
   lustre_http.get("https://api.thecatapi.com/v1/images/search", expect)
 }
 
@@ -78,15 +76,18 @@ pub fn view(model: Model) -> element.Element(Msg) {
   let count = int.to_string(model.count)
 
   html.div([], [
-    html.button([event.on_click(UserIncrementedCount)], [element.text("+")]),
-    html.text(count),
-    html.button(
-      [
-        attribute.disabled(model.count <= 0),
-        event.on_click(UserDecrementedCount),
-      ],
-      [element.text("-")],
-    ),
+    html.h2([], [element.text("Hello 🐱, 💖 from Lustre")]),
+    html.div([], [
+      html.button([event.on_click(UserIncrementedCount)], [element.text("+")]),
+      html.text(count),
+      html.button(
+        [
+          attribute.disabled(model.count <= 0),
+          event.on_click(UserDecrementedCount),
+        ],
+        [element.text("-")],
+      ),
+    ]),
     html.div([], {
       use Cat(id: _, url:) <- list.map(model.cats)
       html.img([attribute.src(url), attribute.width(400), attribute.height(400)])
