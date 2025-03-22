@@ -6,25 +6,25 @@ import gleam/otp/task
 
 const timeout = 9999
 
-fn unix_second() -> Int {
+fn unix_ms() -> Int {
   erlang.system_time(erlang.Millisecond)
 }
 
 pub fn main() {
   // task_demo
-  let st = unix_second()
+  let st = unix_ms()
   echo task_demo()
-  echo "Elapsed: " <> int.to_string(unix_second() - st) <> "ms"
+  echo "Elapsed: " <> int.to_string(unix_ms() - st) <> "ms"
 
   // actor_demo
-  let st = unix_second()
+  let st = unix_ms()
   let peer = actor_demo()
   actor.send(peer, Add(100))
   actor.send(peer, Add(42))
   actor.send(peer, Sub(100))
   echo actor.call(peer, Get, timeout)
   actor.send(peer, Stop)
-  echo "Elapsed: " <> int.to_string(unix_second() - st) <> "ms"
+  echo "Elapsed: " <> int.to_string(unix_ms() - st) <> "ms"
 }
 
 fn task_demo() -> Int {
