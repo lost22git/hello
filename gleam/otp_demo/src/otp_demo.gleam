@@ -1,6 +1,7 @@
 import gleam/erlang
 import gleam/erlang/process.{type Subject}
 import gleam/int
+import gleam/io
 import gleam/otp/actor
 import gleam/otp/task
 
@@ -10,21 +11,25 @@ fn unix_ms() -> Int {
   erlang.system_time(erlang.Millisecond)
 }
 
+fn timeit(f: fn() -> void) {
+  let st = unix_ms()
+  f()
+  io.println("Elapsed: " <> int.to_string(unix_ms() - st) <> "ms")
+}
+
 pub fn main() {
   // task_demo
-  let st = unix_ms()
-  echo task_demo()
-  echo "Elapsed: " <> int.to_string(unix_ms() - st) <> "ms"
+  timeit(fn() { echo task_demo() })
 
   // actor_demo
-  let st = unix_ms()
-  let peer = actor_demo()
-  actor.send(peer, Add(100))
-  actor.send(peer, Add(42))
-  actor.send(peer, Sub(100))
-  echo actor.call(peer, Get, timeout)
-  actor.send(peer, Stop)
-  echo "Elapsed: " <> int.to_string(unix_ms() - st) <> "ms"
+  timeit(fn() {
+    let peer = actor_demo()
+    actor.send(peer, Add(100))
+    actor.send(peer, Add(42))
+    actor.send(peer, Sub(100))
+    echo actor.call(peer, Get, timeout)
+    actor.send(peer, Stop)
+  })
 }
 
 fn task_demo() -> Int {
@@ -40,7 +45,7 @@ fn task_demo() -> Int {
     })
   case task.try_await2(t1, t2, timeout) {
     #(Ok(a), Ok(b)) -> a + b
-    _ -> "t1 or t2 failed" |> panic
+    _ -> panic as "t1 or t2 failed"
   }
 }
 
