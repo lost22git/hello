@@ -97,7 +97,7 @@
 - Reflection
     - [ ] compile-time
     - [ ] runtime
-- Compile-Time Enhance
+- Compile-Time Enhancement
     - [ ] macro
     - [ ] conditional
     - [ ] hints
@@ -109,7 +109,6 @@
     - [ ] single ownership & destructor
     - [ ] rc
     - [ ] tracing-gc
-    - [ ] depends on hosted platform
 - Compilation Backend
     - [ ] c
     - [ ] c++
