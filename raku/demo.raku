@@ -220,3 +220,28 @@ say "blue" xx 4;
 say <blue red> x 4;
 say <blue red> xx 4;
 =end Repeat
+
+
+=begin IO
+.say for "./demo.raku".IO.lines;
+say "lines:", "./demo.raku".IO.lines.elems;
+say "words:", "./demo.raku".IO.words.elems;
+=end IO
+
+
+=begin String
+say "raku".lc;
+say "raku".uc;
+say "raku".chars;
+say "raku".codes;
+say "raku".encode.bytes;
+say "raku;;perl".split(";");
+say <raku perl>.join(";");
+=end String
+
+
+=begin Default
+my Int $nil ;
+say $nil // 10;
+=end Default
+
