@@ -2,6 +2,10 @@
 
 https://janet-lang.org
 
-## ToolChain
+## Toolchain
 
 - https://github.com/janet-lang/spork (netrepl, fmt ...)
+
+## Resources
+
+- https://janet.guide
