@@ -6,6 +6,7 @@ https://raku.org
 
 - https://raku.guide/zh/
 - https://github.com/Raku/examples/tree/master
+- https://github.com/Raku/CCR
 - https://uzluisf.gitlab.io/raku-by-example
 - https://raku-advent.blog/tag/raku/
 
@@ -21,7 +22,7 @@ https://raku.org
 - code formatter not found
 - treesitter not found
 - poor and slow lsp server: [raku-navigator](https://github.com/bscan/RakuNavigator)
-- poor performance (even much slower than python)
+
 
 ## ISSUES
 

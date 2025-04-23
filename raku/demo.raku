@@ -22,19 +22,6 @@ say $m<lang>.made;    # run ParserAction.lang
 =end Grammars
 
 
-=begin Async-Parallelism
-
-start { sleep 1.5; print 'hi' }
-await Supply.from-list(< A B C D E F >).throttle: 2, {
-  sleep 0.5;
-  .print
-}
-
-say "";
-
-=end Async-Parallelism
-
-
 =begin Rational-Number
 
 say 0.1 + 0.2 == 0.3;
@@ -71,8 +58,9 @@ say (1.1).WHAT;
 say 'h'.WHAT;
 say "h".WHAT;
 # Array
-my @array = [1,2];
+my Int @array = [1,2];
 say @array.WHAT;
+say @array.VAR.of;
 # Hash
 my %hash = (a=>1, b=>2);
 say %hash.WHAT;
@@ -111,12 +99,28 @@ given $var {
 
 =begin Sub-Routine
 
+# https://docs.raku.org/language/signatures
+    
 sub fib(Int $n-->Int) {
    if $n <= 1 {return 1}
     fib($n-1) + fib($n-2)
 }
 
 say fib(11);
+
+
+sub test-named(Str :$name, UInt :$age=10 --> Str) {
+   "{$name}'s age is $age"
+}
+
+say test-named(name=>"King");
+say test-named(name=>"King", age=>11);
+my $capture = \(name=>"King", age=>12); # \ => Capture.new
+my $signature = :(Str :$name, UInt :$age); # : => Signature
+say $signature.^name;
+say "capture matches signature: { $capture ~~ $signature }"; 
+say "capture matches signature: { $capture ~~ &test-named.signature }"; 
+say test-named(|$capture);
 
 =end Sub-Routine
 
@@ -272,5 +276,178 @@ my Int $nil;
 say $nil // 10;
 
 =end Default
+
+=begin Junction
+
+use Test;
+
+# all
+is True, (<raku perl ruby>.all ~~ /r/).Bool, "all";
+is True, (("raku" & "perl" & "ruby") ~~ /r/).Bool, "all: &";
+
+# any
+is True, (<raku perl ruby>.any ~~ /p/).Bool, "any";
+is True, (("raku" | "perl" | "ruby") ~~ /p/).Bool, "any: |";
+
+# one
+is True, (<raku perl ruby>.one ~~ /p/).Bool, "one";
+is True, (("raku" ^ "perl" ^ "ruby") ~~ /p/).Bool, "one: ^";
+
+
+# none
+is True, (<raku perl ruby>.none ~~ /o/).Bool, "none";
+is True, (("raku" & "perl" & "ruby") !~~ /o/).Bool, "none: & !~~";
+
+  
+=end Junction
+
+=begin Hyper-Batch
+
+sub time-it($msg, &f) {
+  my $st = now;
+  f();
+  say "Elapsed={now - $st}s, $msg";
+}
+
+for [1, 2, 4, 8, 16, 32] -> $i {
+  my $batch = $i * 1024; 
+  time-it "batch=$batch", -> {
+    (^∞ ).hyper(batch=>$batch).grep(*.is-prime)[99999];
+  }
+}
+
+=end Hyper-Batch
+
+=begin Zip
+
+say <a b c d e> Z <1 2 3 4>;
+say <a b c d e> Z~ <1 2 3 4>;
+say (1..10) Z+ (1..10);
+say (1..10) Z- (1..10);
+say (1..10) Z* (1..10);
+say (1..10) Z/ (1..10);
+say (1..10) Z% (1..10);
+say (1..10) Z%% (1..10);
+
+for <a b c d e> Z (1..4) -> [$k, $v] {
+  say "$k => $v";
+}
+
+=end Zip
+
+
+=begin Concurrency
+
+# https://docs.raku.org/language/concurrency
+
+# promise
+my $p = Promise.in(1).then({
+  say "saying after 1s";
+  1
+});
+my $p2 = Promise.in(2).then({
+  say "saying after 2s";
+  2
+});
+say "await promises result are ", await $p,$p2;
+
+
+# channel
+my $ch = Channel.new;
+start {
+  say now.DateTime;
+  sleep 1;
+  $ch.send(now);
+}
+say $ch.receive.DateTime;
+
+
+# supply (aka. reactive-stream in other languages)
+# https://docs.raku.org/type/Supply
+# https://github.com/Raku/CCR/blob/main/Remaster/Jonathan%20Worthington/Raku-Supplies-Reactive-Programming.md
+
+my $supplier = Supplier.new;
+my $supply = $supplier.Supply;
+$supply.tap: { say "1|", DateTime.now, " : ", $_},  # => on-next
+done=> { say "1|done" },                            # => on-complete
+quit => { say "1|quit with error: $_" };            # => on-error
+
+my $supply2 = $supply.grep(* > 2);  # => filter 
+$supply2.tap: { say "2|", DateTime.now, " : ", $_},
+done=> { say "2|done" },
+quit => { say "2|quit with error: $_"};
+
+for (1..4) -> $i {
+  $supplier.emit($i);
+  $supplier.quit("Got 3") if $i == 3;
+  $supplier.done() if $i == 4;
+  sleep 1;
+}
+
+
+# react 
+react {
+  whenever Supply.interval(1) -> $v {
+    say "1|", DateTime.now, " : ", $v;
+    done() if $v == 4;
+  }
+  
+  whenever Supply.interval(2) -> $v {
+    say "2|", DateTime.now, " : ", $v;
+    done() if $v == 4;
+  }
+}
+
+say "outside of react block";
+
+
+# Supply -> Channel
+my $ch = Supply.interval(1).Channel;
+my $ch2 = Supply.interval(2).Channel;
+
+react {
+  whenever $ch -> $v {
+    say "1|", DateTime.now, " : ", $v;
+    done() if $v == 4;
+  }
+
+  whenever $ch2 -> $v {
+    say "2|", DateTime.now, " : ", $v;
+    done() if $v == 4;
+  }
+}
+
+=end Concurrency
+
+=begin Error
+
+# https://docs.raku.org/language/exceptions
+
+use Test;
+
+# try default
+is 1, try +"xx" // 1;
+
+# with try
+with try +"xx" {
+  is 1, 0;
+} else {
+  is 1, 1;
+}
+
+# try catch
+
+try {
+  CATCH {
+    default { say "error: ", $_ }
+  }
+
+  my $v = +"11x";
+  say "v => ", $v;
+}
+
+say "outside of try";
+
+=end Error
 
 
