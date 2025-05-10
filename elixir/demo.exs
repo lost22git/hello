@@ -163,3 +163,41 @@ json_io_data =
 
 decoded_data =
   JSON.decode!(json_str) |> IO.inspect(label: "json decoded")
+
+# === with ===
+
+# 3
+with {:ok, a} <- {:ok, 1},
+     {:ok, b} <- {:ok, 2} do
+  a + b
+end
+
+# {:err1, 1}
+with {:ok, a} <- {:err1, 1},
+     {:ok, b} <- {:err2, 2} do
+  a + b
+end
+
+# {:err2, 2}
+with {:ok, a} <- {:ok, 1},
+     {:ok, b} <- {:err2, 2} do
+  a + b
+end
+
+# -1
+with {:ok, a} <- {:err1, 1},
+     {:ok, b} <- {:err2, 2} do
+  a + b
+else
+  {:err1, _} -> -1
+  {:err2, _} -> -2
+end
+
+# -2
+with {:ok, a} <- {:ok, 1},
+     {:ok, b} <- {:err2, 2} do
+  a + b
+else
+  {:err1, _} -> -1
+  {:err2, _} -> -2
+end
