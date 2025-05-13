@@ -22,6 +22,7 @@
     - [ ] tuple
     - [ ] bits
     - [ ] symbol/keyword
+    - [ ] soa/aos
 - Number
     - [ ] arbitrary bit-width integers
     - [ ] endian specific number
@@ -39,6 +40,8 @@
     - multi-lines
         - [ ] absolute indent
         - [ ] relative indent
+    - [ ] heredoc
+    - [ ] template
     - [ ] interpolation
     - [ ] null-terminated (cstring)
     - [ ] length-based
@@ -68,18 +71,14 @@
         - [ ] label
         - [ ] default value
         - [ ] destructing
+        - [ ] trailing lambda/block
     - return value
         - [ ] multiple
         - [ ] named
     - [ ] compose
     - [ ] partial
     - [ ] currying
-    - invocation
-        - [ ] ufcs
-        - [ ] pipe
-        - [ ] callback sugar
-        - [ ] trailing lambda/block
-        - [ ] with
+    - [ ] lambda
 - [ ] Pattern Matching
 - [ ] Control Flow Expression
 - Null
@@ -94,6 +93,8 @@
 - Polymorphism
     - [ ] generic
     - [ ] subtype
+      - [ ] nominal
+      - [ ] structural
 - Reflection
     - [ ] compile-time
     - [ ] runtime
@@ -124,3 +125,10 @@
     - [ ] stackful
     - [ ] stackless
     - [ ] preemptive
+- [ ] Actor
+- Neovim Support
+    - [ ] commentstring
+    - [ ] formatter
+    - [ ] treestitter
+    - [ ] lsp
+    - [ ] repl
