@@ -101,62 +101,6 @@ print([1,2].map{ (x)->Int in x + 1 })
 print([1,2].map{ x in x + 1 })
 print([1,2].map{ $0 + 1 })
 
-// adt & pattern-matching
-
-enum EbookFormat {
-  case pdf, epub, mobi
-}
-
-struct Ebook {
-  var pages: Int
-  var format: EbookFormat
-}
-
-enum BookFormat {
-  case paper(Int)  
-  case ebook(Ebook) 
-
-  var pages: Int {
-    return switch self {
-      case let .paper(pages): pages
-      case let .ebook(ebook): ebook.pages
-    }
-  } 
-}
-
-// class
-
-class Book: CustomStringConvertible {
-  let id: Int
-  let title: String
-  var price: Double?
-  var format: BookFormat
-
-  init(id: Int, title: String, format: BookFormat) {
-    self.id = id
-    self.title = title
-    self.format = format
-  }
-  
-  // override CustomStringConvertible
-  public var description: String {
-    return
-      #"Book{id:\#(self.id), title:"\#(self.title)", price:\#(self.price?.description ?? "nil"),format:\#(self.format)}"#
-  }
-
-  // computed property
-  var pages: Int {
-    return self.format.pages
-  }
-}
-var book = Book(id: 1, title: "a book", format: .paper(99))
-print(book)
-book.price = 11.99
-print(book)
-book.format = .ebook(Ebook(pages: 120, format: .pdf))
-print(book)
-print("book pages:", book.pages)
-
 // error handle
 
 enum PortError: Error {
