@@ -1,0 +1,140 @@
+#!/usr/bin/env -S arturo -e
+
+; === print ===
+
+print ["abc" 123]
+print.lines ["abc" 123]
+
+; === raw string or multilines string ===
+
+text: {
+  Hello "Arturo".
+  Hello World.
+}
+
+print text
+
+textWithIdent: {:
+  Hello "Arturo".
+  Hello World.
+:}
+
+print textWithIdent
+
+; === string concat ===
+
+print "hello " ++ "world"
+
+; === string interpolation ===
+
+name: "arturo"
+print ~"hello |name|."
+
+; === convert to ===
+
+to :integer "-11"
+to :floating "-11.11"
+to :string (neg 11)
+to :string (neg 11.11)
+
+; === regex ===
+
+print contains? "122-34353" {/\d+-\d+/} 
+
+; === if-else ===
+
+x: "abc"
+
+if? x="abc" -> print "x is abc"
+else -> print "x is others"
+
+if? x="abc" [
+  print "x is abc"
+]
+else [ 
+  print "x is others"
+]
+
+; === loop ===
+
+loop 1..4 'x [
+  print ~"x: |x|"
+]
+
+loop 1..4 .step: 2 'x [
+  print ~"step:2, x: |x|"
+]
+
+loop [alex bob cindy] 'x [
+  print ~"name: |x|"
+]
+
+loop.with: 'i [alex bob cindy] 'x [
+  print ~"|i|: |x|"
+]
+
+loop #[a: 1 b: 2] [k v] [
+  print ~"|k| => |v|"
+]
+
+; === function ===
+
+fib: $[n][
+  switch n<2 -> 1
+    -> (fib n-1) + (fib n-2)
+]
+
+print "fib 11: " ++  to :string fib 11
+
+; === pipe ===
+
+[alex bob cindy]
+  | map 'x -> to :string x
+  | map => upper
+  | print
+
+  
+; === record ===
+
+define :book [id title pubDate] []
+b: to :book [1 "The Arturo Book." now]
+print b
+print b\title
+
+; === execute ===
+
+; default: pipe
+print execute "cat ./demo.art | wc -l"
+print execute.args: ["-al"] "ls"
+; pipe and get exitcode
+result: execute.code "cat ./demo.art | wc -l"
+inspect result
+; directly: inherit
+execute.directly "cat ./demo.art | wc -l"
+
+; === json ===
+
+; from string
+inspect: read.json {{"a": 1, "b": 2}}
+
+; write to string 
+inspect write.json null #[a: 1 b: 2]
+
+; === http request ===
+
+; get
+; print read "https://httpbin.org/ip"
+
+; get
+resp: request "https://httpbin.org/ip" null
+print ~"status: |resp\status|"
+; inspect resp\headers
+body: read.json resp\body
+print "IP: " ++ body\origin
+
+; post json
+resp: request.post.json "https://httpbin.org/post" #[msg: "Hello from Arturo"]
+body: read.json resp\body
+print "DATA: " ++ body\data 
+
+
