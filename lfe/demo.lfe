@@ -1,6 +1,5 @@
 #!/usr/bin/env lfe
 
-
 (c "foo.lfe")
 
 (foo:double 10)
@@ -131,13 +130,13 @@ first
 
 ; FIXME: ** exception error: bad match-lambda form
 ; https://github.com/lfe/lfe/issues/501
-(maybe
-  (?= (tuple 'ok a) #(err1 1))
-  (?= (tuple 'ok b) #(err2 2))
-  (+ a b)
-  (else
-    ((tuple 'err1 a) a)
-    ((tuple 'err2 b) b)))
+; (maybe
+;   (?= (tuple 'ok a) #(err1 1))
+;   (?= (tuple 'ok b) #(err2 2))
+;   (+ a b)
+;   (else
+;     ((tuple 'err1 a) a)
+;     ((tuple 'err2 b) b)))
 
 
 ; === progn ===
