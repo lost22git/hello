@@ -1,11 +1,10 @@
 package hello
 
 import (
-	// "fmt"
+	"encoding/binary"
 	"reflect"
 	"testing"
 	"unsafe"
-	"encoding/binary"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -103,7 +102,7 @@ type Account struct {
 }
 
 type Account2 struct {
-  Name    string
+	Name    string
 	Id      uint32
 	Balance uint32
 }
@@ -119,7 +118,7 @@ func TestStrcut(t *testing.T) {
 	var a2 = Account2{}
 	assert.EqualValues(t, 16+4+4, unsafe.Sizeof(a2))
 	assert.EqualValues(t, 8, unsafe.Alignof(a2))
-  assert.EqualValues(t, 0, unsafe.Offsetof(a2.Name))
+	assert.EqualValues(t, 0, unsafe.Offsetof(a2.Name))
 	assert.EqualValues(t, 16, unsafe.Offsetof(a2.Id))
 	assert.EqualValues(t, 20, unsafe.Offsetof(a2.Balance))
 }
@@ -159,7 +158,6 @@ func TestMap(t *testing.T) {
 	assert.EqualValues(t, 8, unsafe.Sizeof(a))
 	assert.EqualValues(t, 8, unsafe.Alignof(a))
 }
-
 
 func TestEndian(t *testing.T) {
 	bs := []byte{0, 0, 0, 0}

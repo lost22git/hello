@@ -8,10 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-/// go lang 的 slice 相比其他語言的 slice 多一個 `Cap` 字段,
-/// 因而具有动态length的特性
-///
-
 func TestSliceUnsafeSlice(t *testing.T) {
 	a := [4]string{"hello", "go", "你好", "世界"}
 	// same as s = a[:2]
