@@ -60,15 +60,15 @@ type ResultData struct {
 	Tags     []string `json:"tags"`
 }
 
-func writeFilePart(mw *multipart.Writer, fieldName string, file_path string, bufferSize int) error {
-	filename := path.Base(file_path)
+func writeFilePart(mw *multipart.Writer, fieldName string, filePath string, bufferSize int) error {
+	filename := path.Base(filePath)
 
 	w, err := mw.CreateFormFile(fieldName, filename)
 	if err != nil {
 		return err
 	}
 
-	f, err := os.Open(file_path)
+	f, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func writeFilePart(mw *multipart.Writer, fieldName string, file_path string, buf
 	return nil
 }
 
-func upload(file_path string) (*Result, error) {
+func upload(filePath string) (*Result, error) {
 	const url = "https://api.imgur.com/3/image?client_id=546c25a59c58ad7"
 
 	// create pipe for streamingly uploading
@@ -93,19 +93,19 @@ func upload(file_path string) (*Result, error) {
 	defer pr.Close()
 
 	mw := multipart.NewWriter(pw)
-	content_type := mw.FormDataContentType()
+	contentType := mw.FormDataContentType()
 
 	go func() {
 		defer pw.Close()
 		defer mw.Close()
 		const bufferSize = 1024 * 8
-		err := writeFilePart(mw, "image", file_path, bufferSize)
+		err := writeFilePart(mw, "image", filePath, bufferSize)
 		if err != nil {
 			slog.Error("Error on writing file part", "err", err)
 		}
 	}()
 
-	resp, err := http.Post(url, content_type, pr)
+	resp, err := http.Post(url, contentType, pr)
 	if err != nil {
 		return nil, errors.Join(
 			errors.New("Error on http posting"),
@@ -144,9 +144,9 @@ func upload(file_path string) (*Result, error) {
 func main() {
 	slog.SetLogLoggerLevel(slog.LevelDebug)
 
-	file_path := "./棋魂.jpg"
+	filePath := "./棋魂.jpg"
 
-	result, err := upload(file_path)
+	result, err := upload(filePath)
 	if err != nil {
 		slog.Error("Error on uploading:", "err", err)
 		return
