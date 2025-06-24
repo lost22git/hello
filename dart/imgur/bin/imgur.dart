@@ -23,7 +23,7 @@ Future<Result> upload(File file) async {
 
     var multipart = Multipart.sink(request);
     request.headers.set('Content-Type', multipart.contentType());
-    await multipart.writeFileField('image', file);
+    await multipart.writeFilePart('image', file);
     multipart.done();
 
     var response = await request.close();

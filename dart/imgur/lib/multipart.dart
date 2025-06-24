@@ -31,15 +31,20 @@ class Multipart {
   }
 
   /// write file part
-  /// [filename] comes from [file] if is not given by caller
-  Future<void> writeFilePart(String name, File file, [String? filename]) async {
+  /// [filename] is detected from [file] if is not given
+  Future<void> writeFilePart(
+    String name,
+    File file, {
+    String? filename,
+    String contentType = 'application/octet-stream',
+  }) async {
     filename = filename ?? file.uri.pathSegments.last;
     sink
       ..writeln(_boundaryBegin)
       ..writeln(
         'Content-Disposition: form-data; name="$name"; filename="$filename"',
       )
-      ..writeln('Content-Type: application/octet-stream')
+      ..writeln('Content-Type: $contentType')
       ..writeln();
 
     await sink.addStream(file.openRead());
