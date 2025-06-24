@@ -1,22 +1,28 @@
 @BASE_URI = "https://httpbin.org"
 
-### 
-# @name GET_IP
+
+### GET_IP
+
 GET {{BASE_URI}}/ip HTTP/1.1
 Accept: application/json
 
-###
-# @name POST_JSON
+
+### POST_JSON
+
 POST {{BASE_URI}}/post HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
 {
-  "foo": ["bar", "baz"]
+  "foo": [
+    "bar",
+    "baz"
+  ]
 }
 
-###
-# @name POST_FORMDATA
+
+### POST_FORMDATA
+
 POST {{BASE_URI}}/post HTTP/1.1
 Accept: application/json
 Content-Type: application/x-www-form-urlencoded
@@ -30,18 +36,18 @@ topping=cheese&
 delivery=20:30&
 comments=roc
 
-###
-# @name POST_MULTIPART
+
+### POST_MULTIPART
+
 POST https://api.imgur.com/3/image?client_id=546c25a59c58ad7 HTTP/1.1
 Accept: application/json
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary{{$timestamp}}
 Referer: https://imgur.com/
-# @file-to-variable FILE_DATA ./file.png binary
 
 ------WebKitFormBoundary{{$timestamp}}
 Content-Disposition: form-data; name="image"; filename="file.png"
 Content-Type: image/jpeg
 
-{{FILE_DATA}}
-------WebKitFormBoundary{{$timestamp}}--
+< ./file.png
 
+------WebKitFormBoundary{{$timestamp}}--
