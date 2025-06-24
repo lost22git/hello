@@ -19,6 +19,7 @@ class Multipart {
   String contentType() =>
       'multipart/form-data; boundary="$boundary"; charset=utf-8';
 
+  /// generate boundary
   static String generateBoundary() {
     var rand = Random();
     const len = 30;
@@ -29,11 +30,9 @@ class Multipart {
     return base64Encode(bytes);
   }
 
-  Future<void> writeFileField(
-    String name,
-    File file, [
-    String? filename,
-  ]) async {
+  /// write file part
+  /// [filename] comes from [file] if is not given by caller
+  Future<void> writeFilePart(String name, File file, [String? filename]) async {
     filename = filename ?? file.uri.pathSegments.last;
     sink
       ..writeln(_boundaryBegin)
@@ -47,7 +46,8 @@ class Multipart {
     sink.writeln();
   }
 
-  void writeStringField(String name, String value) {
+  /// write string part
+  void writeStringPart(String name, String value) {
     sink
       ..writeln(_boundaryBegin)
       ..writeln('Content-Disposition: form-data; name="$name"')
@@ -55,6 +55,7 @@ class Multipart {
       ..writeln(value);
   }
 
+  /// write done and return the [IOSink]
   IOSink done() {
     sink.writeln(_boundaryEnd);
     return sink;

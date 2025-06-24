@@ -51,6 +51,5 @@ void testResultJson() {
 
   var result2 = Result.fromJson(jsonDecode(json));
 
-  print(result.data.datetime);
-  print(result2.data.datetime);
+  assert(result.data.datetime == result2.data.datetime);
 }

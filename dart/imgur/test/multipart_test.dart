@@ -6,6 +6,7 @@ import 'package:test/test.dart';
 
 void main() {
   test('multipart generate boundary', testMultipartGenerateBoundary);
+  test('multipart content type', testMultipartContentType);
 }
 
 void testMultipartGenerateBoundary() {
@@ -15,7 +16,7 @@ void testMultipartGenerateBoundary() {
 void testMultipartContentType() {
   assert(
     Multipart(sink: FakeIOSink(), boundary: 'xyz').contentType() ==
-        'multipart/form-data; boundary="xyz"',
+        'multipart/form-data; boundary="xyz"; charset=utf-8',
   );
 }
 
