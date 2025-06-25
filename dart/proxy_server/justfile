@@ -1,0 +1,20 @@
+_default:
+    @just --list --unsorted
+
+exe-info executable:
+    ls -l {{ executable }}
+    file {{ executable }}
+    ldd {{ executable }}
+
+test:
+    dart test
+
+test-http:
+    hurl test.hurl
+
+run:
+    dart run proxy_server
+
+exe:
+    dart compile exe bin/proxy_server.dart -o proxy_server.exe && chmod +x proxy_server.exe
+    just exe-info proxy_server.exe
