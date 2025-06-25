@@ -1,0 +1,17 @@
+_default:
+    @just --list --unsorted
+
+run:
+    swift run
+
+test_http:
+    hurl test.hurl
+
+BUILD_OPTIONS := "-c release --product proxy_server"
+
+build:
+    swift build {{ BUILD_OPTIONS }}
+    cp -f "$(swift build {{ BUILD_OPTIONS }} --show-bin-path)/proxy_server" .
+    ls -l proxy_server
+    file proxy_server
+    ldd proxy_server
