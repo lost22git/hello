@@ -18,8 +18,10 @@ void main() {
   assert((-1.1) is double);
 
   // record (.aka tuple)
-  assert((1, name: "dart", true).runtimeType.toString() ==
-      "(int, bool, {String name})");
+  assert(
+    (1, name: "dart", true).runtimeType.toString() ==
+        "(int, bool, {String name})",
+  );
   assert((1, name: "dart", true) is (int, bool, {String name}));
 
   // list
@@ -52,8 +54,8 @@ void main() {
 
 class Book {
   final int id;
-  final String name;
+  final String title;
 
-  Book(this.id, this.name);
-  String toString() => 'Book{:id ${id} :name "${name}"}';
+  Book(this.id, this.title);
+  String toString() => 'Book{:id ${id} :name "${title}"}';
 }
