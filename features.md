@@ -114,11 +114,13 @@
     - [ ] c
     - [ ] c++
     - [ ] js
+    - [ ] lua
+    - [ ] go
     - [ ] wasm
     - [ ] llvm
     - [ ] jvm
-    - [ ] beam
     - [ ] clr
+    - [ ] beam
 - [ ] Without LibSSL and OpenSSL Requirement
 - [ ] Multi Threads
 - Coroutine
