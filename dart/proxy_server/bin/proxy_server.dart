@@ -1,8 +1,16 @@
 import 'dart:io';
 
+import 'package:logger/logger.dart';
+
+var log = setupLogger();
+
+Logger setupLogger() {
+  return Logger(printer: SimplePrinter(), filter: ProductionFilter());
+}
+
 void main(List<String> arguments) async {
   var server = await HttpServer.bind('0.0.0.0', 8080);
-  print('Serving on ${server.address.address}:${server.port}');
+  log.i('Serving on ${server.address.address}:${server.port}');
   await server.forEach(handle);
 }
 
@@ -15,14 +23,14 @@ void handle(HttpRequest request) {
         request.response.ok("Hello");
       case "/proxy":
         proxyForward(request).catchError((e) {
-          print('ERROR in proxyForward: $e');
+          log.e('ERROR in proxyForward', error: e);
           request.response.serverError();
         });
       default:
         request.response.notFound();
     }
   } catch (e) {
-    print('ERROR in handle: $e');
+    log.e('ERROR in handle', error: e);
     request.response.serverError();
   }
 }
@@ -36,7 +44,7 @@ Future<void> proxyForward(HttpRequest request) async {
 
   var targetUrl = Uri.parse(target);
   var method = request.method;
-  print("Proxy forwarding: [$method] $targetUrl - ${request.contentLength}");
+  log.i("Proxy forwarding: [$method] $targetUrl - ${request.contentLength}");
 
   var client = HttpClient();
   try {
