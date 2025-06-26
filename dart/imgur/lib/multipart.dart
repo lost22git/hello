@@ -22,12 +22,9 @@ class Multipart {
   /// generate boundary
   static String generateBoundary() {
     var rand = Random();
-    const len = 30;
-    var bytes = Uint8List(len);
-    for (var i = 0; i < len; i++) {
-      bytes[i] = rand.nextInt(256);
-    }
-    return base64Encode(bytes);
+    return base64Encode(
+      List.generate(30, (i) => rand.nextInt(256), growable: false),
+    );
   }
 
   /// write file part
