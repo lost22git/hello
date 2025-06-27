@@ -1,6 +1,4 @@
-#!/usr/bin/env dart
-
-void main() {
+main() {
   // Null
   assert(null.runtimeType == Null);
   assert(null is Null);
