@@ -17,3 +17,5 @@
 [2/7] Compiling _NIOFileSystem Array+FileSystem.swift
 error: Recipe `build` failed on line 13 with exit code 1
 ```
+
+SEE: https://github.com/apple/swift-nio/issues/3273

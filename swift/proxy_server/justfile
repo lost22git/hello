@@ -12,7 +12,7 @@ run:
 test-http:
     hurl test.hurl
 
-BUILD_OPTIONS := "-c release --product proxy_server"
+BUILD_OPTIONS := "-c release --product proxy_server --static-swift-stdlib -Xlinker /data/data/com.termux/files/usr/lib/libandroid-posix-semaphore.a"
 
 build:
     swift build {{ BUILD_OPTIONS }}
