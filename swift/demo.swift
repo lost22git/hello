@@ -2,8 +2,8 @@
 
 // string interpolation
 
-let song_name = "Bohemian Rhapsody"
-print("song: \(song_name)")
+let songName = "Bohemian Rhapsody"
+print("song: \(songName)")
 
 let a = 1
 let b = 2
@@ -19,7 +19,7 @@ print(
 
 // raw string
 
-print(#">> the song name is "\#(song_name)""#)
+print(#">> the song name is "\#(songName)""#)
 
 // list
 
@@ -125,16 +125,16 @@ func foo() throws {
 // error handle: try-catch
 
 do {
-    try testPort(port: 8080) 
+    try testPort(port: 8080)
     assert(false)
 } catch .outOfRange {
     assert(false)
 } catch .alreadyBound {
     assert(true) // only this branch is reachable
-} 
+}
 
 do {
-    try testPort(port: -8080) 
+    try testPort(port: -8080)
     assert(false)
 } catch .outOfRange {
     assert(true) // only this branch is reachable
@@ -143,7 +143,7 @@ do {
 }
 
 do {
-    try testPort(port: 8080) 
+    try testPort(port: 8080)
     assert(false)
 } catch {
     switch error {
@@ -153,7 +153,7 @@ do {
 }
 
 do {
-    try testPort(port: -8080) 
+    try testPort(port: -8080)
     assert(false)
 } catch {
     switch error {
