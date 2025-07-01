@@ -56,7 +56,9 @@ class ProgressBar {
     }
 
     func show() async throws {
-        if self.state != .new { return }
+        guard self.state == .new else {
+            return
+        }
         
         defer {
             self.state = .done

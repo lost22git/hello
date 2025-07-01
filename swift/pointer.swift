@@ -58,7 +58,6 @@ func bufferPointers() {
         let bytes = [UInt8].init(rbp.bindMemory(to: UInt8.self))
         assert(bytes == [1,1,0,0])
     }
-
 }
 
 
