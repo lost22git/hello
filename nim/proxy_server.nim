@@ -2,18 +2,27 @@
 ///usr/bin/env nim r -d:ssl "$0" "$@" ; exit $?
 ]#
 
-import std/[strutils, strformat, os, uri]
-import std/logging
-import std/[asyncnet, asynchttpserver, asyncdispatch, httpclient]
+import
+  std/[
+    strutils,
+    strformat,
+    os,
+    uri,
+    logging,
+    #
+    asyncnet,
+    asynchttpserver,
+    asyncdispatch,
+    #
+    httpclient,
+  ]
 
-const PROXY = getEnv("HTTPS_PROXY", "http://localhost:55556")
+proc setupLogger() =
+  let logger =
+    newConsoleLogger(fmtStr = "$datetime $levelname - ", levelThreshold = lvlAll)
+  addHandler(logger)
 
-let globalLogger =
-  newConsoleLogger(fmtStr = "$datetime $levelname - ", levelThreshold = lvlAll)
-
-addHandler(globalLogger)
-
-proc respondStreaming(req: Request, res: AsyncResponse) {.async.} =
+proc respondStreamingly(req: Request, res: AsyncResponse) {.async.} =
   # send status line
   await req.client.send("HTTP/1.1 " & $res.code() & "\c\L")
   # send headers
@@ -27,43 +36,50 @@ proc respondStreaming(req: Request, res: AsyncResponse) {.async.} =
     else:
       break
 
-proc respondFully(req: Request, res: AsyncResponse) {.async.} =
-  let body = await res.body
-  req.respond(res.code(), body, res.headers)
-
-proc getProxyTarget(req: Request): string =
+iterator queryParams(req: Request): (string, string) =
   let q = req.url.query
-  for kv in q.split('&'):
-    if kv.startsWith("target="):
-      return kv[len("target=") .. ^1]
-  raise newException(ValueError, "Missing query param: target")
+  for kvStr in q.split('&'):
+    let kv = kvStr.split('=', maxsplit = 1)
+    if len(kv) == 2:
+      yield (kv[0], kv[1])
+
+func queryParamFirstValue(req: Request, name: string): string =
+  for (k, v) in req.queryParams():
+    if k == name:
+      return v
+  return ""
+
+proc getProxyTarget(req: Request): Uri =
+  let target = req.queryParamFirstValue("target")
+  if target == "":
+    raise newException(ValueError, "Missing query param: target")
+  return parseUri(target)
 
 proc proxyForward(req: Request) {.async.} =
-  let target = req.getProxyTarget().parseUri()
+  let target = getProxyTarget(req)
+  let `method` = req.reqMethod
+  info "Forwarding to", " [", `method`, "] ", target
   req.headers["host"] = target.hostname
-  info "Forwarding", " [", req.reqMethod, "] ", target
-  var client = newAsyncHttpClient()
-  # var client = newAsyncHttpClient(proxy = newProxy(PROXY))
-  defer:
-    client.close()
   #!fmt: off
+  var client = newAsyncHttpClient()
+  defer: client.close()
   var res = await client.request(
-    url = target, 
-    httpMethod = req.reqMethod, 
-    headers = req.headers, 
+    url = target,
+    httpMethod = `method`,
+    headers = req.headers,
     body = req.body
   )
   #!fmt: on
-  await req.respondStreaming(res)
-  # await req.respondFully(res)
+  await req.respondStreamingly(res)
 
 proc cb(req: Request) {.async.} =
   try:
-    await proxyForward(req)
+    await req.proxyForward()
   except:
+    error getCurrentExceptionMsg()
     await req.respond(Http500, getCurrentExceptionMsg())
 
-proc main() {.async.} =
+proc startServer() {.async.} =
   var server = newAsyncHttpServer()
   server.listen(Port(8080))
   info "Serving at ", server.getPort().uint16()
@@ -73,4 +89,5 @@ proc main() {.async.} =
     else:
       await sleepAsync(500)
 
-waitFor main()
+setupLogger()
+waitFor startServer()
