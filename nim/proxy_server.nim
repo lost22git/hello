@@ -36,28 +36,37 @@ proc getProxyTarget(req: Request): string =
   for kv in q.split('&'):
     if kv.startsWith("target="):
       return kv[len("target=") .. ^1]
-  raise newException(ValueError, "Param not found: target")
+  raise newException(ValueError, "Missing query param: target")
 
-proc cb(req: Request) {.async.} =
-  var client = newAsyncHttpClient(proxy = newProxy(PROXY))
+proc proxyForward(req: Request) {.async.} =
+  let target = req.getProxyTarget().parseUri()
+  req.headers["host"] = target.hostname
+  info "Forwarding", " [", req.reqMethod, "] ", target
+  var client = newAsyncHttpClient()
+  # var client = newAsyncHttpClient(proxy = newProxy(PROXY))
   defer:
     client.close()
+  #!fmt: off
+  var res = await client.request(
+    url = target, 
+    httpMethod = req.reqMethod, 
+    headers = req.headers, 
+    body = req.body
+  )
+  #!fmt: on
+  await req.respondStreaming(res)
+  # await req.respondFully(res)
+
+proc cb(req: Request) {.async.} =
   try:
-    let target = getProxyTarget(req).parseUri()
-    req.headers["host"] = target.hostname
-    info "Fetching", " [", req.reqMethod, "] ", target
-    var res = await client.request(
-      url = target, httpMethod = req.reqMethod, headers = req.headers, body = req.body
-    )
-    await req.respondStreaming(res)
-    # await req.respondFully(res)
+    await proxyForward(req)
   except:
     await req.respond(Http500, getCurrentExceptionMsg())
 
 proc main() {.async.} =
   var server = newAsyncHttpServer()
-  server.listen(Port(8000))
-  info "Proxy server is running on ", server.getPort().uint16()
+  server.listen(Port(8080))
+  info "Serving at ", server.getPort().uint16()
   while true:
     if server.shouldAcceptRequest():
       await server.acceptRequest(cb)
