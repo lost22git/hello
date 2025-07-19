@@ -40,6 +40,18 @@
 ;; map
 
 ;; set
+(clojure.set/difference #{1 2} #{2 3})
+(clojure.set/difference #{2 3} #{1 2})
+(clojure.set/intersection #{2 3} #{1 2})
+(clojure.set/union #{2 3} #{1 2})
+(clojure.set/superset? #{1 2 3} #{2 3})
+(clojure.set/subset? #{2 3} #{1 2 3})
+(as-> #{{:name "jojo" :color :red}
+        {:name "coco" :color :black}} x
+  (clojure.set/join x #{{:name "jojo" :kind :dog} {:name "coco" :kind :cat}} {:name :name})
+  (clojure.set/select (comp #{:red :blue} :color) x)
+  (clojure.set/rename x {:name :nickname})
+  (clojure.set/project x [:nickname :kind]))
 
 ;; seq
 
@@ -83,12 +95,47 @@
 ; cond->
 ; cond->>
 
-;; transduce = transform + reduce
-(def xf (comp (filter #(.startsWith % "b"))
-              (map clojure.string/upper-case)))
-(-> (transduce xf conj ["foo" "bar"])
-    (= ["BAR"])
-    assert)
+(comment
+
+  (let [xf (comp (filter #(.startsWith % "b"))
+                 (map clojure.string/upper-case))]
+    (-> (transduce xf conj ["foo" "bar"])
+        (= ["BAR"])
+        assert))
+
+  ; transducer: 
+  ; a function of reduce-fn -> reduce-fn (aka. reduce-fn transformer)
+  (def transducer (fn [reduce-fn]
+                    (fn
+                      ([] (reduce-fn))
+                      ([acc] (reduce-fn acc))
+                      ([acc e]
+                      ; transform logic ...
+                       (reduce-fn acc e)))))
+
+  (defn filter-transducer [filter-fn]
+    (fn [reduce-fn]
+      (fn
+        ([] (reduce-fn))
+        ([acc] (reduce-fn acc))
+        ([acc e]
+         (if (filter-fn e)
+           (reduce-fn acc e)
+           acc)))))
+
+  (defn map-transducer [map-fn]
+    (fn [reduce-fn]
+      (fn
+        ([] (reduce-fn))
+        ([acc] (reduce-fn acc))
+        ([acc e]
+         (reduce-fn acc (map-fn e))))))
+
+  (let [xf (comp (filter-transducer #(.startsWith % "b"))
+                 (map-transducer clojure.string/upper-case))]
+    (-> (transduce xf conj ["foo" "bar"])
+        (= ["BAR"])
+        assert)))
 
 ;; more seq ops
 (assert (= (take 4 (repeat "ha"))
@@ -191,19 +238,33 @@
 (assert
  (fn? map))
 
-(comment
-  (use '[clojure.repl])
-  ;; apropos
-  (->> "symbol"
-       (apropos)
-       (filter #(clojure.string/starts-with? % "clojure")))
-  ;; doc
-  (doc with-open)
-  ;; source
-  (source with-open)
-  ;; dir
-  (->>
-   (dir clojure.java.io)
-   (with-out-str)
-   (clojure.string/split-lines)
-   (map symbol)))
+;; random
+(rand-int 10)
+(rand 10)
+(rand-nth [":)" ":(" ":/"])
+(random-sample 0.5 [":)" ":(" ":/"])
+(random-uuid)
+
+;; 
+(frequencies ["a" "b" "a" "a"])
+(distinct ["a" "b" "a" "a"])
+(dedupe ["a" "b" "a" "a"])
+
+(->>
+ (range 10)
+ (partition 3 1)
+ (map vec)
+ (partition 3 1))
+
+(->> "aaabbca"
+     (partition-by identity)
+     (map (juxt first count)))
+
+(let [v 1]
+  (cond-> v
+    (zero? v) (inc)))
+
+(if-let [a [1 2]
+         (a 3)]
+  "ok"
+  "ko")
