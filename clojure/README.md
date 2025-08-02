@@ -4,7 +4,7 @@
 
 https://clojure.org/guides/install_clojure
 
-### Tools 
+### Tools
 
 - [babashka](https://github.com/babashka/babashka#installation)
 - [conjure](https://github.com/Olical/conjure)
@@ -137,14 +137,14 @@ project structure almost same as `deps-new`
 
 - fuzzy search functions by pattern
 `(apropos "search pattern")`
-```repl
+```clojure
 user=> (apropos "future")
 (clojure.core/future clojure.core/future-call clojure.core/future-cancel clojure.core/future-cancelled? clojure.core/future-done? clojure.core/future?)
 ```
 
 - view document of the function
 `(doc function-name)`
-```repl
+```clojure
 user=> (doc future)
 -------------------------
 clojure.core/future
@@ -159,7 +159,7 @@ Macro
 
 - view source code of the function
 `(source function-name)`
-```repl
+```clojure
 user=> (source future)
 (defmacro future
   "Takes a body of expressions and yields a future object that will
@@ -173,7 +173,7 @@ user=> (source future)
 
 - fuzzy search docs by pattern
 `(find-doc "search pattern")`
-```repl
+```clojure
 user=> (find-doc "future")
 -------------------------
 clojure.core/deref
@@ -203,7 +203,7 @@ Macro
 
 - list functions of the namespace
 `(dir namespace-name)`
-```repl
+```clojure
 user=> (dir clojure.string)                                                    blank?
 capitalize
 ends-with?
@@ -224,7 +224,7 @@ last-index-of
 - [doc](https://github.com/Tensegritics/ClojureDart/tree/main/doc)
 - [samples](https://github.com/Tensegritics/ClojureDart/tree/main/samples)
 
-## Tips 
+## Tips
 
 ### check alias `cljd` more functions
 
