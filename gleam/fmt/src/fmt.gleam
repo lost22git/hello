@@ -1,8 +1,8 @@
-import gleam/string
 import gleam/dynamic.{type Dynamic}
-import gleam/list
-import gleam/iterator
 import gleam/int
+import gleam/iterator
+import gleam/list
+import gleam/string
 
 pub fn fmt(template: String, env_vars: List(Dynamic)) -> String {
   let #(fragments_from_to, exprs_from_to) = parse(template)
@@ -64,11 +64,10 @@ fn parse(template: String) -> #(List(#(Int, Int)), List(#(Int, Int))) {
               ParseRecord(
                 ..acc,
                 fragments: acc.fragments
-                |> list.take(list.length(acc.fragments) - 1),
+                  |> list.take(list.length(acc.fragments) - 1),
                 in_expr: False,
                 from: last_fragment.0,
-                to: acc.to
-                + 1,
+                to: acc.to + 1,
               )
             }
             True, False -> {
@@ -80,11 +79,10 @@ fn parse(template: String) -> #(List(#(Int, Int)), List(#(Int, Int))) {
               ParseRecord(
                 ..acc,
                 fragments: acc.fragments
-                |> list.append([#(acc.from, acc.to - 1)]),
+                  |> list.append([#(acc.from, acc.to - 1)]),
                 in_expr: True,
                 from: acc.to,
-                to: acc.to
-                + 1,
+                to: acc.to + 1,
               )
             }
           }
@@ -96,12 +94,10 @@ fn parse(template: String) -> #(List(#(Int, Int)), List(#(Int, Int))) {
               ParseRecord(
                 ..acc,
                 exprs: acc.exprs
-                |> list.append([#(acc.from + 1, acc.to - 1)]),
+                  |> list.append([#(acc.from + 1, acc.to - 1)]),
                 in_expr: False,
-                from: acc.to
-                + 1,
-                to: acc.to
-                + 1,
+                from: acc.to + 1,
+                to: acc.to + 1,
               )
             }
             False -> {

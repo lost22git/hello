@@ -1,4 +1,4 @@
-# Gleam Lang learning
+# Gleam Lang Learning
 
 ## Installation
 

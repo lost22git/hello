@@ -7,4 +7,4 @@ tailwind *args:
 
 # start dev server
 dev *args:
-    gleam run -m lustre/dev start -b 0.0.0.0 {{ args }}
+    gleam run -m lustre/dev start {{ args }}
