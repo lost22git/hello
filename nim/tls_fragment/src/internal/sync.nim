@@ -96,7 +96,7 @@ proc socks5ExtractServerAddr(client: Socket): (string, uint16) =
 
 proc socks5Handshake(client: Socket): (string, uint16) =
   ## handle socks5 proxy handshake
-  ## 
+  ##
   ## NOTE:
   ## we only support tcp and no auth now.
 
@@ -142,7 +142,7 @@ proc httpExtractServerAddr(client: Socket): (string, uint16) =
 
   var line = ""
   while true:
-    line = client.recvLine()
+    client.readLine(line)
     if line == "\r\n":
       return
     if line.startsWith("Host: "):
@@ -163,7 +163,7 @@ proc httpHandshake(client: Socket): (string, uint16) =
 
 proc proxyProtocolHandshake(client: Socket): (string, uint16) =
   ## handle proxy protocol handshake
-  ## 
+  ##
   ## supported proxy protocols:
   ## 1. http
   ## 2. socks5
@@ -258,7 +258,7 @@ proc downstreamingThreadProc(client: Client) {.thread.} =
 
 proc streaming(client: Client) =
   ## client streaming
-  ## 
+  ##
   ## main steps:
   ## 1. spawn a thread to downstreaming
   ## 2. upstreaming
@@ -360,7 +360,7 @@ proc start(server: Server) {.thread.} =
 
   while true:
     server.clientList = server.clientList.filterIt(it.runThread.running())
-
+    info fmt"{server.clientList.len=}"
     {.gcsafe.}:
       var client = Client(config: config.client, id: genOid())
     server.sock.accept(client.sock)

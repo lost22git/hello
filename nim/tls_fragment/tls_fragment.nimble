@@ -11,3 +11,8 @@ bin = @["tls_fragment"]
 
 requires "nim >= 2.2.4"
 
+task buildSync, "build sync version":
+  exec "nimble build --verbose -d:release -d:lto"
+
+task buildAsync, "build async version":
+  exec "nimble build --verbose -d:release -d:lto -d:async"
