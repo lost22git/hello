@@ -12,12 +12,10 @@ https://clojure.org/guides/install_clojure
 ## Resources
 
 - [getting_started](https://clojure.org/guides/getting_started)
-- [reader](https://clojure.org/reference/reader)
-- [contrib_libs](https://clojure.org/dev/contrib_libs)
-- [news](https://clojure.org/news/news)
 - [quickref](https://clojuredocs.org/quickref)
 - [clojure guide](https://clojure-doc.org)
 - [elements of clojure](https://elementsofclojure.com)
+- [understanding-persistent-vector-pt-1](https://hypirion.com/musings/understanding-persistent-vector-pt-1)
 
 
 ## New Project
