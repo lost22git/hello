@@ -19,16 +19,16 @@ proc get[K, V](cache: Cache[K, V], key: K): Future[V] {.async.} =
   if cache.loadingFutTab.contains(key):
     await cache.loadingFutTab[key]
     return await cache.get(key)
-  else:
-    let loadingFut = newFuture[void]("cache notify future: key=" & $key)
-    cache.loadingFutTab[key] = loadingFut
-    try:
-      let value = await cache.loader(key)
-      cache.tab[key] = value
-      return value
-    finally:
-      cache.loadingFutTab.del key
-      loadingFut.complete()
+
+  let loadingFut = newFuture[void]("cache notify future: key=" & $key)
+  cache.loadingFutTab[key] = loadingFut
+  try:
+    let value = await cache.loader(key)
+    cache.tab[key] = value
+    return value
+  finally:
+    loadingFut.complete()
+    cache.loadingFutTab.del key
 
 proc del[K, V](cache: Cache[K, V], key: K) =
   cache.tab.del key
