@@ -1,0 +1,11 @@
+#!/usr/bin/env nelua
+
+local function fib(n: integer): integer
+  if n == 1 or n == 0 then
+    return 1
+  end
+
+  return fib(n-1) + fib(n-2)
+end
+
+print(fib(11))
