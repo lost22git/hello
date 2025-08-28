@@ -50,27 +50,18 @@ iterator values*(table: DashTable): string =
 
 # === PUBLIC PROCEDURES ===
 
-proc shardsIndex*(table: DashTable, key: string): int {.inline.} =
-  ## compute shards index of `key`
+proc shardWithIndex(table: DashTable, key: string): (int, Shard) {.inline.} =
+  ## compute shards index of `key` and return `(index,shard)`
 
-  table.myhash(key) and table.shards.high
-
-proc newDashTable*(
-    shards: int = defaultShards, mode: StringTableMode = modeCaseInsensitive
-): DashTable =
-  ## new `DashTable` instance
-
-  doAssert shards > 1, "shards must be >1"
-  doAssert isPowerOfTwo(shards), "shards must be power of 2"
-
-  DashTable(shards: newSeqWith(shards, newShard(mode)), mode: mode)
+  let index = table.myhash(key) and table.shards.high
+  (index, table.shards[index])
 
 proc hasKey*(table: DashTable, key: string): bool =
   ## check `key` if found
 
-  let index = table.shardsIndex(key)
-  readWith table.shards[index].lock:
-    result = table.shards[index].tab.hasKey(key)
+  let (index, shard) = table.shardWithIndex(key)
+  readWith shard.lock:
+    result = shard.tab.hasKey(key)
 
 proc get*(
     table: DashTable, key: string, f: proc(key: string): string
@@ -80,10 +71,10 @@ proc get*(
   ##
   ## - raise error if error raised on calling `f`
 
-  let index = table.shardsIndex(key)
-  readWith table.shards[index].lock:
-    if table.shards[index].tab.hasKey(key):
-      return table.shards[index].tab[key]
+  let (index, shard) = table.shardWithIndex(key)
+  readWith shard.lock:
+    if shard.tab.hasKey(key):
+      return shard.tab[key]
 
   # key not found
   return f(key)
@@ -106,9 +97,9 @@ proc get*(table: DashTable, key, fallbackValue: string): string =
 proc add*(table: DashTable, key: string, value: sink string) =
   ## add `key`-`value` entry
 
-  let index = table.shardsIndex(key)
-  writeWith table.shards[index].lock:
-    table.shards[index].tab[key] = value
+  let (index, shard) = table.shardWithIndex(key)
+  writeWith shard.lock:
+    shard.tab[key] = value
 
 proc del*(table: DashTable, key: string) =
   ## delete the associated entry of `key` (ignore `key` not found)
@@ -117,9 +108,9 @@ proc del*(table: DashTable, key: string) =
   if not table.hasKey(key):
     return
 
-  let index = table.shardsIndex(key)
-  writeWith table.shards[index].lock:
-    table.shards[index].tab.del(key)
+  let (index, shard) = table.shardWithIndex(key)
+  writeWith shard.lock:
+    shard.tab.del(key)
 
 proc take*(
     table: DashTable, key: string, f: proc(key: string): string
@@ -133,11 +124,11 @@ proc take*(
   if not table.hasKey(key):
     return f(key)
 
-  let index = table.shardsIndex(key)
-  writeWith table.shards[index].lock:
-    if table.shards[index].tab.hasKey(key):
-      result = table.shards[index].tab[key]
-      table.shards[index].tab.del(key)
+  let (index, shard) = table.shardWithIndex(key)
+  writeWith shard.lock:
+    if shard.tab.hasKey(key):
+      result = shard.tab[key]
+      shard.tab.del(key)
       return
 
   # key not found
@@ -160,10 +151,10 @@ proc read*(
   ## - raise error if error raised on calling `f`
   ## - `f` is called in readlock block
 
-  let index = table.shardsIndex(key)
-  readWith table.shards[index].lock:
-    if table.shards[index].tab.hasKey(key):
-      let value = table.shards[index].tab[key]
+  let (index, shard) = table.shardWithIndex(key)
+  readWith shard.lock:
+    if shard.tab.hasKey(key):
+      let value = shard.tab[key]
       f(key, value)
       return
 
@@ -184,13 +175,13 @@ proc getOrAdd*(
   except KeyError:
     discard
 
-  let index = table.shardsIndex(key)
-  writeWith table.shards[index].lock:
-    if table.shards[index].tab.hasKey(key):
-      return table.shards[index].tab[key]
+  let (index, shard) = table.shardWithIndex(key)
+  writeWith shard.lock:
+    if shard.tab.hasKey(key):
+      return shard.tab[key]
     else:
       let value = f(key)
-      table.shards[index].tab[key] = value
+      shard.tab[key] = value
       return value
 
 proc getOrAdd*(table: DashTable, key: string, valueToAddOnKeyNotFound: string): string =
@@ -213,10 +204,10 @@ proc update*(
   if not table.hasKey(key):
     raise newException(KeyError, "key=" & key)
 
-  let index = table.shardsIndex(key)
-  writeWith table.shards[index].lock:
-    if table.shards[index].tab.hasKey(key):
-      f(key, table.shards[index].tab[key])
+  let (index, shard) = table.shardWithIndex(key)
+  writeWith shard.lock:
+    if shard.tab.hasKey(key):
+      f(key, shard.tab[key])
       return
 
   # key not found
@@ -242,6 +233,18 @@ proc `[]`*(table: DashTable, key: string): string {.raises: [KeyError].} =
 
 proc `[]=`*(table: DashTable, key: string, value: sink string) =
   table.add(key, value)
+
+# === PUBLIC CONSTRUCTORS ===
+
+proc newDashTable*(
+    shards: int = defaultShards, mode: StringTableMode = modeCaseInsensitive
+): DashTable =
+  ## new `DashTable` instance
+
+  doAssert shards > 1, "shards must be >1"
+  doAssert isPowerOfTwo(shards), "shards must be power of 2"
+
+  DashTable(shards: newSeqWith(shards, newShard(mode)), mode: mode)
 
 # === Test ===
 # --mm:atomicArc
