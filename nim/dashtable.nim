@@ -59,7 +59,7 @@ proc shardWithIndex(table: DashTable, key: string): (int, Shard) {.inline.} =
 proc hasKey*(table: DashTable, key: string): bool =
   ## check `key` if found
 
-  let (index, shard) = table.shardWithIndex(key)
+  let (_, shard) = table.shardWithIndex(key)
   readWith shard.lock:
     result = shard.tab.hasKey(key)
 
@@ -71,7 +71,7 @@ proc get*(
   ##
   ## - raise error if error raised on calling `f`
 
-  let (index, shard) = table.shardWithIndex(key)
+  let (_, shard) = table.shardWithIndex(key)
   readWith shard.lock:
     if shard.tab.hasKey(key):
       return shard.tab[key]
@@ -87,17 +87,36 @@ proc get*(table: DashTable, key: string): string {.raises: [KeyError].} =
   get(table, key) do(key: string) -> string:
     raise newException(KeyError, "key=" & key)
 
-proc get*(table: DashTable, key, fallbackValue: string): string =
+proc get*(table: DashTable, key, fallbackValue: sink string): string =
   ## get the value mapped to `key`
   ## if `key` not found, return `fallbackValue`
 
   get(table, key) do(key: string) -> string:
     fallbackValue
 
-proc add*(table: DashTable, key: string, value: sink string) =
+proc get*(
+    table: DashTable, key: string, f: proc(key, value: string)
+) {.raises: [KeyError], effectsOf: f.} =
+  ## get the value mapped to `key` and call `f`
+  ##
+  ## - raise error if `key` not found
+  ## - raise error if error raised on calling `f`
+  ## - `f` is called in readlock block
+
+  let (_, shard) = table.shardWithIndex(key)
+  readWith shard.lock:
+    if shard.tab.hasKey(key):
+      let value = shard.tab[key]
+      f(key, value)
+      return
+
+  # key not found
+  raise newException(KeyError, "key=" & key)
+
+proc add*(table: DashTable, key, value: sink string) =
   ## add `key`-`value` entry
 
-  let (index, shard) = table.shardWithIndex(key)
+  let (_, shard) = table.shardWithIndex(key)
   writeWith shard.lock:
     shard.tab[key] = value
 
@@ -108,7 +127,7 @@ proc del*(table: DashTable, key: string) =
   if not table.hasKey(key):
     return
 
-  let (index, shard) = table.shardWithIndex(key)
+  let (_, shard) = table.shardWithIndex(key)
   writeWith shard.lock:
     shard.tab.del(key)
 
@@ -124,7 +143,7 @@ proc take*(
   if not table.hasKey(key):
     return f(key)
 
-  let (index, shard) = table.shardWithIndex(key)
+  let (_, shard) = table.shardWithIndex(key)
   writeWith shard.lock:
     if shard.tab.hasKey(key):
       result = shard.tab[key]
@@ -142,27 +161,8 @@ proc take*(table: DashTable, key: string): string {.raises: [KeyError].} =
   take(table, key) do(key: string) -> string:
     raise newException(KeyError, "key=" & key)
 
-proc read*(
-    table: DashTable, key: string, f: proc(key, value: string)
-) {.raises: [KeyError], effectsOf: f.} =
-  ## read the value mapped to `key` and call `f`
-  ##
-  ## - raise error if `key` not found
-  ## - raise error if error raised on calling `f`
-  ## - `f` is called in readlock block
-
-  let (index, shard) = table.shardWithIndex(key)
-  readWith shard.lock:
-    if shard.tab.hasKey(key):
-      let value = shard.tab[key]
-      f(key, value)
-      return
-
-  # key not found
-  raise newException(KeyError, "key=" & key)
-
 proc getOrAdd*(
-    table: DashTable, key: string, f: proc(key: string): string
+    table: DashTable, key: sink string, f: proc(key: string): string
 ): string {.effectsOf: f.} =
   ## get the value mapped to `key`
   ## if `key` not found, add `key`-`value`(the result of calling `f`) entry first
@@ -175,7 +175,7 @@ proc getOrAdd*(
   except KeyError:
     discard
 
-  let (index, shard) = table.shardWithIndex(key)
+  let (_, shard) = table.shardWithIndex(key)
   writeWith shard.lock:
     if shard.tab.hasKey(key):
       return shard.tab[key]
@@ -184,7 +184,7 @@ proc getOrAdd*(
       shard.tab[key] = value
       return value
 
-proc getOrAdd*(table: DashTable, key: string, valueToAddOnKeyNotFound: string): string =
+proc getOrAdd*(table: DashTable, key, valueToAddOnKeyNotFound: sink string): string =
   ## get the value mapped to `key`
   ## if `key` not found, add `key`-`valueToAddOnKeyNotFound` entry
 
@@ -204,7 +204,7 @@ proc update*(
   if not table.hasKey(key):
     raise newException(KeyError, "key=" & key)
 
-  let (index, shard) = table.shardWithIndex(key)
+  let (_, shard) = table.shardWithIndex(key)
   writeWith shard.lock:
     if shard.tab.hasKey(key):
       f(key, shard.tab[key])
@@ -231,7 +231,7 @@ proc clear*(table: DashTable) =
 proc `[]`*(table: DashTable, key: string): string {.raises: [KeyError].} =
   table.get(key)
 
-proc `[]=`*(table: DashTable, key: string, value: sink string) =
+proc `[]=`*(table: DashTable, key, value: sink string) =
   table.add(key, value)
 
 # === PUBLIC CONSTRUCTORS ===
