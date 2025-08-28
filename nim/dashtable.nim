@@ -119,6 +119,10 @@ proc add*(table: DashTable, key: string, value: sink string) =
 proc del*(table: DashTable, key: string) =
   ## delete the associated entry of `key` (ignore `key` not found)
 
+  # key not found
+  if not table.hasKey(key):
+    return
+
   let index = table.shardsIndex(key)
   writeWith table.shards[index].lock:
     table.shards[index].tab.del(key)
