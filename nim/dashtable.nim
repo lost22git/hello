@@ -1,3 +1,5 @@
+#!/usr/bin/env -S nim r --mm:atomicArc
+
 import std/[strtabs, math, cpuinfo, sequtils, hashes]
 import threading/rwlock
 
@@ -91,23 +93,15 @@ proc get*(table: DashTable, key: string): string {.raises: [KeyError].} =
   ##
   ## - raise error if `key` not found
 
-  get(
-    table,
-    key,
-    proc(key: string): string =
-      raise newException(KeyError, "key=" & key),
-  )
+  get(table, key) do(key: string) -> string:
+    raise newException(KeyError, "key=" & key)
 
 proc get*(table: DashTable, key, fallbackValue: string): string =
   ## get the value mapped to `key`
   ## if `key` not found, return `fallbackValue`
 
-  get(
-    table,
-    key,
-    proc(key: string): string =
-      fallbackValue,
-  )
+  get(table, key) do(key: string) -> string:
+    fallbackValue
 
 proc add*(table: DashTable, key: string, value: sink string) =
   ## add `key`-`value` entry
@@ -154,12 +148,8 @@ proc take*(table: DashTable, key: string): string {.raises: [KeyError].} =
   ##
   ## - raise error if `key` not found
 
-  take(
-    table,
-    key,
-    proc(key: string): string =
-      raise newException(KeyError, "key=" & key),
-  )
+  take(table, key) do(key: string) -> string:
+    raise newException(KeyError, "key=" & key)
 
 proc read*(
     table: DashTable, key: string, f: proc(key, value: string)
@@ -202,6 +192,13 @@ proc getOrAdd*(
       let value = f(key)
       table.shards[index].tab[key] = value
       return value
+
+proc getOrAdd*(table: DashTable, key: string, valueToAddOnKeyNotFound: string): string =
+  ## get the value mapped to `key`
+  ## if `key` not found, add `key`-`valueToAddOnKeyNotFound` entry
+
+  getOrAdd(table, key) do(key: string) -> string:
+    valueToAddOnKeyNotFound
 
 proc update*(
     table: DashTable, key: string, f: proc(key: string, value: var string)
@@ -259,21 +256,14 @@ proc run(f: proc(args: (int, DashTable)) {.thread.}, table: DashTable) =
 
 proc getOrAdd(args: (int, DashTable)) {.thread.} =
   let (i, table) = args
-  let value = table.getOrAdd(
-    $i,
-    proc(key: string): string =
-      $(parseInt(key) * 10),
-  )
+  let value = table.getOrAdd($i) do(key: string) -> string:
+    $(parseInt(key) * 10)
   echo "getOrAdd:" & $i & "=>" & value
 
 proc update(args: (int, DashTable)) {.thread.} =
   let (i, table) = args
-  table.update(
-    $i,
-    proc(key: string, value: var string) =
-      value.add "-updated"
-    ,
-  )
+  table.update($i) do(key: string, value: var string):
+    value.add "-updated"
 
 proc take(args: (int, DashTable)) {.thread.} =
   let (i, table) = args
