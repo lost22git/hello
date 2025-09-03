@@ -14,7 +14,7 @@ IO.puts(["HE", ?L, ~c"LO"])
 # new line ( inspect given item )
 IO.inspect(%{a: 1, b: 2})
 
-# === Prompt === 
+# === Prompt ===
 
 input = IO.gets("Input an int number: ")
 {num, _} = Integer.parse(input)
