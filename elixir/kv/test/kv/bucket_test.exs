@@ -24,4 +24,15 @@ defmodule KV.BucketTest do
     old_val = KV.Bucket.del(config.test, "milk")
     assert old_val == 10
   end
+
+  test "subscribes to puts and dels" do
+    {:ok, bucket} = start_supervised(KV.Bucket)
+    KV.Bucket.sub(bucket)
+
+    KV.Bucket.put(bucket, "milk", 3)
+    assert_receive {:put, "milk", 3}
+
+    spawn(fn -> KV.Bucket.del(bucket, "milk") end)
+    assert_receive {:del, "milk"}
+  end
 end

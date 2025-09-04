@@ -10,7 +10,7 @@ defmodule KV do
     children = [
       {Registry, name: KV, keys: :unique},
       {DynamicSupervisor, name: KV.BucketSupervisor, strategy: :one_for_one},
-      {Task.Supervisor, name: KV.ServerSupervisor},
+      {Task.Supervisor, name: KV.ClientSupervisor},
       Supervisor.child_spec({Task, fn -> KV.Server.listen(8080) end}, restart: :permanent)
     ]
 
