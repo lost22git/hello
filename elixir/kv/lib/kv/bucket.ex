@@ -54,15 +54,15 @@ defmodule KV.Bucket do
     {:reply, val, state}
   end
 
-  def handle_call({:put, key, val}, _from, state) do
+  def handle_call({:put, key, val} = msg, _from, state) do
     state = put_in(state.bucket[key], val)
-    broadcast(state, {:put, key, val})
+    broadcast(state, msg)
     {:reply, :ok, state}
   end
 
-  def handle_call({:del, key}, _from, state) do
+  def handle_call({:del, key} = msg, _from, state) do
     {val, state} = pop_in(state.bucket[key])
-    broadcast(state, {:del, key})
+    broadcast(state, msg)
     {:reply, val, state}
   end
 
