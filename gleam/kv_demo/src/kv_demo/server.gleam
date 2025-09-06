@@ -6,7 +6,7 @@ import gleam/result
 import gleam/string
 import glisten.{type Connection, Packet}
 import kv_demo/bucket_store.{type BucketStore}
-import kv_demo/command.{type CommandError, type CommandResult}
+import kv_demo/command.{type Command, type CommandError, type CommandResult}
 
 type State =
   BucketStore
@@ -30,27 +30,30 @@ fn handle_tcp_message(
   msg: glisten.Message(a),
   conn: Connection(a),
 ) -> glisten.Next(State, glisten.Message(a)) {
-  echo msg
-  let assert Packet(msg) = msg
+  let assert Packet(msg) = echo msg
   let assert Ok(line) = bit_array.to_string(msg)
-
-  let _ =
-    line
-    |> string.trim
-    |> command.parse
-    |> echo
-    |> result.try(command.run(_, state))
-    |> echo
-    |> write_result(conn)
-
+  let data = handle(line, state)
+  let assert Ok(_) = glisten.send(conn, bytes_tree.from_string(data))
   glisten.continue(state)
 }
 
-fn write_result(
-  result: Result(CommandResult, CommandError),
-  conn: Connection(a),
-) {
-  let data = case result {
+fn handle(line: String, state: State) -> String {
+  line
+  |> decode_command
+  |> echo
+  |> result.try(command.run(_, state))
+  |> encode_command_result
+  |> echo
+}
+
+fn decode_command(line: String) -> Result(Command, CommandError) {
+  line
+  |> string.trim
+  |> command.parse
+}
+
+fn encode_command_result(res: Result(CommandResult, CommandError)) -> String {
+  case res {
     Error(cmd_error) ->
       case cmd_error {
         command.BucketNotFound -> "BUCKET NOT FOUND\r\n"
@@ -64,5 +67,4 @@ fn write_result(
         command.PutResult(v) -> option.unwrap(v, "nil") <> "\r\nOK\r\n"
       }
   }
-  glisten.send(conn, bytes_tree.from_string(data))
 }
