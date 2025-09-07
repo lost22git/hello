@@ -10,5 +10,4 @@ gleam test  # Run the tests
 ```
 
 ## TODO
-- add Subscribe command support
 - how to get BucketStore actor if supervised

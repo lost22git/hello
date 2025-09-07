@@ -1,58 +1,78 @@
 import gleam/bit_array
 import gleam/bytes_tree
-import gleam/erlang/process
-import gleam/option.{None}
+import gleam/erlang/process.{type Subject}
+import gleam/option.{Some}
 import gleam/result
 import gleam/string
-import glisten.{type Connection, Packet}
+import glisten.{type Connection, type Message, Packet, User}
+import kv_demo/bucket
 import kv_demo/bucket_store.{type BucketStore}
-import kv_demo/command.{type Command, type CommandError, type CommandResult}
+import kv_demo/command
 
-type State =
-  BucketStore
+type State {
+  State(bucket_store: BucketStore, subject: Subject(bucket.Message))
+}
 
 /// Starts a server
-pub fn start(port: Int, state: State) {
-  glisten.new(init_connection(state, _), handle_tcp_message)
+pub fn start(port: Int, bucket_store: BucketStore) {
+  glisten.new(init_connection(bucket_store, _), handle_message)
   |> glisten.bind("0.0.0.0")
   |> glisten.start(port)
 }
 
-fn init_connection(
-  state: State,
-  _conn: Connection(b),
-) -> #(State, option.Option(process.Selector(b))) {
-  #(state, None)
+fn init_connection(bucket_store: BucketStore, _conn: Connection(b)) {
+  // subject to subscribe bucket messages
+  let subject = process.new_subject()
+  let state = State(bucket_store:, subject:)
+  // add selector to select the subject
+  let selector =
+    process.new_selector()
+    |> process.select(for: subject)
+  #(state, Some(selector))
 }
 
-fn handle_tcp_message(
+fn handle_message(
   state: State,
-  msg: glisten.Message(a),
-  conn: Connection(a),
-) -> glisten.Next(State, glisten.Message(a)) {
-  let assert Packet(msg) = echo msg
+  msg: Message(bucket.Message),
+  conn: Connection(bucket.Message),
+) {
+  case msg {
+    Packet(msg) -> handle_tcp_message(state, msg, conn)
+    User(msg) -> handle_user_message(state, msg, conn)
+  }
+}
+
+fn handle_tcp_message(state: State, msg: BitArray, conn: Connection(a)) {
   let assert Ok(line) = bit_array.to_string(msg)
-  let data = handle(line, state)
-  let assert Ok(_) = glisten.send(conn, bytes_tree.from_string(data))
+  let data = handle_command(line, state)
+  let _ = glisten.send(conn, bytes_tree.from_string(data))
   glisten.continue(state)
 }
 
-fn handle(line: String, state: State) -> String {
+fn handle_user_message(state: State, msg: bucket.Message, conn: Connection(a)) {
+  let data = encode_bucket_message(msg)
+  let _ = glisten.send(conn, bytes_tree.from_string(data))
+  glisten.continue(state)
+}
+
+fn handle_command(line: String, state: State) {
   line
   |> decode_command
   |> echo
-  |> result.try(command.run(_, state))
+  |> result.try(command.run(_, state.bucket_store, state.subject))
   |> encode_command_result
   |> echo
 }
 
-fn decode_command(line: String) -> Result(Command, CommandError) {
+fn decode_command(line: String) {
   line
   |> string.trim
   |> command.parse
 }
 
-fn encode_command_result(res: Result(CommandResult, CommandError)) -> String {
+fn encode_command_result(
+  res: Result(command.CommandResult, command.CommandError),
+) {
   case res {
     Error(cmd_error) ->
       case cmd_error {
@@ -65,6 +85,15 @@ fn encode_command_result(res: Result(CommandResult, CommandError)) -> String {
         command.GetResult(v) -> option.unwrap(v, "nil") <> "\r\nOK\r\n"
         command.NewResult -> "OK\r\n"
         command.PutResult(v) -> option.unwrap(v, "nil") <> "\r\nOK\r\n"
+        command.SubResult -> ""
       }
+  }
+}
+
+fn encode_bucket_message(msg: bucket.Message) {
+  case msg {
+    bucket.Del(pid: _, key:) -> key <> " DELETED\r\n"
+    bucket.Put(pid: _, key:, val:) -> key <> " SET TO " <> val <> "\r\n"
+    _ -> ""
   }
 }

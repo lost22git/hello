@@ -9,6 +9,7 @@ pub type Command {
   Put(bucket: String, key: String, val: String)
   Get(bucket: String, key: String)
   Del(bucket: String, key: String)
+  Sub(bucket: String)
 }
 
 pub type CommandResult {
@@ -16,6 +17,7 @@ pub type CommandResult {
   PutResult(Option(String))
   GetResult(Option(String))
   DelResult(Option(String))
+  SubResult
 }
 
 pub type CommandError {
@@ -30,6 +32,7 @@ pub fn parse(line: String) -> Result(Command, CommandError) {
     ["PUT", bucket, key, val] -> Ok(Put(bucket:, key:, val:))
     ["GET", bucket, key] -> Ok(Get(bucket:, key:))
     ["DEL", bucket, key] -> Ok(Del(bucket:, key:))
+    ["SUB", bucket] -> Ok(Sub(bucket:))
     _ -> Error(UnknownCommand)
   }
 }
@@ -38,6 +41,7 @@ pub fn parse(line: String) -> Result(Command, CommandError) {
 pub fn run(
   cmd: Command,
   bucket_store: BucketStore,
+  client_subject: Subject(bucket.Message),
 ) -> Result(CommandResult, CommandError) {
   case cmd {
     New(bucket:) -> start_and_index_bucket(bucket_store, bucket)
@@ -53,13 +57,15 @@ pub fn run(
       lookup_bucket(bucket_store, bucket, fn(b) {
         Ok(DelResult(bucket.del(b, key)))
       })
+    Sub(bucket:) ->
+      lookup_bucket(bucket_store, bucket, fn(b) {
+        bucket.sub(b, client_subject)
+        Ok(SubResult)
+      })
   }
 }
 
-fn start_and_index_bucket(
-  bucket_store: BucketStore,
-  name: String,
-) -> Result(CommandResult, CommandError) {
+fn start_and_index_bucket(bucket_store: BucketStore, name: String) {
   let b = bucket.start(name)
   bucket_store.index(bucket_store, name, b)
   Ok(NewResult)
