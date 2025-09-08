@@ -64,83 +64,6 @@ Stream.resource(
 |> Stream.each(&IO.puts/1)
 |> Stream.run()
 
-# === Process ===
-
-Process.list() |> IO.inspect(label: "process count:")
-
-Process.alive?(self()) |> IO.inspect(label: "self alive?")
-
-Process.info(self()) |> IO.inspect(label: "self info")
-
-Process.get() |> IO.inspect(label: "self dict")
-
-# register an alias for a pid
-main_pid = self()
-Process.register(main_pid, :main)
-
-# spawn a process and monitor it 
-{sender_pid, sender_monitor_ref} =
-  spawn_monitor(fn ->
-    # send messages to process
-    send(:main, "HELLO")
-    send(:main, "ELIXIR")
-  end)
-
-Process.sleep(100)
-
-message_queue_len = Process.info(self())[:message_queue_len]
-message_queue_len |> IO.inspect(label: :message_queue_len)
-
-# receive messages of current process
-for _ <- 1..3 do
-  receive do
-    {:DOWN, ^sender_monitor_ref, :process, ^sender_pid, code} ->
-      "Process :sender was down with #{code}"
-      |> IO.inspect(label: "DOWN")
-
-    msg ->
-      msg |> IO.inspect(label: "receive")
-
-    1000 ->
-      IO.puts("No message in 1s")
-  end
-end
-
-message_queue_len = Process.info(self())[:message_queue_len]
-message_queue_len |> IO.inspect(label: :message_queue_len)
-
-# === GenServer ===
-
-# === Task ===
-
-work = fn secs ->
-  Process.sleep(secs)
-  secs
-end
-
-IO.puts("#{DateTime.utc_now()} awaiting")
-
-Task.await_many(
-  [1000, 2000]
-  |> Enum.map(&Task.async(fn -> work.(&1) end))
-)
-|> IO.inspect(label: "results")
-
-IO.puts("#{DateTime.utc_now()} done")
-
-# Task Stream
-
-IO.puts("#{DateTime.utc_now()} awaiting")
-
-Task.async_stream([1000, 2000], fn x ->
-  Process.sleep(x)
-  x
-end)
-|> Stream.each(&IO.inspect(&1, label: "results"))
-|> Stream.run()
-
-IO.puts("#{DateTime.utc_now()} done")
-
 # === JSON ===
 
 defmodule Book do
@@ -201,3 +124,82 @@ else
   {:err1, _} -> -1
   {:err2, _} -> -2
 end
+
+# === Process ===
+
+Process.list() |> IO.inspect(label: "process count:")
+
+Process.alive?(self()) |> IO.inspect(label: "self alive?")
+
+Process.info(self()) |> IO.inspect(label: "self info")
+
+Process.get() |> IO.inspect(label: "self dict")
+
+# register an alias for a pid
+main_pid = self()
+Process.register(main_pid, :main)
+
+# spawn a process and monitor it
+{sender_pid, sender_monitor_ref} =
+  spawn_monitor(fn ->
+    # send messages to process
+    send(:main, "HELLO")
+    send(:main, "ELIXIR")
+  end)
+
+Process.sleep(100)
+
+message_queue_len = Process.info(self())[:message_queue_len]
+message_queue_len |> IO.inspect(label: :message_queue_len)
+
+# receive messages of current process
+for _ <- 1..3 do
+  receive do
+    {:DOWN, ^sender_monitor_ref, :process, ^sender_pid, code} ->
+      "Process :sender was down with #{code}"
+      |> IO.inspect(label: "DOWN")
+
+    msg ->
+      msg |> IO.inspect(label: "receive")
+
+    1000 ->
+      IO.puts("No message in 1s")
+  end
+end
+
+message_queue_len = Process.info(self())[:message_queue_len]
+message_queue_len |> IO.inspect(label: :message_queue_len)
+
+# === Task ===
+
+work = fn secs ->
+  Process.sleep(secs)
+  secs
+end
+
+IO.puts("#{DateTime.utc_now()} awaiting")
+
+Task.await_many(
+  [1000, 2000]
+  |> Enum.map(&Task.async(fn -> work.(&1) end))
+)
+|> IO.inspect(label: "results")
+
+IO.puts("#{DateTime.utc_now()} done")
+
+# Task Stream
+
+IO.puts("#{DateTime.utc_now()} awaiting")
+
+Task.async_stream([1000, 2000], fn x ->
+  Process.sleep(x)
+  x
+end)
+|> Stream.each(&IO.inspect(&1, label: "results"))
+|> Stream.run()
+
+IO.puts("#{DateTime.utc_now()} done")
+
+# === GenServer ===
+
+# === Macros ===
