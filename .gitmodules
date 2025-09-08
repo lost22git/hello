@@ -1,6 +1,6 @@
 [submodule "gleam/kv_demo"]
 	path = gleam/kv_demo
-	url = git@github.com:lost22git/kv_demo
+	url = git@github.com:lost22git/gleam_kv_demo
 [submodule "elixir/kv_demo"]
 	path = elixir/kv_demo
 	url = git@github.com:lost22git/elixir_kv_demo
