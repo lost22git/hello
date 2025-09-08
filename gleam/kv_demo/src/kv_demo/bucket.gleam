@@ -7,11 +7,12 @@ import gleam/option.{type Option}
 import gleam/otp/actor
 
 pub type Message {
-  Get(pid: Subject(Option(String)), key: String)
-  Put(pid: Subject(Option(String)), key: String, val: String)
-  Del(pid: Subject(Option(String)), key: String)
-  Sub(pid: Pid, subject: Subject(Message))
+  Get(reply: Subject(Option(String)), key: String)
+  Put(reply: Subject(Option(String)), key: String, val: String)
+  Del(reply: Subject(Option(String)), key: String)
+  Sub(reply: Subject(Nil), pid: Pid, subject: Subject(Message))
   ProcessDown(monitor: Monitor, pid: Pid, reason: ExitReason)
+  Discard
 }
 
 type State {
@@ -22,15 +23,37 @@ pub type Bucket =
   Subject(Message)
 
 /// Starts a new bucket
-/// TODO gleam/otp has no DynamicSupervisor support, so we have no Supervisor for Bucket
+/// NOTE: gleam/otp has no DynamicSupervisor support, so we have no Supervisor for Bucket
 pub fn start(name: String) -> Bucket {
   let assert Ok(actor) =
-    actor.new(State(bucket: dict.new(), subscribers: dict.new()))
+    actor.new_with_initialiser(100, on_init)
     |> actor.on_message(handle_message)
     |> actor.named(process.new_name(name))
     |> actor.start()
   process.unlink(actor.pid)
   actor.data
+}
+
+fn on_init(subject: Subject(Message)) {
+  let selector =
+    process.new_selector()
+    |> process.select(subject)
+    |> process.select_monitors(decode_process_down)
+
+  let state = State(bucket: dict.new(), subscribers: dict.new())
+
+  actor.initialised(state)
+  |> actor.selecting(selector)
+  |> actor.returning(subject)
+  |> Ok
+}
+
+fn decode_process_down(down: process.Down) {
+  case down {
+    process.ProcessDown(monitor:, pid:, reason:) ->
+      ProcessDown(monitor:, pid:, reason:)
+    _ -> Discard
+  }
 }
 
 /// Gets a value from `bucket` by `key` 
@@ -51,37 +74,43 @@ pub fn del(bucket: Bucket, key: String) -> Option(String) {
 
 /// Subscribes `bucket`
 pub fn sub(bucket: Bucket, subject: Subject(Message)) {
-  actor.send(bucket, Sub(pid: process.self(), subject:))
+  actor.call(bucket, waiting: 100, sending: Sub(
+    _,
+    pid: process.self(),
+    subject:,
+  ))
 }
 
 fn handle_message(state: State, msg: Message) -> actor.Next(State, Message) {
   case msg {
-    Put(pid:, key:, val:) -> {
+    Put(reply:, key:, val:) -> {
       let old_val = dict.get(state.bucket, key) |> option.from_result()
       let new_state =
         State(..state, bucket: dict.insert(state.bucket, key, val))
-      actor.send(pid, old_val)
+      actor.send(reply, old_val)
       broadcast(state, msg)
       actor.continue(new_state)
     }
-    Get(pid:, key:) -> {
+    Get(reply:, key:) -> {
       let val = dict.get(state.bucket, key) |> option.from_result()
-      actor.send(pid, val)
+      actor.send(reply, val)
       actor.continue(state)
     }
-    Del(pid:, key:) -> {
+    Del(reply:, key:) -> {
       let val = dict.get(state.bucket, key) |> option.from_result()
       let new_state = State(..state, bucket: dict.delete(state.bucket, key))
-      actor.send(pid, val)
+      actor.send(reply, val)
       broadcast(state, msg)
       actor.continue(new_state)
     }
-    Sub(pid:, subject:) -> {
+    Sub(reply:, pid:, subject:) -> {
       let new_state =
         State(
           ..state,
           subscribers: dict.insert(state.subscribers, pid, subject),
         )
+      process.monitor(pid)
+      actor.send(reply, Nil)
       actor.continue(new_state)
     }
     ProcessDown(monitor: _, pid:, reason: _) -> {
@@ -89,6 +118,7 @@ fn handle_message(state: State, msg: Message) -> actor.Next(State, Message) {
         State(..state, subscribers: dict.delete(state.subscribers, pid))
       actor.continue(new_state)
     }
+    Discard -> actor.continue(state)
   }
 }
 

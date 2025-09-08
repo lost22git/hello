@@ -16,8 +16,13 @@ type State {
 /// Starts a server
 pub fn start(port: Int, bucket_store: BucketStore) {
   glisten.new(init_connection(bucket_store, _), handle_message)
+  |> glisten.with_close(on_connection_close)
   |> glisten.bind("0.0.0.0")
   |> glisten.start(port)
+}
+
+fn on_connection_close(_state: State) {
+  Nil
 }
 
 fn init_connection(bucket_store: BucketStore, _conn: Connection(b)) {
@@ -43,10 +48,14 @@ fn handle_message(
 }
 
 fn handle_tcp_message(state: State, msg: BitArray, conn: Connection(a)) {
-  let assert Ok(line) = bit_array.to_string(msg)
-  let data = handle_command(line, state)
-  let _ = glisten.send(conn, bytes_tree.from_string(data))
-  glisten.continue(state)
+  case bit_array.to_string(msg) {
+    Error(_) -> glisten.stop_abnormal("SERVER RECEIVED AN INVALID UTF-8 DATA")
+    Ok(line) -> {
+      let data = handle_command(line, state)
+      let _ = glisten.send(conn, bytes_tree.from_string(data))
+      glisten.continue(state)
+    }
+  }
 }
 
 fn handle_user_message(state: State, msg: bucket.Message, conn: Connection(a)) {
@@ -92,8 +101,8 @@ fn encode_command_result(
 
 fn encode_bucket_message(msg: bucket.Message) {
   case msg {
-    bucket.Del(pid: _, key:) -> key <> " DELETED\r\n"
-    bucket.Put(pid: _, key:, val:) -> key <> " SET TO " <> val <> "\r\n"
+    bucket.Del(reply: _, key:) -> key <> " DELETED\r\n"
+    bucket.Put(reply: _, key:, val:) -> key <> " SET TO " <> val <> "\r\n"
     _ -> ""
   }
 }
