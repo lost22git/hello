@@ -4,7 +4,7 @@
 (assert (infinite? ##Inf))
 (assert (infinite? ##-Inf))
 
-; def 
+; def
 (def m 1)
 (def n 2)
 ; cal function
@@ -103,7 +103,7 @@
         (= ["BAR"])
         assert))
 
-  ; transducer: 
+  ; transducer:
   ; a function of reduce-fn -> reduce-fn (aka. reduce-fn transformer)
   (def transducer (fn [reduce-fn]
                     (fn
@@ -163,7 +163,7 @@
      (= [[2 4] [1 3 5]])
      (assert))
 
-;; for 
+;; for
 (->
  (for [{:keys [fid name]} [{:fid 1 :name "foo"} {:fid 2 :name "bar"} {:fid 3 :name "zoo"}]]
    [fid name])
@@ -245,7 +245,7 @@
 (random-sample 0.5 [":)" ":(" ":/"])
 (random-uuid)
 
-;; 
+;;
 (frequencies ["a" "b" "a" "a"])
 (distinct ["a" "b" "a" "a"])
 (dedupe ["a" "b" "a" "a"])
