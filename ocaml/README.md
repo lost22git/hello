@@ -18,7 +18,7 @@ eval $(opam env --switch=default)
 
 EOF
 
-opam install ocaml-lsp-server odoc ocamlformat
+opam install ocaml-lsp-server odoc ocamlformat utop
 ```
 
 ## Resources
