@@ -1,0 +1,17 @@
+_default:
+    @just --list --unsorted
+
+exe-info executable:
+    ls -l {{ executable }}
+    file {{ executable }}
+    ldd {{ executable }}
+
+run:
+    swift run
+
+BUILD_OPTIONS := "-c release --product nio-demo --static-swift-stdlib -Xlinker /data/data/com.termux/files/usr/lib/libandroid-posix-semaphore.a"
+
+build:
+    swift build {{ BUILD_OPTIONS }}
+    cp -f "$(swift build {{ BUILD_OPTIONS }} --show-bin-path)/nio-demo" .
+    just exe-info nio-demo
