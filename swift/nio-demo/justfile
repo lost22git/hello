@@ -1,17 +1,21 @@
+APP := "nio-demo"
+BUILD_OPTIONS := "-c release --product nio-demo --static-swift-stdlib -Xlinker /data/data/com.termux/files/usr/lib/libandroid-posix-semaphore.a"
+
 _default:
     @just --list --unsorted
 
-exe-info executable:
-    ls -l {{ executable }}
-    file {{ executable }}
-    ldd {{ executable }}
+exe-info exe:
+    ls -l {{ exe }}
+    file {{ exe }}
+    ldd {{ exe }}
+
+print-process:
+    ps Hu $(pgrep {{ APP }})
 
 run:
     swift run
 
-BUILD_OPTIONS := "-c release --product nio-demo --static-swift-stdlib -Xlinker /data/data/com.termux/files/usr/lib/libandroid-posix-semaphore.a"
-
 build:
     swift build {{ BUILD_OPTIONS }}
-    cp -f "$(swift build {{ BUILD_OPTIONS }} --show-bin-path)/nio-demo" .
-    just exe-info nio-demo
+    cp -f "$(swift build {{ BUILD_OPTIONS }} --show-bin-path)/{{ APP }}" .
+    just exe-info {{ APP }}
