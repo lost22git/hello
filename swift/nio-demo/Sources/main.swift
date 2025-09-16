@@ -14,9 +14,9 @@ class MyHandler : ChannelDuplexHandler {
     lazy var log: Logger = Logger(label: "MyHandler")
 
     // handler
-    
+
     func handlerAdded(context: ChannelHandlerContext) {
-        log[metadataKey: "channel-id"] = "\(ObjectIdentifier(context.channel))"
+        log[metadataKey: "channelId"] = "\(ObjectIdentifier(context.channel))"
         log.info("handlerAdded")
     }
 
@@ -25,7 +25,7 @@ class MyHandler : ChannelDuplexHandler {
     }
 
     // outbound
-    
+
     func register(context: ChannelHandlerContext, promise: EventLoopPromise<Void>?) {
         log.info("register")
         context.register(promise: promise)
@@ -41,7 +41,7 @@ class MyHandler : ChannelDuplexHandler {
             context.fireErrorCaught(error)
         }
     }
-    
+
     func flush(context: ChannelHandlerContext) {
         log.info("flush")
         context.flush()
@@ -61,7 +61,7 @@ class MyHandler : ChannelDuplexHandler {
         log.info("triggerUserOutboundEvent: \(event)")
         context.triggerUserOutboundEvent(event, promise: promise)
     }
- 
+
     // inbound
 
     func channelRegistered(context: ChannelHandlerContext) {
@@ -71,7 +71,7 @@ class MyHandler : ChannelDuplexHandler {
 
     func channelUnregistered(context: ChannelHandlerContext) {
         log.info("channelUnregistered")
-        context.fireChannelUnregistered()   
+        context.fireChannelUnregistered()
     }
 
     func channelActive(context: ChannelHandlerContext) {
@@ -96,12 +96,12 @@ class MyHandler : ChannelDuplexHandler {
     }
 
     func channelReadComplete(context: ChannelHandlerContext) {
-        log.info("channelReadComplete")   
+        log.info("channelReadComplete")
         context.channel.flush()
     }
 
     func channelWritabilityChanged(context: ChannelHandlerContext) {
-        log.info("channelWritabilityChanged")   
+        log.info("channelWritabilityChanged")
         context.fireChannelWritabilityChanged()
     }
 
@@ -111,7 +111,7 @@ class MyHandler : ChannelDuplexHandler {
     }
 
     func errorCaught(context: ChannelHandlerContext, error: Error) {
-        log.error("errorCaught", metadata: ["error": "\(error)"])   
+        log.error("errorCaught", metadata: ["error": "\(error)"])
         let _ = context.channel.close()
     }
 
