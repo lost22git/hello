@@ -31,7 +31,7 @@
     - [ ] rational
     - arithmetic
         - [ ] overflow
-        - [ ] wraparound 
+        - [ ] wraparound
         - [ ] saturation
 - String
     - [ ] utf-8
@@ -106,7 +106,7 @@
     - [ ] global
     - [ ] local
 - Memory Management
-    - [ ] manual 
+    - [ ] manual
     - [ ] single ownership & destructor
     - [ ] rc
     - [ ] tracing-gc
@@ -121,13 +121,17 @@
     - [ ] jvm
     - [ ] clr
     - [ ] beam
-- [ ] Without LibSSL and OpenSSL Requirement
-- [ ] Multi Threads
-- Coroutine
-    - [ ] stackful
-    - [ ] stackless
-    - [ ] preemptive
-- [ ] Actor
+- Parallelism
+  - [ ] data parallel
+  - [ ] task parallel
+- Concurrency
+  - [ ] single thread
+  - [ ] multiple threads
+  - [ ] coroutine
+      - [ ] stackful
+      - [ ] stackless
+      - [ ] preemptive
+  - [ ] structured concurrency
 - [ ] UnitTest
 - Neovim Support
     - [ ] commentstring
