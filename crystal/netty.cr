@@ -7,6 +7,37 @@ module Netty
     Write
   end
 
+  # === ChannelOption ===
+
+  private macro defoptions(*options)
+    record ChannelOption(T), name : ChannelOptionName, type : T.class
+    enum ChannelOptionName
+      {% for o in options %}
+        {{ o.var.camelcase }}      
+      {% end %}
+    end
+
+    module ChannelOptions
+      {% for o in options %}
+        class_getter {{ o.var }} = ChannelOption({{ o.type }}).new(name: :{{ o.var }}, type: {{ o.type }})
+      {% end %}
+    end
+  end
+
+  defoptions tcp_nodelay : Bool,
+    so_broadcast : Bool,
+    so_keepalive : Bool,
+    so_linger : Int32,
+    so_reuseaddr : Bool,
+    so_reuseport : Bool,
+    so_rcvbuf : Int32,
+    so_sndbuf : Int32,
+    auto_read : Bool,
+    backlog : Int32,
+    connect_timeout : Time::Span,
+    read_timeout : Time::Span,
+    write_timeout : Time::Span
+
   # === ChannelHandler ===
 
   module ChannelHandler
@@ -85,8 +116,17 @@ module Netty
 
   # === ChannelHandlerContext ===
 
-  class ChannelHandlerContext
+  module ChannelHandlerContext
     include ChannelInvoker
+
+    abstract def name : String
+    abstract def handler : ChannelHandler
+    abstract def pipeline : ChannelPipeline
+    abstract def channel : Channel
+  end
+
+  class DChannelHandlerContext
+    include ChannelHandlerContext
 
     getter name : String
 
@@ -103,12 +143,12 @@ module Netty
       @outbound_handler = handler.as?(ChannelOutboundHandler)
     end
 
-    def channel : Channel
-      return self.pipeline.channel
-    end
-
     def handler : ChannelHandler
       return (@inbound_handler || @outbound_handler).not_nil!
+    end
+
+    def channel : Channel
+      return self.pipeline.channel
     end
 
     private def invoke_handler_added
@@ -168,39 +208,18 @@ module Netty
     {% end %}
   end
 
-  # === Channel ===
-
-  class ChannelCore
-  end
-
-  class Channel
-    # include ChannelOutboundInvoker
-
-    getter core : ChannelCore
-
-    getter pipeline : ChannelPipeline?
-
-    def initialize
-      @core = ChanneCore.new
-      @pipeline = ChannelPipeline.new(self)
-    end
-
-    # --- impl ChannelOutboundInvoker ---
-
-    {% for m in ChannelOutboundInvoker.methods %}
-      {% handler_method = m.name %}
-      {% args = m.args.splat %}
-      {% args_name = m.args.map(&.name).splat %}
-
-      def {{ m.name }}({{ args }})
-        if p = @pipeline
-          p.{{ handler_method }}({{ args_name }})
-        end
-      end
-    {% end %}
-  end
-
   # === ChannelPipeline ===
+
+  module ChannelPipeline
+    include ChannelInvoker
+
+    abstract def channel : Channel
+    abstract def add_handler_first(handler : ChannelHandler, name : String)
+    abstract def add_handler_last(handler : ChannelHandler, name : String)
+    abstract def add_handler_before(handler : ChannelHandler, name : String, relative : ChannelHandlerContext | String | ChannelHandler)
+    abstract def add_handler_after(handler : ChannelHandler, name : String, relative : ChannelHandlerContext | String | ChannelHandler)
+    abstract def remove_handler(target : ChannelHandlerContext | ChannelHandler | String)
+  end
 
   private class HeadChannelHandler
     include ChannelOutboundHandler
@@ -215,21 +234,15 @@ module Netty
       return ChannelHandlerContext.new(self, @@name, pipeline)
     end
 
-    def read(context : ChannelHandlerContext)
-      context.channel.core.read
-    end
+    {% for m in ChannelOutboundHandler.methods %}
+      {% args = m.args.splat %}
+      {% first_arg_name = m.args[0].name %}
+      {% rest_args_name = m.args[1..].map(&.name).splat %}
 
-    def write(context : ChannelHandlerContext, data)
-      context.channel.core.write(data)
-    end
-
-    def flush(context : ChannelHandlerContext)
-      context.channel.core.flush
-    end
-
-    def close(context : ChannelHandlerContext, mode : CloseMode = CloseMode::All)
-      context.channel.core.close(mode)
-    end
+      def {{ m.name }}({{ args }})
+        {{ first_arg_name }}.channel.internal.{{ m.name }}0({{ rest_args_name }})
+      end
+    {% end %}
   end
 
   private class TailChannelHandler
@@ -244,18 +257,10 @@ module Netty
     def make_context(pipeline : ChannelPipeline)
       return ChannelHandlerContext.new(self, @@name, pipeline)
     end
-
-    def channel_read(context : ChannelHandlerContext, data)
-      context.channel.core.channel_read(data)
-    end
-
-    def error_caught(context : ChannelHandlerContext, ex : Exception)
-      context.channel.core.error_caught(ex)
-    end
   end
 
-  class ChannelPipeline
-    include ChannelInvoker
+  class DChannelPipeline
+    include ChannelPipeline
 
     getter channel : Channel
 
@@ -269,11 +274,27 @@ module Netty
       @tail.prev = @head
     end
 
-    def add_handler_at_first(handler : ChannelHandler, name : String)
+    private def find_handler_context(&) : ChannelHandlerContext?
+      c = @head
+      while c
+        return c if yield c
+        c = c.next
+      end
+    end
+
+    private def first_inbound_context : ChannelHandlerContext?
+      @head.try &.next
+    end
+
+    private def first_outbound_context : ChannelHandlerContext?
+      @tail.try &.prev
+    end
+
+    def add_handler_first(handler : ChannelHandler, name : String)
       self.add_handler_after(handler, name, @head)
     end
 
-    def add_handler_at_last(handler : ChannelHandler, name : String)
+    def add_handler_last(handler : ChannelHandler, name : String)
       self.add_handler_before(handler, name, @tail)
     end
 
@@ -323,14 +344,6 @@ module Netty
       c.invoke_handler_added
     end
 
-    def find_handler_context(&) : ChannelHandlerContext?
-      c = @head
-      while c
-        return c if yield c
-        c = c.next
-      end
-    end
-
     def remove_handler(target : ChannelHandlerContext | ChannelHandler | String)
       c = case target
           when ChannelHandlerContext then target
@@ -351,14 +364,6 @@ module Netty
       c.prev = nil
       c.next = nil
       c.invoke_handler_removed
-    end
-
-    private def first_inbound_context : ChannelHandlerContext?
-      @head.try &.next
-    end
-
-    private def first_outbound_context : ChannelHandlerContext?
-      @tail.try &.prev
     end
 
     # --- impl ChannelInboundInvoker ---
@@ -385,6 +390,80 @@ module Netty
       def {{ m.name }}({{ args }})
         if cx = self.first_outbound_context
           cx.invoke_{{ handler_method }}({{ args_name }})
+        end
+      end
+    {% end %}
+  end
+
+  # === Channel ===
+
+  module ChannelInternal
+    abstract def read0
+    abstract def write0(data)
+    abstract def flush0
+    abstract def close0(mode : CloseMode = CloseMode::All)
+  end
+
+  module Channel
+    include ChannelOutboundInvoker
+
+    abstract def internal : ChannelInternal
+    abstract def pipeline : ChannelPipeline?
+
+    abstract def set_option(option : ChannelOption(T), val : T) forall T
+    abstract def get_option(option : ChannelOption(T)) forall T
+  end
+
+  class DChannel
+    include ChannelInternal
+    include Channel
+
+    getter pipeline : ChannelPipeline?
+
+    def initialize
+      @pipeline = ChannelPipeline.new(self)
+    end
+
+    def internal : ChannelInternal
+      self
+    end
+
+    def set_option(option : ChannelOption(T), val : T) forall T
+      # TODO
+    end
+
+    def get_option(option : ChannelOption(T)) forall T
+      # TODO
+    end
+
+    # --- impl ChannelInternal ---
+
+    def read0
+      # TODO
+    end
+
+    def write0(data)
+      # TODO
+    end
+
+    def flush0
+      # TODO
+    end
+
+    def close0(mode : CloseMode = CloseMode::All)
+      # TODO
+    end
+
+    # --- impl ChannelOutboundInvoker ---
+
+    {% for m in ChannelOutboundInvoker.methods %}
+      {% handler_method = m.name %}
+      {% args = m.args.splat %}
+      {% args_name = m.args.map(&.name).splat %}
+
+      def {{ m.name }}({{ args }})
+        if p = @pipeline
+          p.{{ handler_method }}({{ args_name }})
         end
       end
     {% end %}
