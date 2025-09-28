@@ -52,9 +52,17 @@ An error occurred:
 - ChannelHandlerContext: a node of ChannelPipeline, a context of ChannelHandler
 - ChannelHandler: a procedure of ChannelPipeline to handle messages of Channel; accesses Channel, ChannelPipeline and other components via ChannelHandlerContext
 
+channels sources:
+- SelectableChannel.swift
+- BaseSocketChannel.swift
+- BaseStreamSocketChannel.swift
+- SocketChannel.swift
+
 ### ByteBuffer
 
 ### EventLoop
+
+- SelectableEventLoop
 
 ## Compared with Netty
 
