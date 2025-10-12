@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+func main() {
+	setupLogger()
+	startServer()
+}
+
 func setupLogger() {
 	logLevel := &slog.LevelVar{}
 	logLevel.Set(slog.LevelDebug)
@@ -20,11 +25,6 @@ func setupLogger() {
 	slog.SetDefault(logger)
 }
 
-func main() {
-	setupLogger()
-	startServer()
-}
-
 func startServer() {
 	proxyHandler := new(ProxyHandler)
 	proxyHandler.Client = &http.Client{
@@ -33,7 +33,7 @@ func startServer() {
 	}
 	http.Handle("GET /", proxyHandler)
 	http.Handle("POST /", proxyHandler)
-	slog.Info("Proxy server is running on :8000")
+	slog.Info("Proxy server listening on :8000")
 	if err := http.ListenAndServe(":8000", nil); err != nil {
 		panic(err)
 	}
