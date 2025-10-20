@@ -1,12 +1,12 @@
 # Crystal Lang Learning
 
+Ruby is the shell, Go is the kernel, but LLVM.
+
 ## Resources
 
+- [RFC](https://github.com/crystal-lang/rfcs)
 - https://www.slideshare.net/crystallanguage/crystal-internals-part-1-70673255
 - https://www.slideshare.net/crystallanguage/crystal-presentation-at-recurse-center-ny
-- https://lbarasti.com/post/json_beyond_basics
-- https://lbarasti.com/post/select_statement
-- https://github.com/icyleaf/fast-crystal
 
 ## Enumerable/Iterable
 
@@ -355,14 +355,13 @@ worker_count = ENV["CRYSTAL_WORKERS"]? || 4
 
 [worker_count](https://github.com/crystal-lang/crystal/blob/3bf34106ca718c220629d1977e8db72e935dadad/src/crystal/scheduler.cr#L249)
 
+
 ## Summary
 
-CONS:
-- Poor compilation speed
-- Poor syntax highlight
-- Poor LSP server support
-- Fiber need more optimizations (memory overhead)
-- [ Too many required C-libs used by the compiler and stdlib](https://crystal-lang.org/reference/1.13/man/required_libraries.html)
-- Need more optimizations on Windows (binary size, memory overhead)
-
-
+- CSP
+- Structural Type System
+- Union Type
+- Global Type Inference
+- Tracing GC
+- Native Code
+- Rich and High Quality Stdlib
