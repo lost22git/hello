@@ -1,11 +1,18 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"reflect"
+	"slices"
 	"time"
 )
 
 func main() {
+	// test_array()
+
+	// test_slice()
+
 	// test_chan()
 
 	// test_map()
@@ -19,6 +26,41 @@ func main() {
 	// test_zero_value()
 
 	// test_time_it()
+
+	// test_multi_values()
+
+	// test_reflect_tag_of_field()
+
+	// test_errors()
+}
+
+func test_array() {
+	a := [2]string{"foo", "bar"}
+	b := [...]string{"foo", "bar"}
+	fmt.Printf("a: %[1]T %[1]v\n", a)
+	fmt.Printf("b: %[1]T %[1]v\n", b)
+	fmt.Println("a==b:", a == b)
+}
+
+func test_slice() {
+	v := "foo"
+	a := []string{v, "goo"}
+	b := append(a, "bar")
+	c := append(b, "zar")
+	d := append(c, "koo")
+	fmt.Println("a:", len(a), cap(a), a, &a[0])
+	fmt.Println("b:", len(b), cap(b), b, &b[0])
+	fmt.Println("c:", len(c), cap(c), c, &c[0])
+	fmt.Println("d:", len(d), cap(d), d, &d[0])
+	e := slices.Delete(d, len(d)-2, len(d)-1) // delete "zar"
+	fmt.Println("e:", len(e), cap(e), e, &e[0])
+	fmt.Println("d:", len(d), cap(d), d, &d[0]) // "zar" <- "koo", "koo" <- ""
+
+	// specify len and cap
+	n := make([]int, 0, 10)
+	fmt.Println("n:", len(n), cap(n), n)
+	m := make([]int, 2, 10)
+	fmt.Println("m:", len(m), cap(m), m)
 }
 
 func test_chan() {
@@ -113,4 +155,57 @@ func test_time_it() {
 		time.Sleep(1 * time.Second)
 
 	})
+}
+
+func test_multi_values() {
+	get_host_port := func() (host string, port uint16) {
+		return "localhost", 9999
+	}
+	fmt_host_port := func(host string, port uint16) string {
+		return fmt.Sprintf("%s:%d", host, port)
+	}
+	fmt.Println(fmt_host_port(get_host_port()))
+}
+
+func test_reflect_tag_of_field() {
+	type HostPort struct {
+		host string `note:"hostname or ip"`
+		port uint16 `note:"port range from 1 to 65535"`
+	}
+
+	host_port := HostPort{}
+	f_host, _ := reflect.TypeOf(host_port).FieldByName("host")
+	println(f_host.Tag.Get("note"))
+}
+
+type myError struct {
+	msg string
+}
+
+var myErr = myError{msg: "oops my error!!!"}
+
+func (err myError) Error() string {
+	return fmt.Sprintf("[%T]: %s", err, err.msg)
+}
+
+func raise_myerror() error {
+	return myErr
+}
+
+func wrap_myerror() error {
+	return fmt.Errorf("wrapper error: %w", raise_myerror())
+}
+
+func test_errors() {
+	err := wrap_myerror()
+	fmt.Println(err)
+	if errors.Is(err, myErr) {
+		println("wrapper of myErr")
+		var my_err myError
+		if errors.As(err, &my_err) {
+			println(my_err.msg)
+		}
+	} else {
+		println("not wrapper of myErr")
+	}
 }
