@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"slices"
 	"time"
+	"unsafe"
 )
 
 func main() {
@@ -32,6 +33,11 @@ func main() {
 	// test_reflect_tag_of_field()
 
 	// test_errors()
+
+	// test_iterator()
+
+	// test_methods()
+
 }
 
 func test_array() {
@@ -56,11 +62,31 @@ func test_slice() {
 	fmt.Println("e:", len(e), cap(e), e, &e[0])
 	fmt.Println("d:", len(d), cap(d), d, &d[0]) // "zar" <- "koo", "koo" <- ""
 
+	f := e[0:2]
+	fmt.Println("f:", len(f), cap(f), f, &f[0])
+
+	g := append(f, "boo")
+	fmt.Println("g:", len(g), cap(g), g, &g[0])
+	fmt.Println("f:", len(f), cap(f), f, &f[0])
+	fmt.Println("e:", len(e), cap(e), e, &e[0])
+
 	// specify len and cap
 	n := make([]int, 0, 10)
 	fmt.Println("n:", len(n), cap(n), n)
 	m := make([]int, 2, 10)
 	fmt.Println("m:", len(m), cap(m), m)
+
+	// empty slice
+	empty_slice := []string{}
+	fmt.Println("empty_slice:", len(empty_slice), cap(empty_slice), empty_slice)
+	fmt.Println("empty_slice sizeof:", unsafe.Sizeof(empty_slice))
+	fmt.Println("empty_slice header:", *(*reflect.SliceHeader)(unsafe.Pointer(&empty_slice)))
+
+	// nil slice
+	var nil_slice []string = nil
+	fmt.Println("nil_slice:", len(nil_slice), cap(nil_slice), nil_slice)
+	fmt.Println("nil_slice sizeof:", unsafe.Sizeof(nil_slice))
+	fmt.Println("nil slice header:", *(*reflect.SliceHeader)(unsafe.Pointer(&nil_slice)))
 }
 
 func test_chan() {
@@ -208,4 +234,56 @@ func test_errors() {
 	} else {
 		println("not wrapper of myErr")
 	}
+}
+
+func test_iterator() {
+	a := []string{"foo", "bar", "koo"}
+	a_iter := func(consume func(i int, v string) bool) {
+		for i, v := range a {
+			if !consume(i, v) {
+				return
+			}
+		}
+	}
+
+	for i, v := range a_iter {
+		println(i, v)
+	}
+
+	println("--- simulate for range iterator ---")
+
+	a_iter(func(i int, v string) bool {
+		println(i, v)
+		return true
+	})
+
+	println("--- for range a integer ---")
+	for v := range 10 {
+		println(v)
+	}
+
+}
+
+type Counter struct {
+	value uint32
+}
+
+// immutable receiver: passed by copy or by ref
+func (c Counter) Value() uint32 {
+	return c.value
+}
+
+// mutable receiver: passed by ref
+func (c *Counter) Inc(delta uint32) {
+	c.value += delta
+}
+
+func test_methods() {
+	c := Counter{}
+	c.Inc(10)
+	println(c.Value())
+
+	hc := &Counter{}
+	hc.Inc(10)
+	println(hc.Value())
 }
