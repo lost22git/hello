@@ -110,17 +110,6 @@
     - [ ] single ownership & destructor
     - [ ] rc
     - [ ] tracing-gc
-- Compilation Backend
-    - [ ] c
-    - [ ] c++
-    - [ ] js
-    - [ ] lua
-    - [ ] go
-    - [ ] wasm
-    - [ ] llvm
-    - [ ] jvm
-    - [ ] clr
-    - [ ] beam
 - Parallelism
   - [ ] data parallel
   - [ ] task parallel
@@ -132,6 +121,9 @@
       - [ ] stackless
       - [ ] preemptive
   - [ ] structured concurrency
+- Data Flow
+  - [ ] FBP (Flow-Based)
+  - [ ] FRP (Functional-Reactive)
 - [ ] UnitTest
 - Neovim Support
     - [ ] commentstring
