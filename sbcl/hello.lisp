@@ -4,7 +4,6 @@
 (defun main ()
   (hello "lisper"))
 
-
 ; Build an executable binary in shell:
 ;
 ; sbcl --load hello.lisp <<EOF 

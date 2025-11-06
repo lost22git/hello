@@ -1,5 +1,8 @@
 #!/usr/bin/env -S sbcl --script
 
+(defmacro λ (args &body body)
+  `(lambda ,args ,@body))
+
 ;; format t -> printf
 ;; format nil -> sprintf
 
@@ -46,6 +49,8 @@
 
 (pprint (find "foo" '("bar" "zar" "foo") :test #'equal))
 
+;; === LOOP ===
+
 ;; loop list using `in`
 (loop for i in (list "sbcl" "clojure" "janet")
       do (pprint i))
@@ -75,6 +80,52 @@
                              (format t "~A => ~A~&" k v))))
 
 ;; maphash
-(maphash (lambda (k v)
-                 (format t "~A => ~A~&" k v))
+(maphash (λ (k v)
+            (format t "~A => ~A~&" k v))
          *lang-to-country*)
+
+;; === IO ===
+
+(with-open-file (in #p"demo.lisp" :direction :input :if-does-not-exist nil)
+  (when in
+    (loop for line = (read-line in nil nil)
+          while line
+          do (format t "~A~&" line))))
+
+(assert (string=
+         "HELLO-LISP"
+         (with-output-to-string (s)
+           (write-string "HELLO" s)
+           (write-char #\- s)
+           (write-string "LISP" s))))
+
+;; === destructing ===
+
+;; destructing list
+
+(destructuring-bind (a b) '("foo" "bar")
+                    (print a)
+                    (print b))
+
+;; destructing multiple-value
+
+(multiple-value-bind (a b) (values 1 2)
+                     (+ a b))
+
+;; destructing struct
+
+(defstruct book isbn title)
+
+(let ((b (make-book :isbn "abc" :title "On Lisp")))
+  (with-slots  (isbn title)  b
+    (print isbn)
+    (print title)))
+
+;; === remove symbol ===
+
+(defun remove-symbol (s &optional (p *package*))
+  (unintern s p)
+  (makunbound s))
+
+(remove-symbol 'book)
+
