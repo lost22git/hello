@@ -1,26 +1,26 @@
-(lang dune 3.16)
+(lang dune 3.19)
 
-(name halo)
+(name demo)
 
 (generate_opam_files true)
 
 (source
  (github username/reponame))
 
-(authors "Author Name")
+(authors "Author Name <author@example.com>")
 
-(maintainers "Maintainer Name")
+(maintainers "Maintainer Name <maintainer@example.com>")
 
 (license LICENSE)
 
 (documentation https://url/to/documentation)
 
 (package
- (name halo)
+ (name demo)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune)
+ (depends ocaml)
  (tags
-  (topics "to describe" your project)))
+  ("add topics" "to describe" your project)))
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/reference/dune-project/index.html

@@ -1,0 +1,9 @@
+(executable
+ (public_name demo)
+ (name main)
+ (modules tco memory_layout exception concurrent http_client regex main)
+ (libraries unix cohttp-lwt-unix str demo)
+ (flags
+  (:standard -I +unix))
+ (preprocess
+  (pps ppx_deriving.std ppx_deriving_yojson)))
