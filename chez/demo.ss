@@ -109,7 +109,7 @@
    of those fns.  The returned fn takes a variable number of args, and
    returns a vector containing the result of applying each fn to the
    args (left-to-right).
-   ((juxt a b c) x) => [(a x) (b x) (c x)j
+   ((juxt a b c) x) => [(a x) (b x) (c x)]
   "
   (lambda xs
           (map (lambda (f)
@@ -147,7 +147,31 @@
 
 ;; === transducer ===
 
+(define (x-map f)
+  "Returns a transducer"
+  (lambda (rf)
+          (lambda (s e)
+                  (rf s (f e)))))
 
+(define (x-filter f)
+  "Returns a transducer"
+  (lambda (rf)
+          (lambda (s e)
+                  (if (f e)
+                    (rf s e)
+                    s))))
+
+(define (transduce xf f init col)
+  (fold-left (xf f) init col))
+
+(let* ((xf (comp
+            (x-filter odd?)
+            (x-map (lambda (x)
+                           (format #t "map x=~A\n" x)
+                           (* x x)))))
+       (f (lambda (s e) (format #t "rf s=~A e=~A\n" s e) (+ s e)))
+       (res (transduce xf f 0 '(1 2 3 4 5))))
+      (format #t "transduce result: ~A~%" res))
 
 
 
