@@ -173,5 +173,37 @@
        (res (transduce xf f 0 '(1 2 3 4 5))))
       (format #t "transduce result: ~A~%" res))
 
+;; === threading macros ===
 
+(define-syntax ->
+  (lambda (stx)
+          (syntax-case stx ()
+                       [(_ x) #'x]
+                       [(_ x (f arg ...) rest ...)
+                        #'(-> (f x arg ...) rest ...)]
+                       [(_ x f rest ...)
+                        #'(-> (f x) rest ...)])))
 
+(define-syntax ->>
+  (lambda (stx)
+          (syntax-case stx ()
+                       [(_ x) #'x]
+                       [(_ x (f arg ...) rest ...)
+                        #'(->> (f arg ... x) rest ...)]
+                       [(_ x f rest ...)
+                        #'(->> (f x) rest ...)])))
+
+(-> 11
+    (+ 22 33)
+    (- 44)
+    (= 22)
+    assert)
+
+(->> "foo"
+     (format #f "~A:~A" "bar")
+     (string=? "bar:foo")
+     assert)
+
+(-> (string-upcase "abc")
+    (string=? "ABC")
+    assert)

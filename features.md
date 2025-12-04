@@ -88,7 +88,7 @@
 - Error
     - [ ] try-catch
     - [ ] multi returns
-    - [ ] result type
+    - [ ] result type (tag union)
     - [ ] error type union
 - Polymorphism
     - [ ] generic
@@ -114,7 +114,6 @@
   - [ ] data parallel
   - [ ] task parallel
 - Concurrency
-  - [ ] single thread
   - [ ] multiple threads
   - [ ] coroutine
       - [ ] stackful
@@ -124,6 +123,11 @@
 - Data Flow
   - [ ] FBP (Flow-Based)
   - [ ] FRP (Functional-Reactive)
+- Condition System
+- Effect System
+- Continuation Primitives
+  - [ ] undelimited `call/cc`
+  - [ ] delimited `shift` & `reset`
 - [ ] UnitTest
 - Neovim Support
     - [ ] commentstring
