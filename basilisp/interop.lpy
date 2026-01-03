@@ -1,0 +1,5 @@
+#!/usr/bin/env -S basilisp run
+
+(import foo)
+
+(foo/hello "Basilisp-call-Python")

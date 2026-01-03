@@ -1,0 +1,19 @@
+#!/usr/bin/env -S basilisp run
+
+;; require basilisp module
+; (require '[basilisp.string :as str])
+
+;; require clojure module
+;; ns would be changed from clojure to basilisp automatically
+(require '[clojure.string :as str])
+
+;; import python module
+(import [datetime :as dt])
+
+(defn greet [name]
+  ;; f-string
+  (println #f "{(dt.datetime/now)} - Hello {(str/upper-case name)}"))
+
+(greet "Basilisp")
+
+
