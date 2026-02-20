@@ -18,7 +18,8 @@ https://clojure.org/guides/install_clojure
 - [understanding-persistent-vector-pt-1](https://hypirion.com/musings/understanding-persistent-vector-pt-1)
 - [Clojure core.async.flow first look](https://redpenguin101.github.io/html/posts/2025_01_18_clojure_flows.html)
 - [Clojure Compilation](https://blog.ndk.io/clojure-compilation.html)
-
+- [ clojure-goes-fast ](https://clojure-gose-fast.com)
+  - https://clojure-goes-fast.com/blog/clojures-deadly-sin/
 
 ## New Project
 
