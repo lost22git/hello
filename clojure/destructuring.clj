@@ -1,6 +1,6 @@
 #!/usr/bin/env -S clj -M
 
-;; let binding destructing 
+;; let binding destructuring 
 (let [[a b] [1 2]]
   (assert (= (+ a b) 3)))
 
@@ -8,7 +8,7 @@
   (assert (= first "foo"))
   (assert (= last "bar")))
 
-;; fn param destructing
+;; fn param destructuring
 (defn add
   [{:keys [x y]}]
   (+ x y))
@@ -16,7 +16,7 @@
 (defrecord Point [x y z])
 (assert (= (add (->Point 1 2 0)) 3))
 
-;; destructing nil
+;; destructuring nil
 (let [{:keys [x y]} nil]
   (assert (nil? x))
   (assert (nil? y)))
