@@ -75,10 +75,14 @@
     - return value
         - [ ] multiple
         - [ ] named
-    - [ ] compose
-    - [ ] partial
-    - [ ] currying
-    - [ ] lambda
+    - high order 
+      - [ ] compose
+      - [ ] partial
+      - [ ] currying
+      - [ ] lambda
+    - [ ] multi-dispatch
+      - [ ] compile-time
+      - [ ] run-time
 - [ ] Pattern Matching
 - [ ] Control Flow Expression
 - Null
@@ -97,7 +101,7 @@
       - [ ] structural
 - Reflection
     - [ ] compile-time
-    - [ ] runtime
+    - [ ] run-time
 - Compile-Time Enhancement
     - [ ] macro
     - [ ] conditional
