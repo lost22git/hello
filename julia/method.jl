@@ -1,5 +1,8 @@
 #!/usr/bin/env julia
 
+# Method
+# multi-dispatch in run-time
+
 foo(x::Int) = println("[Int] $(x).")
 foo(x::String) = println("[String] $(x).")
 

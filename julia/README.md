@@ -1,5 +1,9 @@
 # Julia Lang Learning
 
+## Resources
+
+- https://viralinstruction.com/posts/threads/
+
 ## Tips
 
 - List all symbols of a module
