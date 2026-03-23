@@ -11,7 +11,11 @@ https://www.sbcl.org/manual/
 
 ## Tools
 
-### [quick-lisp](https://www.quicklisp.org/beta/): library manager
+### [asdf](https://asdf.common-lisp.dev) - Build Tool
+
+In generate, it is built-in CL distributions.
+
+### [quick-lisp](https://www.quicklisp.org/beta/) - Dependency Management
 
 - Install
 ```sh
@@ -24,19 +28,16 @@ EOF
 rm quicklisp.lisp
 ```
 
-### [asdf](https://asdf.common-lisp.dev): build tool
+### cl-project - Project Template
 
-## Build an executable binary
+- Install
 
-- [sb-ext:save-lisp-and-die](https://www.sbcl.org/manual/#Function-sb_002dext-save_002dlisp_002dand_002ddie)
-
-```sh
-sbcl --load app.lisp <<EOF
-(sb-ext:save-lisp-and-die "app" 
-                          :toplevel #'main
-                          :executable t
-                          :compression 22)
-EOF
+on REPL
+```lisp
+(ql:quickload "cl-project")
 ```
 
-
+OR on SHELL
+```sh
+sbcl --non-interactive --eval '(ql:quickload :cl-project)'
+```

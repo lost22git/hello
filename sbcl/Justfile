@@ -1,0 +1,230 @@
+project_path := justfile_directory()
+project_name := file_name(project_path)
+sbcl_cmd := "sbcl --noinform --noprint --disable-debugger"
+
+_default:
+    @just --list --unsorted
+
+[group('ql')]
+ql-setup:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    curl -O https://beta.quicklisp.org/quicklisp.lisp
+    sbcl --load quicklisp.lisp <<EOF
+    (quicklisp-quickstart:install)
+    (ql:add-to-init-file)
+    (quit)
+    EOF
+    rm quicklisp.lisp
+
+[group('ql')]
+ql-update:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (ql:update-client :prompt nil)
+    EOF
+
+[group('dist')]
+dist-search KEYWORD:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (ql:system-apropos {{ KEYWORD }}) 
+    EOF
+
+[group('dist')]
+dist-install DIST:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (ql:quickload {{ DIST }}) 
+    EOF
+
+[group('dist')]
+dist-uninstall DIST:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (ql:uninstall {{ DIST }}) 
+    EOF
+
+[group('dist')]
+dist-update DIST:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (ql:update-dist {{ DIST }} :prompt nil)
+    EOF
+
+[group('dist')]
+dist-update-all:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (ql:update-all-dists :prompt nil)
+    EOF
+
+[group('asdf-project')]
+init:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (ql:quickload :cl-project)
+    (cl-project:make-project #p"../{{ project_name }}"
+      :name "{{ project_name }}"
+      :description "{{ project_name }}"
+      :author "lost"
+      :license "MIT"
+      :depends-on '())
+    EOF
+    echo "Finishing cl-project:make-project ..."
+
+    echo "Creating .sbclrc ..."
+    cat <<EOF > .sbclrc
+    (push (truename ".") asdf:*central-registry*)
+    EOF
+
+    echo "Creating dev.lisp ..."
+    cat <<EOF > dev.lisp
+    (load ".sbclrc")
+    (ql:quickload :{{ project_name }})
+    (asdf:load-system :{{ project_name }})
+    EOF
+
+[group('asdf-project')]
+sync:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (load ".sbclrc")
+    (ql:quickload :{{ project_name }})
+    (asdf:load-system :{{ project_name }})
+    EOF
+
+[group('asdf-project')]
+run FUN="main" *ARGS:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (load ".sbclrc")
+    (ql:quickload :{{ project_name }})
+    (asdf:load-system :{{ project_name }})
+    ({{ project_name }}:{{ FUN }} {{ ARGS }})
+    EOF
+
+[group('asdf-project')]
+test:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (load ".sbclrc")
+    (ql:quickload :{{ project_name }}/tests)
+    (asdf:test-system :{{ project_name }}/tests)
+    EOF
+
+[group('asdf-project')]
+make:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    cat <<EOF   
+    # NOTE: please ensure these build configs on ASD file
+
+        :build-operation "program-op"
+        :build-pathname "demo.exe"
+        :entry-point "demo:main"
+
+    EOF
+
+    {{ sbcl_cmd }} <<EOF
+    (load ".sbclrc")
+    (asdf:make :{{ project_name }})
+    EOF
+
+[group('asdf-project')]
+build ENTRYPOINT_FUN="main":
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (load ".sbclrc")
+    (ql:quickload :{{ project_name }})
+    (asdf:load-system :{{ project_name }})
+    (sb-ext:save-lisp-and-die "{{ project_name }}.exe"
+      :executable t
+      :toplevel #'{{ project_name }}:{{ ENTRYPOINT_FUN }}
+      :compression 9
+      :save-runtime-options t)
+    EOF
+
+[group('single-file')]
+single-file-init NAME:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    file="{{ NAME }}.lisp"
+
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $file
+    (defun main ()
+      (format t "~A~&" "Hello SBCL."))
+    EOF
+
+[group('single-file')]
+single-file-run FILE FUN="main" *ARGS:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (load "{{ FILE }}")
+    ({{ FUN }} {{ ARGS }})
+    EOF
+
+[group('single-file')]
+single-file-build FILE ENTRYPOINT_FUN="main":
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    {{ sbcl_cmd }} <<EOF
+    (load "{{ FILE }}")
+    (sb-ext:save-lisp-and-die "{{ file_stem(FILE) }}.exe"
+      :executable t
+      :toplevel #'{{ ENTRYPOINT_FUN }}
+      :compression 9
+      :save-runtime-options t)
+    EOF
+
+[group('script')]
+script-init NAME:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    script_file="{{ NAME }}.lisp"
+
+    if [[ -e "$script_file" ]]; then
+      echo "Error: $script_file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $script_file
+    #!/usr/bin/env -S sbcl --script
+    (format t "~A~&" "Hello SBCL script.")
+    EOF
+
+    chmod +x $script_file
