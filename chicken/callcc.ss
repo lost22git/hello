@@ -5,11 +5,10 @@
 (define fact
   (lambda (x)
     (if (= x 0)
-      (call/cc 
-        (lambda (k)
-           (set! retry k)
-           1))
-       (* x (fact (-  x 1))))))
+        (call/cc (lambda (k)
+                   (set! retry k)
+                   1))
+        (* x (fact (- x 1))))))
 
 (display (fact 4))
 (newline)
@@ -21,5 +20,5 @@
 
 ;; source of procedure `values` in `scheme` module
 (define (values . vals)
-  (call-with-current-continuation 
-    (lambda (k) (apply k vals))))
+  (call-with-current-continuation
+   (lambda (k) (apply k vals))))

@@ -1,0 +1,154 @@
+csi := "chicken-csi"
+csc := "chicken-csc"
+ext := "ss"
+
+_default:
+    @just --list --unsorted
+
+setup:
+    chicken-install apropos
+    chicken-install csm
+
+info:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    {{ csi }} -q <<EOF
+    (import (chicken platform))
+    (begin
+      (print "build-platform          | " (build-platform))
+      (print "chicken-home            | " (chicken-home))
+      (print "chicken-version         | " (chicken-version))
+      (print "features                | " (features))
+      (print "include-path            | " (include-path))
+      (print "installation-repository | " (installation-repository))
+      (print "machine-byte-order      | " (machine-byte-order))
+      (print "machine-type            | " (machine-type))
+      (print "repository-path         | " (repository-path))
+      (print "software-type           | " (software-type))
+      (print "software-version        | " (software-version))
+      (print "system-cache-directory  | " (system-cache-directory))
+      (print "system-config-directory | " (system-config-directory)))
+    EOF
+
+[group('egg')]
+egg-list-versions *EGGS:
+    chicken-install -list-versions {{ EGGS }}
+
+[group('egg')]
+egg-install *EGGS:
+    chicken-install {{ EGGS }}
+
+[group('egg')]
+egg-uninstall *EGGS:
+    chicken-uninstall {{ EGGS }}
+
+[group('egg')]
+egg-list *EGGS:
+    chicken-status -list {{ EGGS }}
+
+[group('egg')]
+egg-list-files *EGGS:
+    chicken-status -f {{ EGGS }}
+
+[group('egg')]
+egg-list-components *EGGS:
+    chicken-status -c {{ EGGS }}
+
+[group('egg')]
+egg-init NAME:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    source_file={{ NAME }}.scm
+    egg_file={{ NAME }}.egg
+
+    echo "Creating $source_file ..."
+    if [[ -e "$source_file" ]]; then
+      echo "Error: $source_file already exists" >&2
+      exit 1
+    fi
+    cat <<EOF > $source_file
+    (module {{ NAME }} (hi)
+      (import scheme (chicken base))
+      (define (hi)
+        (display "Hi")))
+    EOF
+
+    echo "Creating $egg_file ..."
+    if [[ -e "$egg_file" ]]; then
+      echo "Error: $egg_file already exists" >&2
+      exit 1
+    fi
+    cat <<EOF > $egg_file
+    ((synopsis "{{ NAME }}")
+      (version 1.0)
+      (author "lost")
+      (license "MIT")
+      (components (extension demo)))
+    EOF
+
+[group('single-file')]
+single-file-init NAME:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    file="{{ NAME }}.{{ ext }}"
+
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $file
+    (display "HELLO, CHICKEN SCIRPT.")
+    EOF
+
+[group('single-file')]
+single-file-build FILE *CSC_FLAGS:
+    {{ csc }} {{ CSC_FLAGS }} {{ FILE }}
+
+[group('script')]
+script-init NAME:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    script_file="{{ NAME }}.{{ ext }}"
+
+    if [[ -e "$script_file" ]]; then
+      echo "Error: $script_file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $script_file
+    #!/usr/bin/env -S {{ csi }} -s
+    (display "HELLO CHICKEN.")
+    EOF
+
+    chmod +x $script_file
+
+[group('csm')]
+csm-clean:
+    csm -clean
+
+[group('csm')]
+csm-init NAME="main":
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    file="{{ NAME }}.{{ ext }}"
+
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $file
+    (module {{ NAME }} ()
+      (import scheme (chicken base))
+      (display "HELLO CSM."))
+    EOF
+
+[group('csm')]
+csm-build MAIN_MODULE_NAME="main" *CSM_FLAGS:
+    csm {{ CSM_FLAGS }} -program {{ MAIN_MODULE_NAME }}
