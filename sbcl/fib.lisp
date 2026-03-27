@@ -1,5 +1,16 @@
 #!/usr/bin/env -S sbcl --script
 
+(defgeneric fib-mm (n)
+  (:documentation "fib-mm")
+  (:method ((n (eql 0))) 1)
+  (:method ((n (eql 1))) 1)
+  (:method (n) (+ (fib-mm (- n 1))
+                  (fib-mm (- n 2)))))
+
+; (format t "fib-mm(0) = ~A~%" (fib-mm 0))
+; (format t "fib-mm(1) = ~A~%" (fib-mm 1))
+; (format t "fib-mm(11) = ~A~%" (fib-mm 11))
+
 (defun fib (n)
   (if (<= n 1)
     1
@@ -55,5 +66,3 @@
 ;   (time (fib-reduce n))
 ;   (format t "--- fib-loop ----------------------------")
 ;   (time (fib-loop n)))
-
-

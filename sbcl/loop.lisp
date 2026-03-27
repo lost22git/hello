@@ -7,35 +7,33 @@
         with mark = 0
         with from = 0
         for to = (+ from (length sep))
-          unless (or (not max-count) (> max-count 1)) do (return (list s))
-          if (<= to len)
-            if (funcall eq-fn sep (subseq s from to))
+        unless (or (not max-count) (> max-count 1)) do (return (list s))
+        if (<= to len)
+        if (funcall eq-fn sep (subseq s from to))
               ;; found seperator
-              if (and  trim? (= mark from)) 
+        if (and  trim? (= mark from))
                 ;; skip empty
-                do (setf mark to)
-                and do (setf from to) ;; go on next round
-              else 
+        do (setf mark to)
+        and do (setf from to) ;; go on next round
+        else
                 ;; accept empty 
-                if (and max-count (= (- max-count 2) (length result)))
+        if (and max-count (= (- max-count 2) (length result)))
                   ;; reach max-size - 1 
-                  collect (subseq s mark from) into result
-                  and do (setf mark to)
-                  and do (setf from len)  ;; collect last one on next round
-                else
-                  collect (subseq s mark from) into result
-                  and do (setf mark to)
-                  and do (setf from to) ;; go on next round
-            else ;; not found seperator,
-              do (incf from) ;; go on next round
-          else ;; collect last one 
-            if (or (not trim?) (< mark len))
+        collect (subseq s mark from) into result
+        and do (setf mark to)
+        and do (setf from len)  ;; collect last one on next round
+        else
+        collect (subseq s mark from) into result
+        and do (setf mark to)
+        and do (setf from to) ;; go on next round
+        else ;; not found seperator,
+        do (incf from) ;; go on next round
+        else ;; collect last one 
+        if (or (not trim?) (< mark len))
               ;; accept empty
-              collect (subseq s mark) into result
-              and do (return result)
+        collect (subseq s mark) into result
+        and do (return result)
         finally (return result)))
-
-
 
 (assert (equalp
          '("hello" "lisp")
