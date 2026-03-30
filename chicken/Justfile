@@ -1,3 +1,5 @@
+project_path := justfile_directory()
+project_name := file_name(project_path)
 csi := "chicken-csi"
 csc := "chicken-csc"
 ext := "ss"
@@ -56,12 +58,12 @@ egg-list-components *EGGS:
     chicken-status -c {{ EGGS }}
 
 [group('egg')]
-egg-init NAME:
+egg-init:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    source_file={{ NAME }}.scm
-    egg_file={{ NAME }}.egg
+    source_file={{ project_name }}.scm
+    egg_file={{ project_name }}.egg
 
     echo "Creating $source_file ..."
     if [[ -e "$source_file" ]]; then
@@ -69,7 +71,7 @@ egg-init NAME:
       exit 1
     fi
     cat <<EOF > $source_file
-    (module {{ NAME }} (hi)
+    (module {{ project_name }} (hi)
       (import scheme (chicken base))
       (define (hi)
         (display "Hi")))
@@ -81,32 +83,12 @@ egg-init NAME:
       exit 1
     fi
     cat <<EOF > $egg_file
-    ((synopsis "{{ NAME }}")
+    ((synopsis "{{ project_name }}")
       (version 1.0)
       (author "lost")
       (license "MIT")
-      (components (extension demo)))
+      (components (extension {{ project_name }})))
     EOF
-
-[group('single-file')]
-single-file-init NAME:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    file="{{ NAME }}.{{ ext }}"
-
-    if [[ -e "$file" ]]; then
-      echo "Error: $file already exists" >&2
-      exit 1
-    fi
-
-    cat <<EOF > $file
-    (display "HELLO, CHICKEN SCIRPT.")
-    EOF
-
-[group('single-file')]
-single-file-build FILE *CSC_FLAGS:
-    {{ csc }} {{ CSC_FLAGS }} {{ FILE }}
 
 [group('script')]
 script-init NAME:
@@ -126,6 +108,35 @@ script-init NAME:
     EOF
 
     chmod +x $script_file
+
+[group('single-file')]
+single-file-init NAME:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    file="{{ NAME }}.{{ ext }}"
+
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $file
+    (display "HELLO, CHICKEN SCIRPT.")
+    EOF
+
+[group('single-file')]
+single-file-run FILE *CSI_FLAGS:
+    {{ csi }} -q -b {{ CSI_FLAGS }} {{ FILE }}
+
+[group('single-file')]
+single-file-build FILE *CSC_FLAGS:
+    {{ csc }} {{ CSC_FLAGS }} {{ FILE }}
+
+# Static-linking OpenSSL if libssl.a and libcrypto.a are found in the `OPENSSL_STATIC_DIR`, otherwise dynamic-linking OpenSSL.
+[group('single-file')]
+single-file-build-static-with-openssl FILE OPENSSL_STATIC_DIR *CSC_FLAGS:
+    {{ csc }} {{ CSC_FLAGS }} -static -uses openssl -L{{ OPENSSL_STATIC_DIR }} -L -lssl -L -lcrypto {{ FILE }}
 
 [group('csm')]
 csm-clean:
