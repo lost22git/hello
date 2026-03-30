@@ -17,8 +17,14 @@
 (display (retry 2)) ; 2 * 1 * 2 * 3 * 4
 (newline)
 (display (retry 10)) ; 10 * 1 * 2 * 3 * 4
+(newline)
+(display
+ (retry (retry 10))) ;; NOTE: composable? no!
+(newline)
+(define v (retry 10)) ;; NOTE: composable? no!
+; (display v) ;; ERROR: unbound variable v
 
 ;; source of procedure `values` in `scheme` module
-(define (values . vals)
-  (call-with-current-continuation
-   (lambda (k) (apply k vals))))
+; (define (values . vals)
+;   (call-with-current-continuation
+;    (lambda (k) (apply k vals))))

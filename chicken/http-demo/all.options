@@ -1,0 +1,3 @@
+(cond-expand
+  (static "-static" "-uses" "openssl" "-L" "-lssl" "-L" "-lcrypto" "-L../openssl-static")
+  (else "-L" "-lssl" "-L" "-lcrypto"))

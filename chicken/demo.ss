@@ -5,8 +5,8 @@
 (print "Hello, " "chicken " "scheme.")
 
 (import (chicken format))
-(printf "~A~N" 1)
-(format #t "~A~N" 1)
+(printf "~A~%" 1)
+(format #t "~A~%" 1)
 
 (null? '())
 (null? #())
@@ -17,4 +17,5 @@
 (import (prefix utf8 utf8:))
 (utf8:string-length "λ")
 
-(apropos "hash" #:macros? #t)
+(apropos "map" #:macros? #t)
+(apropos "string" #:macros? #t #:find #:module)
