@@ -4,10 +4,10 @@ https://racket-lang.org
 
 ## Resources
 
-- [Official Doc](https://docs.racket-lang.org)
+- https://beautifulracket.com
 - https://defn.io
 
-## Complains
+## Features
 
-The `raco exe` compilation is extremely slow (maybe x2 slower than Rust release compilation)
-
+- Powerful continuation support
+- Powerful macro support

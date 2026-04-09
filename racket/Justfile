@@ -1,0 +1,70 @@
+_default:
+    @just --list --unsorted
+
+[group('pkg')]
+pkg-show *RACO_PKG_SHOW_OPTS:
+    raco pkg show {{ RACO_PKG_SHOW_OPTS }}
+
+[group('pkg')]
+pkg-install NAME *RACO_PKG_INSTALL_OPTS:
+    raco pkg install {{ RACO_PKG_INSTALL_OPTS }} {{ NAME }}
+
+[group('pkg')]
+pkg-uninstall NAME *RACO_PKG_UNINSTALL_OPTS:
+    raco pkg uninstall {{ RACO_PKG_UNINSTALL_OPTS }} {{ NAME }}
+
+clean:
+    rm -rf compiled
+
+new NAME:
+    raco pkg new {{ NAME }}
+    cp {{ justfile() }} {{ NAME }}/Justfile
+
+run FILE:
+    racket {{ FILE }}
+
+test:
+    raco test .
+
+make FILE *RACO_MAKE_OPTS:
+    raco make {{ RACO_MAKE_OPTS }} {{ FILE }}
+
+exe FILE *RACO_EXE_OPTS:
+    raco make {{ FILE }}
+    raco exe {{ RACO_EXE_OPTS }} {{ FILE }}
+
+[group('single-file')]
+single-file-init NAME:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    file="{{ NAME }}.rkt"
+
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $file
+    #lang racket/base
+    (displayln "HELLO, RACKET.")
+    EOF
+
+[group('script')]
+script-init NAME:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    file="{{ NAME }}.rkt"
+
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $file
+    #!/usr/bin/env -S racket -r
+    (displayln "HELLO, RACKET SCRIPT.")
+    EOF
+
+    chmod +x $file
