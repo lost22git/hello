@@ -33,6 +33,9 @@
 ;; constantly
 (constantly 1)
 
+;; identity
+(identity 1)
+
 ;; complement
 (complement odd?)
 
