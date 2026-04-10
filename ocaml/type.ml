@@ -1,8 +1,7 @@
-[@@@ocaml.warning "-a"]
+#!/usr/bin/env ocaml
 
 open Printf
 
-let () = print_endline "=== memory_layout ==="
 let typeof v = Obj.repr v
 
 (** get words count of payload of instance on heap *)
@@ -155,13 +154,13 @@ assert (instance_payload_bytes v == 2 * 8);;
 
 let v = fun a b -> a + b;;
 
-assert (instance_payload_words v == 3);;
-assert (instance_payload_bytes v == 3 * 8);;
+assert (instance_payload_words v == 2);;
+assert (instance_payload_bytes v == 2 * 8);;
 
 let v = fun a b c -> a + b + c;;
 
-assert (instance_payload_words v == 3);;
-assert (instance_payload_bytes v == 3 * 8);;
+assert (instance_payload_words v == 2);;
+assert (instance_payload_bytes v == 2 * 8);;
 
 (* error *)
 exception Error_foo

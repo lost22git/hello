@@ -1,0 +1,46 @@
+_default:
+    @just --list --unsorted
+
+clean:
+    dune clean
+
+init NAME:
+    dune init project {{ NAME }}
+    cp {{ justfile() }} {{ NAME }}/Justfile
+
+install-deps:
+    opam install . --deps-only --with-test
+
+run NAME:
+    dune exec {{ NAME }}
+
+test:
+    dune test 
+
+build *DUNE_BUILD_OPTS:
+    dune build {{ DUNE_BUILD_OPTS }}
+
+[group('script')]
+script-init NAME:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    file="{{ NAME }}.ml"
+
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $file
+    #!/usr/bin/env ocaml
+
+    let () = print_endline "HELLO, OCAML SCRIPT."
+    EOF
+
+    chmod +x $file
+
+[group('single-file')]
+single-file-build FILE PKGS *BUILD_OPTS:
+    ocamlfind ocamlopt {{ BUILD_OPTS }} -package {{ PKGS }} -linkpkg -o {{ file_stem(FILE) }} {{ FILE }}
+    rm {{ file_stem(FILE) }}.o {{ file_stem(FILE) }}.cmi {{ file_stem(FILE) }}.cmx 
