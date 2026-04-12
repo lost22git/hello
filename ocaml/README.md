@@ -17,3 +17,9 @@
 - Error Models: tag union / try-with / effect handler
 - Native Code
 - Fast Compiler
+
+## Complaints
+
+- Lack of a built-in way to print everything, you must use ppx.
+- Lack of type-based function overloading, you can only use ADT & pattern-matching.
+- `(* *)` vs `( * )`
