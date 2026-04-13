@@ -3,6 +3,8 @@
 ## Resources
 
 - https://cs3110.github.io/textbook/cover.html
+- https://github.com/ocaml-multicore/ocaml-effects-tutorial
+- https://batsov.com/articles/2026/03/03/ppx-for-mere-mortals/
 
 ## Summary
 

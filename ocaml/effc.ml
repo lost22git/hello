@@ -19,22 +19,19 @@ let guess max_number =
   in
   loop ()
 
+let log s = print_endline s
+
+let ask s =
+  print_string s;
+  read_line ()
+
 let handlers () =
   {
     effc =
       (fun (type c) (eff : c Effect.t) ->
         match eff with
-        | Log s ->
-            Some
-              (fun (k : (c, _) continuation) ->
-                print_endline s;
-                continue k ())
-        | Ask s ->
-            Some
-              (fun (k : (c, _) continuation) ->
-                print_string s;
-                let answer = read_line () in
-                continue k answer)
+        | Log s -> Some (fun (k : (c, _) continuation) -> log s |> continue k)
+        | Ask s -> Some (fun (k : (c, _) continuation) -> ask s |> continue k)
         | _ -> None);
     exnc = (function e -> raise e);
     retc = (fun _ -> ());
