@@ -1,0 +1,42 @@
+_default:
+    @just --list --unsorted
+
+[group('script')]
+script-init NAME:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    file="{{ NAME }}.sml"
+
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $file
+    #!/usr/bin/env -S poly --script
+    print "HELLO, POLY/ML SCRIPT.\n";
+    EOF
+
+    chmod +x $file
+
+[group('single-file')]
+single-file-init NAME:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    file="{{ NAME }}.sml"
+
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $file
+    fun main () =
+      print "HELLO, POLY/ML.\n";
+    EOF
+
+[group('single-file')]
+single-file-build FILE:
+    polyc -o {{ file_stem(FILE) }} {{ FILE }}
