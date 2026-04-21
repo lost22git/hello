@@ -9,7 +9,7 @@
   (print (string/repeat "=" 22))
 
   # end comment
-)
+  )
 
 (comment
   # === Print ===
@@ -29,7 +29,7 @@
                    "ssss\n")))
 
   # end comment
-)
+  )
 
 (comment
   # === String ===
@@ -42,7 +42,7 @@
 ``)
 
   # end comment
-)
+  )
 
 (comment
   # === Array/Tuple ===
@@ -57,7 +57,7 @@
       type)
 
   # end comment
-)
+  )
 
 (comment
   # === Table/Struct ===
@@ -72,7 +72,7 @@
       type)
 
   # end comment
-)
+  )
 
 
 (comment
@@ -98,7 +98,7 @@
       0))
 
   # end comment
-)
+  )
 
 (comment
   # === For/Loop ===
@@ -116,7 +116,7 @@
     (print i))
 
   # end comment
-)
+  )
 
 
 (comment
@@ -161,7 +161,7 @@
   (apply add-named (kvs {:a 1 :b 2}))
 
   # end comment
-)
+  )
 
 (comment
   # === Buffer ===
@@ -191,7 +191,7 @@
       @[33]))
 
   # end comment
-)
+  )
 
 (comment
   # === PEG ===
@@ -216,7 +216,7 @@
   (peg/match hexcolor "#FF800F")
 
   # end comment
-)
+  )
 
 
 (comment
@@ -272,7 +272,7 @@
       (print v)))
 
   # end comment
-)
+  )
 
 (comment
   # === Thread ===
@@ -284,7 +284,7 @@
     (print "hello from spawn-thread"))
 
   # end comment
-)
+  )
 
 
 (comment
@@ -357,21 +357,21 @@
     ([e] (eprint e)))
 
   # end comment
-)
+  )
 
 
 (comment
   # === Net ===
 
   # end comment
-)
+  )
 
 
 (comment
   # === FFI ===
 
   # end comment
-)
+  )
 
 (comment
   # === JSON ===
@@ -389,7 +389,7 @@
         assert))
 
   # end comment
-)
+  )
 
 
 (comment
@@ -423,7 +423,7 @@
         (print "HELLO -> " name))))
 
   # end comment
-)
+  )
 
 
 (comment
@@ -448,4 +448,4 @@
         pp))
 
   # end comment
-)
+  )

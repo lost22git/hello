@@ -1,0 +1,21 @@
+_default:
+    @just --list --unsorted
+
+[group('script')]
+script-init NAME:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    file="{{ NAME }}.janet"
+
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $file
+    #!/usr/bin/env janet
+    (print "HELLO, JANET SCRIPT.")
+    EOF
+
+    chmod +x $file
