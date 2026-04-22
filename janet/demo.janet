@@ -32,6 +32,30 @@
   )
 
 (comment
+  # === Error ===
+
+  (protect
+    10)
+
+  (protect
+    (error -1)
+    10)
+
+  (try (error -1)
+    ([err fiber]
+      (debug/stacktrace fiber err "")
+      0))
+
+  (try
+    (do
+      (def n (getline "INPUT A NUMBER: "))
+      (print "YOUR NUMBER IS: " (int/s64 (string/trim n))))
+    ([e] (eprint "ERROR: " e)))
+
+  # end comment
+  )
+
+(comment
   # === String ===
 
   # multi-lines raw string (text block)
@@ -74,95 +98,6 @@
   # end comment
   )
 
-
-(comment
-  (try
-    (do
-      (def n (getline "INPUT A NUMBER: "))
-      (print "YOUR NUMBER IS: " (int/s64 (string/trim n))))
-    ([e] (eprint "ERROR: " e))))
-
-(comment
-  # === Error ===
-
-  (protect
-    10)
-
-  (protect
-    (error -1)
-    10)
-
-  (try (error -1)
-    ([err fiber]
-      (debug/stacktrace fiber err "")
-      0))
-
-  # end comment
-  )
-
-(comment
-  # === For/Loop ===
-
-  # for i [1,5) do-effect
-  (for i 1 5
-    (print i))
-
-  # loop bindings do-effect
-  (loop [i :range [1 5 1]]
-    (print i))
-  (loop [i :in (range 1 5 1)]
-    (print i))
-  (each i (range 1 5 1)
-    (print i))
-
-  # end comment
-  )
-
-
-(comment
-  # === Function ===
-  # https://janet-lang.org/docs/functions.html
-
-  (defn hello
-    "Hello to given name"
-    [name]
-    (print "Hello " name " !!"))
-
-  (def name :private "The name of Janet" "Janet")
-  (hello name)
-
-  # lambda |()
-  (->> ["Janet" "Fennel"]
-       (map |(string/ascii-upper $)))
-
-  # fib
-  (defn fib [n]
-    (case n
-      0 1
-      1 1
-      (+ (fib (- n 1)) (fib (- n 2)))))
-
-  (print "fib(11): " (fib 11))
-
-  # &keys params
-  (defn add-keys [&keys {:a a :b b}]
-    (+ a b))
-
-  (add-keys :a 1 :b 2)
-  (add-keys ;(kvs {:a 1 :b 2}))
-  (apply add-keys (kvs {:a 1 :b 2}))
-
-  # &named params
-  (defn add-named [&named a b]
-    (+ a b))
-
-  (add-named :a 1 :b 2)
-  (add-named ;(kvs {:a 1 :b 2}))
-  (apply add-named (kvs {:a 1 :b 2}))
-
-  # end comment
-  )
-
 (comment
   # === Buffer ===
 
@@ -189,87 +124,6 @@
     (deep=
       (peg/match '(uint-be 4) buf 8)
       @[33]))
-
-  # end comment
-  )
-
-(comment
-  # === PEG ===
-  # https://janet-lang.org/docs/peg.html
-  # - primitive patterns
-  # - combining patterns
-  # - captures
-  # - recursion
-
-  (def hexcolor
-    ~{:hex (range "09" "af" "AF") # :h
-      :hexhex (2 :hex)
-      :capture-hexhex (<- :hexhex)
-      :capture-hexhex-with-pos (*
-                                 ($)
-                                 :capture-hexhex
-                                 ($))
-      :main (*
-              "#"
-              (3 :capture-hexhex-with-pos))})
-
-  (peg/match hexcolor "#FF800F")
-
-  # end comment
-  )
-
-
-(comment
-  # === Fiber ===
-
-  (let [f (fiber/current)]
-    (print "=== fiber current ===")
-    (pp (fiber/status f))
-    (pp (fiber/getenv f))
-    (pp (fiber/maxstack f))
-    (pp (fiber/last-value f)))
-
-  (let [f (fiber/root)]
-    (print "=== fiber root ===")
-    (pp (fiber/status f))
-    (pp (fiber/getenv f))
-    (pp (fiber/maxstack f))
-    (pp (fiber/last-value f)))
-
-  (let [ch (ev/chan)
-        supervisor (ev/chan)
-        n 4
-        giver-fib (ev/spawn (do (repeat n
-                                  (ev/sleep 1)
-                                  (ev/give ch (os/time)))
-                              (ev/chan-close ch)))
-        taker-fib (ev/go |(forever
-                            (if-let [v (ev/take $)]
-                              (print v) (break))) ch supervisor)]
-
-    (pp (ev/take supervisor))
-    (ev/chan-close supervisor)
-    (print "taker-fib" taker-fib ": " (fiber/status taker-fib))
-    (print "giver-fib" giver-fib ": " (fiber/status giver-fib)))
-
-  (try
-    (ev/with-deadline 3
-      (do
-        (ev/sleep 1)
-        (print "first sleep done")
-        (ev/sleep 1)
-        (print "second sleep done")
-        (ev/sleep 1)
-        (print "third sleep done")))
-    ([e f]
-      (print "last-value: " (fiber/last-value f))
-      (debug/stacktrace f e "")
-      nil))
-
-  (let [generator
-        (coro (yield 1) (yield 10) (yield 100))]
-    (each v generator
-      (print v)))
 
   # end comment
   )
@@ -355,97 +209,6 @@
         (os/proc-wait p))
       (string/trim result))
     ([e] (eprint e)))
-
-  # end comment
-  )
-
-
-(comment
-  # === Net ===
-
-  # end comment
-  )
-
-
-(comment
-  # === FFI ===
-
-  # end comment
-  )
-
-(comment
-  # === JSON ===
-
-  (import spork/json)
-
-  (let [buf @""
-        data {:name "Janet"
-              :tags @["Functional" "Lisp"]}]
-    (json/encode data "" "" buf)
-    (-> (json/decode buf true true)
-        (table/to-struct)
-        tracev
-        (deep= data)
-        assert))
-
-  # end comment
-  )
-
-
-(comment
-  # ===  ArgParse ===
-
-  (import spork/argparse :prefix "")
-  (import spork/schema)
-
-  (def cli-spec ["Greeting cli app"
-                 "name" {:help "Name to greet"
-                         :kind :option
-                         :required true}
-                 "times" {:help "Times of greeting"
-                          :short "n"
-                          :kind :option
-                          :required false
-                          :default "1"
-                          :map scan-number}])
-
-  (def cli-validator
-    (schema/validator
-      (props
-        "name" (and :string (length 3 10))
-        "times" (and :number (pred pos?)))))
-
-  (with-dyns [:args
-              @["app" "--name" "king" "-n" "-2"]]
-    (let [{"name" name "times" times}
-          (cli-validator (argparse ;cli-spec))]
-      (repeat times
-        (print "HELLO -> " name))))
-
-  # end comment
-  )
-
-
-(comment
-  # === HTTP ===
-
-  (import spork/http)
-
-  (def resp (http/request
-              "GET"
-              "http://api64.ipify.org"
-              :headers
-              {"User-Agent" "curl/8.12.1"
-               "Accept" "*/*"}))
-
-  (case (resp :status)
-    200
-    (-> resp
-        (get :body)
-        pp)
-    (-> resp
-        (get :message)
-        pp))
 
   # end comment
   )

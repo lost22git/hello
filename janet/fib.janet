@@ -19,7 +19,6 @@
     (visit (dec n) (+ a b) a)))
 (defn fib-tail-recur
   [n]
-
   (visit n 1 0))
 
 (comment
