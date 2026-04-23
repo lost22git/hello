@@ -32,5 +32,6 @@ Method:
 - multi-dispatch (run-time, args-count or args-type based dispatch)
 
 Similar things in other languages:
+- CommonLisp: multi-methods (run-time, args-value or args-type based dispatch)
 - Clojure: multi-methods (run-time, args-value based dispatch)
 - Elixir; multi-clauses (run-time, args-count or args-value based dispatch)
