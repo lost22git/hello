@@ -53,8 +53,6 @@
   (clojure.set/rename x {:name :nickname})
   (clojure.set/project x [:nickname :kind]))
 
-;; seq
-
 ;; record
 (defrecord Book [name pages])
 (def book (->Book "The Clojure Book" 111))
@@ -222,3 +220,9 @@
   (cond-> v
     (zero? v) (inc)))
 
+;; reduced: terminated in advanced in reduce iteration
+(reduce (fn [acc x]
+          (if (= x 7)
+            (reduced x) ;; terminated in advanced 
+            (+ acc x)))
+        (range 7))
