@@ -1,0 +1,18 @@
+_default:
+    @just --list --unsorted
+
+build:
+    crystal build --release -o fib_cr.exe fib.cr && strip fib_cr.exe
+    dart compile exe -o fib_dart.exe fib.dart && chmod +x fib_dart.exe
+    go build -o fib_go.exe fib.go && strip fib_go.exe
+    ghc -O -o fib_hs.exe --make fib.hs && rm fib.hi && strip fib_hs.exe
+    nim c --hints:off -d:release -o:fib_nim.exe  fib.nim && strip fib_nim.exe
+    ocamlopt -O3 -o fib_ml.exe fib.ml && rm fib.cmi fib.cmx && strip fib_ml.exe
+    raco make fib.rkt && raco exe -o fib_rkt.exe fib.rkt && rm ./compiled/ -rf
+    rustc -O -o fib_rs.exe fib.rs && strip fib_rs.exe
+    swiftc -static-stdlib -O -o fib_swift.exe fib.swift && strip fib_swift.exe
+    v -prod -o fib_v.exe fib.v && strip fib_v.exe
+    rm *.o
+
+bench:
+    hyperfine --warmup 3 ./fib_cr.exe ./fib_dart.exe ./fib_go.exe ./fib_hs.exe ./fib_ml.exe ./fib_nim.exe ./fib_rkt.exe ./fib_rs.exe ./fib_swift.exe ./fib_v.exe ./fib.jl ./fib.ts ./fib.lua ./fib.ss ./fib.lisp
