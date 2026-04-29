@@ -4,15 +4,9 @@
 
 - https://learnyouahaskell.github.io
 - https://www.haskell.org/documentation/
+- https://hoogle.haskell.org
 
-## Concepts
+## Summary
 
-### typeclass
-
-### Functor
-
-### Applicative
-
-### Monoid
-
-### Monad
+- Laziness - everything is function since lazy evaluation.
+- Box - boxing effects into type system to help compiler understand and optimize code.

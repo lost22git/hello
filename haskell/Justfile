@@ -1,0 +1,29 @@
+_default:
+    @just --list --unsorted
+
+build FILE *OPTIONS:
+    ghc --make {{ FILE }} {{ OPTIONS }}
+    rm {{ file_stem(FILE) }}.hi {{ file_stem(FILE) }}.o
+
+run FILE *OPTIONS:
+    ghc --run {{ FILE }} {{ OPTIONS }}
+
+[group('script')]
+script-init NAME:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    file="{{ NAME }}.hs"
+
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
+      exit 1
+    fi
+
+    cat <<EOF > $file
+    #!/usr/bin/env runhaskell
+    main = do
+      print "HELLO, HASKELL SCRIPT."
+    EOF
+
+    chmod +x $file
