@@ -1,0 +1,15 @@
+project_path := justfile_directory()
+project_name := file_name(project_path)
+build_dir := "_build"
+
+_default:
+    @just --list --unsorted
+
+clean:
+    rm -rf ./{{ build_dir }}
+
+build:
+    ponyc -o {{ build_dir }}
+
+run: build
+    ./{{ build_dir }}/{{ project_name }}
