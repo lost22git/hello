@@ -5,4 +5,4 @@
       1
       (+ (fib (- n 1)) (fib (- n 2)))))
 
-(let ([n 40]) (display (fib 40)))
+(let ([n 40]) (display (fib n)))

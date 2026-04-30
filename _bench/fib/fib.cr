@@ -1,4 +1,4 @@
-def fib(n : Int32) : Int32
+def fib(n : Int) : Int
   if n < 2
     return 1
   else

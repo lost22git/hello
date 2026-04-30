@@ -9,4 +9,4 @@ local function fib(n)
 end
 
 local n = 40
-print(fib(40))
+print(fib(n))

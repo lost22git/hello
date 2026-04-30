@@ -1,18 +1,78 @@
 _default:
     @just --list --unsorted
 
-build:
-    crystal build --release -o fib_cr.exe fib.cr && strip fib_cr.exe
-    dart compile exe -o fib_dart.exe fib.dart && chmod +x fib_dart.exe
-    go build -o fib_go.exe fib.go && strip fib_go.exe
-    ghc -O -o fib_hs.exe --make fib.hs && rm fib.hi && strip fib_hs.exe
-    nim c --hints:off -d:release -o:fib_nim.exe  fib.nim && strip fib_nim.exe
-    ocamlopt -O3 -o fib_ml.exe fib.ml && rm fib.cmi fib.cmx && strip fib_ml.exe
-    raco make fib.rkt && raco exe -o fib_rkt.exe fib.rkt && rm ./compiled/ -rf
-    rustc -O -o fib_rs.exe fib.rs && strip fib_rs.exe
-    swiftc -static-stdlib -O -o fib_swift.exe fib.swift && strip fib_swift.exe
-    v -prod -o fib_v.exe fib.v && strip fib_v.exe
-    rm *.o
+clean:
+    rm *.exe -f
+    rm *.class -f
+    rm *.uc -f
+    rm classes -rf
 
-bench:
-    hyperfine --warmup 3 ./fib_cr.exe ./fib_dart.exe ./fib_go.exe ./fib_hs.exe ./fib_ml.exe ./fib_nim.exe ./fib_rkt.exe ./fib_rs.exe ./fib_swift.exe ./fib_v.exe ./fib.jl ./fib.ts ./fib.lua ./fib.ss ./fib.lisp
+m := "fib"
+
+[unix]
+build:
+    #!/usr/bin/env bash
+    set -uxo pipefail
+
+    cc {{ m }}.c -O3 -o {{ m }}_c.exe && strip $_
+    c3c compile {{ m }}.c3 -O3 -o {{ m }}_c3.exe && strip $_
+    chicken-csc {{ m }}.ss -static -fixnum-arithmetic -O3 -o {{ m }}_chicken.exe && strip $_ && rm *.link -f
+    mkdir -p classes && clj -Sdeps '{:paths ["."]}' -M -e '(compile (quote {{ m }}))'
+    crystal build {{ m }}.cr --release -o {{ m }}_crystal.exe && strip $_
+    dart compile exe {{ m }}.dart -o {{ m }}_dart.exe && chmod +x $_
+    go build -o {{ m }}_go.exe {{ m }}.go && strip {{ m }}_go.exe
+    ghc --make {{ m }}.hs -fllvm -O -o {{ m }}_haskell.exe && strip $_ && rm {{ m }}.hi -f
+    javac {{ m }}.java
+    nim c --hints:off -d:release -o:{{ m }}_nim.exe {{ m }}.nim && strip {{ m }}_nim.exe
+    ocamlopt {{ m }}.ml -O3 -o {{ m }}_ocaml.exe && strip $_ && rm {{ m }}.cm{i,x} -f
+    # FIXME: not libpolyml static-linking now
+    polyc {{ m }}.sml -o {{ m }}_poly.exe && strip $_
+    if [ "Android" != "$(uname -o)" ]; then
+      # Koka
+      koka {{ m }}.kk -O3 -o {{ m }}_koka.exe && strip $_ && chmod +x $_ && rm .koka -rf
+      # Pony    
+      ponyc -b {{ m }}_pony.exe && strip $_
+      # Racket CS
+      raco make {{ m }}.rkt && raco demodularize -o {{ m }}.zo {{ m }}.rkt && raco exe --cs --orig-exe -o {{ m }}_racket.exe {{ m }}.zo && strip {{ m }}_racket.exe && rm ./compiled {{ m }}.zo -rf
+      # Unison
+      ucm << 'EOF'
+    project.create {{ m }}
+    load {{ m }}.u
+    update
+    compile main {{ m }}
+    EOF
+      # Roc
+      roc build {{ m }}.roc --optimize --output {{ m }}_roc.exe && strip $_
+      # Zig
+      zig build-exe {{ m }}.zig -O ReleaseFast && mv {{ m }} {{ m }}_zig.exe && strip $_
+    fi
+    rustc {{ m }}.rs -O -o {{ m }}_rust.exe && strip $_
+    sbcl --script {{ m }}.lisp
+    swiftc {{ m }}.swift -static-stdlib -O -o {{ m }}_swift.exe && strip $_
+    v {{ m }}.v -prod -o {{ m }}_v.exe && strip $_
+    rm *.o -f
+
+warmup := "3"
+natives := `rg --files --sort=path -g '*.exe' | rg -U '(.+)\n' -r './$1 ' || true`
+scripts := f"./{{m}}.jl ./{{m}}.ts ./{{m}}.lua ./{{m}}.ss"
+clojure_cp := `clj -Spath || true`
+clojure := f"java -Xmx8m -Xms8m -XX:TieredStopAtLevel=1 -cp ./classes:{{clojure_cp}} {{m}}"
+java := f"java -Xmx8m -Xms8m -XX:TieredStopAtLevel=1 {{m}}"
+unison := f"ucm run.compiled {{m}}.uc"
+bytecodes := f"'{{clojure}}' '{{java}}' '{{unison}}'"
+
+[group('bench')]
+bench_all:
+    hyperfine --warmup {{ warmup }} {{ natives }} {{ scripts }} {{ bytecodes }}
+
+[group('bench')]
+bench_natives:
+    hyperfine --warmup {{ warmup }} {{ natives }}
+
+[group('bench')]
+bench_scripts:
+    hyperfine --warmup {{ warmup }} {{ scripts }}
+
+[group('bench')]
+bench_bytecodes:
+    hyperfine --warmup {{ warmup }} {{ bytecodes }}
