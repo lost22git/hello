@@ -21,7 +21,9 @@ script-init NAME:
     fi
 
     cat <<EOF > $file
-    #!/usr/bin/env runhaskell
+    #!/usr/bin/env -S ghc --run
+
+    main :: IO ()
     main = do
       print "HELLO, HASKELL SCRIPT."
     EOF
