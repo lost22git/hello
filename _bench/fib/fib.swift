@@ -1,5 +1,5 @@
 func fib(_ n: Int) -> Int {
-    if n<2 {
+    if n < 2 {
         return 1
     } else{
         return fib(n-1) + fib(n-2)
@@ -8,4 +8,3 @@ func fib(_ n: Int) -> Int {
 
 let n = 40
 print(fib(n))
-
