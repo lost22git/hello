@@ -1,10 +1,10 @@
-def fib(n : Int) : Int
+def fib(n : UInt64) : UInt64
   if n < 2
-    return 1
+    return 1.to_u64
   else
-    return fib(n - 1) + fib(n - 2)
+    return (fib(n - 1) + fib(n - 2))
   end
 end
 
-n = 40
+n : UInt64 = 40
 puts fib(n)

@@ -17,6 +17,7 @@ build:
     cc {{ m }}.c -O3 -o {{ m }}_c.exe && strip $_
     c3c compile {{ m }}.c3 -O3 -o {{ m }}_c3.exe && strip $_
     chicken-csc {{ m }}.ss -static -fixnum-arithmetic -O3 -o {{ m }}_chicken.exe && strip $_ && rm *.link -f
+    ldc2 {{ m }}.d -O3 --release --of={{ m }}_d.exe && strip {{ m }}_d.exe && rm {{ m }}.o -f
     mkdir -p classes && clj -Sdeps '{:paths ["."]}' -M -e '(compile (quote {{ m }}))'
     crystal build {{ m }}.cr --release -o {{ m }}_crystal.exe && strip $_
     dart compile exe {{ m }}.dart -o {{ m }}_dart.exe && chmod +x $_
@@ -28,8 +29,28 @@ build:
     # FIXME: not libpolyml static-linking now
     polyc {{ m }}.sml -o {{ m }}_poly.exe && strip $_
     if [ "Android" != "$(uname -o)" ]; then
+      # Ada
+      (
+        cat <<'EOF' > alire.toml
+    name = "demo"
+    description = ""
+    version = "0.1.0-dev"
+
+    authors = ["Your Name"]
+    maintainers = ["Your Name <example@example.com>"]
+    licenses = "MIT OR Apache-2.0 WITH LLVM-exception"
+    website = ""
+    tags = []
+
+    executables = ["demo"]
+    EOF
+        eval $(alr printenv) && gnatmake {{ m }}.adb -O3 -o {{ m }}_ada.exe && strip $_ && rm {{ m }}.{ali,o} alire -rf 
+        rm alire.toml -f
+      )
       # Koka
-      koka {{ m }}.kk -O3 -o {{ m }}_koka.exe && strip $_ && chmod +x $_ && rm .koka -rf
+      koka {{ m }}.kk -v0 -O3 -o {{ m }}_koka.exe && strip $_ && chmod +x $_ && rm .koka -rf
+      # Moonbit
+      moon run {{ m }}.mbt --target native --release && cp _build/native/release/build/single/single.exe {{ m }}_moon.exe && strip $_ && rm _build -rf
       # Pony    
       ponyc -b {{ m }}_pony.exe && strip $_
       # Racket CS

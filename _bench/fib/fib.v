@@ -1,4 +1,4 @@
-fn fib(n int) int {
+fn fib(n u64) u64 {
 	if n < 2 {
 		return 1
 	} else {
@@ -6,5 +6,5 @@ fn fib(n int) int {
 	}
 }
 
-n := 40
+n := u64(40)
 println(fib(n))

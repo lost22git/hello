@@ -1,7 +1,7 @@
 when defined(nimHasQuirky):
   {.push quirky: on.}
 
-proc fib(n: int): int =
+proc fib(n: uint64): uint64 =
   if n < 2:
     1
   else:
@@ -10,5 +10,5 @@ proc fib(n: int): int =
 when defined(nimHasQuirky):
   {.pop.}
 
-let n = 40
+let n: uint64 = 40
 echo fib(n)

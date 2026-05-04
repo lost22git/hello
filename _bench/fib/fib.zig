@@ -1,11 +1,11 @@
 const std = @import("std");
 
 pub fn main() void {
-    const n = 40;
+    const n: u64 = 40;
     std.debug.print("{d}\n", .{fib(n)});
 }
 
-fn fib(n: usize) usize {
+fn fib(n: u64) u64 {
     if (n < 2) {
         return 1;
     } else {

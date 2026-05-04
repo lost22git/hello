@@ -1,9 +1,9 @@
 actor Main 
   new create(env: Env) =>
-    let n: USize = 40
+    let n: U64 = 40
     env.out.print(fib(n).string())
 
-  fun fib(n: USize): USize =>
+  fun fib(n: U64): U64 =>
     if n < 2 then
       1
     else

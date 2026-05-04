@@ -3,11 +3,13 @@ app [main!] { pf: platform "https://github.com/roc-lang/basic-cli/releases/downl
 import pf.Stdout
 
 main! = |_args|
+    n : U64
     n = 40
     Stdout.line! (Num.to_str (fib n))
 
+fib : U64 -> U64
 fib = |n|
     if n < 2 then
         1
     else
-        fib (n - 1) + fib(n - 2)
+        fib (n - 1) + fib (n - 2)

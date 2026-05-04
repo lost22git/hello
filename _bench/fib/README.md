@@ -21,3 +21,11 @@ just bench_scripts
 # or 
 just bench_bytecodes
 ```
+
+## Note
+
+Allowed optimization methods:
+
+- For native - `-O3`
+- For lisp - `fixnum`
+- For dynamic type languages - `type-hints`
