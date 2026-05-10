@@ -5,7 +5,6 @@ main = do
   test_mvar
   test_chan
 
-
 -- - Control.Concurrent.MVar => SynchronousQueue
 -- - Control.Concurrent.TVar => STM
 -- - Control.Concurrent.Chan => Channel/BlockingQueue
@@ -27,6 +26,3 @@ test_chan = do
         writeChan ch 42
     v <- readChan ch
     putStrLn $ "[main] Chan received: " ++ show v
-
-
-

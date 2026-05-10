@@ -1,12 +1,46 @@
 _default:
     @just --list --unsorted
 
-build FILE *OPTIONS:
-    ghc --make {{ FILE }} {{ OPTIONS }}
+[group('cabal')]
+cabal-clean:
+    cabal v2-clean
+
+[group('cabal')]
+cabal-list *KEYWORD:
+    cabal list --installed {{ KEYWORD }}
+
+[group('cabal')]
+cabal-search KEYWORD:
+    cabal list {{ KEYWORD }}
+
+[group('cabal')]
+cabal-install NAME:
+    cabal v2-install --lib {{ NAME }}
+
+[group('cabal')]
+cabal-init NAME:
+    cabal init {{ NAME }}
+
+[group('cabal')]
+cabal-deps:
+    cabal v2-build --only-dependencies
+
+[group('cabal')]
+cabal-build *BUILD_OPTS:
+    cabal v2-build {{ BUILD_OPTS }}
+
+[group('cabal')]
+cabal-run *RUN_OPTS:
+    cabal v2-run {{ RUN_OPTS }}
+
+[group('single-file')]
+single-file-build FILE *OPTS:
+    ghc --make {{ FILE }} {{ OPTS }}
     rm {{ file_stem(FILE) }}.hi {{ file_stem(FILE) }}.o
 
-run FILE *OPTIONS:
-    ghc --run {{ FILE }} {{ OPTIONS }}
+[group('single-file')]
+single-file-run FILE *OPTS:
+    ghc --run {{ FILE }} {{ OPTS }}
 
 [group('script')]
 script-init NAME:
