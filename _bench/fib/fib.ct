@@ -1,0 +1,27 @@
+(defpackage #:fib-coalton
+  (:use #:coalton #:coalton-prelude)
+  (:export #:main #:fib))
+
+(in-package #:fib-coalton)
+
+(named-readtables:in-readtable coalton:coalton)
+
+(coalton-toplevel
+
+ (declare fib (UFix -> UFix))
+ (define (fib n)
+   (if (< n 2)
+     1
+     (+ (fib (- n 1)) (fib (- n 2)))))
+
+ (declare main (Void -> Void))
+ (define (main)
+   (let ((declare n UFix)
+         (n 40))
+     (print (fib n)))))
+
+#+sbcl
+ (sb-ext:save-lisp-and-die "fib_coalton.exe"
+                           :toplevel #'main
+                           :executable cl:t
+                           :compression 9)

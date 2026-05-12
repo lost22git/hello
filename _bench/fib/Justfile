@@ -14,18 +14,31 @@ build:
     #!/usr/bin/env bash
     set -uxo pipefail
 
+    # C
     cc {{ m }}.c -O3 -o {{ m }}_c.exe && strip $_
+    # C3
     c3c compile {{ m }}.c3 -O3 -o {{ m }}_c3.exe && strip $_
+    # Chicken Scheme
     chicken-csc {{ m }}.ss -static -fixnum-arithmetic -O3 -o {{ m }}_chicken.exe && strip $_ && rm *.link -f
-    ldc2 {{ m }}.d -O3 --release --of={{ m }}_d.exe && strip {{ m }}_d.exe && rm {{ m }}.o -f
+    # Clojure
     mkdir -p classes && clj -Sdeps '{:paths ["."]}' -M -e '(compile (quote {{ m }}))'
+    # Crystal
     crystal build {{ m }}.cr --release -o {{ m }}_crystal.exe && strip $_
+    # D
+    ldc2 {{ m }}.d -O3 --release --of={{ m }}_d.exe && strip {{ m }}_d.exe && rm {{ m }}.o -f
+    # Dart
     dart compile exe {{ m }}.dart -o {{ m }}_dart.exe && chmod +x $_
+    # Go
     go build -o {{ m }}_go.exe {{ m }}.go && strip {{ m }}_go.exe
-    ghc --make {{ m }}.hs -fllvm -O -o {{ m }}_haskell.exe && strip $_ && rm {{ m }}.hi -f
+    # Haskell
+    ghc --make {{ m }}.hs -O -o {{ m }}_haskell.exe && strip $_ && rm {{ m }}.hi -f
+    # Java
     javac {{ m }}.java
+    # Nim
     nim c --hints:off -d:release -o:{{ m }}_nim.exe {{ m }}.nim && strip {{ m }}_nim.exe
+    # OCaml
     ocamlopt {{ m }}.ml -O3 -o {{ m }}_ocaml.exe && strip $_ && rm {{ m }}.cm{i,x} -f
+    # Poly/ML
     # FIXME: not libpolyml static-linking now
     polyc {{ m }}.sml -o {{ m }}_poly.exe && strip $_
     if [ "Android" != "$(uname -o)" ]; then
@@ -62,14 +75,21 @@ build:
     update
     compile main {{ m }}
     EOF
+      rm -f .unisonHistory
       # Roc
       roc build {{ m }}.roc --optimize --output {{ m }}_roc.exe && strip $_
       # Zig
       zig build-exe {{ m }}.zig -O ReleaseFast && mv {{ m }} {{ m }}_zig.exe && strip $_
     fi
+    # Rust
     rustc {{ m }}.rs -O -o {{ m }}_rust.exe && strip $_
+    # SBCL
     sbcl --script {{ m }}.lisp
+    # Coalton/SBCL
+    COALTON_ENV=release sbcl --noinform --eval '(asdf:load-system "coalton")' --load {{ m }}.ct
+    # Swift
     swiftc {{ m }}.swift -static-stdlib -O -o {{ m }}_swift.exe && strip $_
+    # V
     v {{ m }}.v -prod -o {{ m }}_v.exe && strip $_
     rm *.o -f
 
