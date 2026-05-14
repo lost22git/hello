@@ -18,7 +18,8 @@
  (define (main)
    (let ((declare n UFix)
          (n 40))
-     (print (fib n)))))
+     (print (fib n))
+     (cl:format cl:t "~A~%" (fib n)))))
 
 #+sbcl
  (sb-ext:save-lisp-and-die "fib_coalton.exe"
