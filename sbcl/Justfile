@@ -215,16 +215,130 @@ script-init NAME:
     #!/usr/bin/env bash
     set -euxo pipefail
 
-    script_file="{{ NAME }}.lisp"
+    file="{{ NAME }}.lisp"
 
-    if [[ -e "$script_file" ]]; then
-      echo "Error: $script_file already exists" >&2
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
       exit 1
     fi
 
-    cat <<EOF > $script_file
+    cat <<EOF > $file
     #!/usr/bin/env -S sbcl --script
     (format t "~A~&" "Hello SBCL script.")
     EOF
 
-    chmod +x $script_file
+    chmod +x $file
+
+[group('coalton')]
+coalton-init:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    echo "Creating .sbclrc ..."
+    cat <<'EOF' > .sbclrc
+    (push (truename ".") asdf:*central-registry*)
+    EOF
+    echo "Creating dev.lisp ..."
+    cat << 'EOF' > dev.lisp
+    (load ".sbclrc")
+
+    (let ((config '((:compiler-mode                   "development")
+                    (:print-unicode                   t)
+                    (:perform-specialization          nil)
+                    (:perform-heuristic-inlining      nil)
+                    (:emit-type-annotations           nil)
+                    (:print-types                     t)
+                    (:print-rewrites                  nil)
+                    (:auto-continue-redefinition      t)
+                    (:deprecation-warnings-as-errors  nil))))
+      (setf (symbol-plist ':coalton-config) nil)
+      (loop :for (key value) :in config
+            :do (setf (get ':coalton-config key) value)))
+
+    (asdf:load-system "{{ project_name }}")
+    EOF
+    echo  "Creating build.lisp ..." 
+    cat <<'EOF' > build.lisp
+    (load ".sbclrc")
+
+    (let ((config '((:compiler-mode                 "release")
+                    (:print-unicode                 t)
+                    (:perform-specialization        t)
+                    (:perform-heuristic-inlining    t)
+                    (:emit-type-annotations         t)
+                    (:print-types                   t)
+                    (:print-rewrites                t))))
+      (setf (symbol-plist ':coalton-config) nil)
+      (loop :for (key value) :in config
+            :do (setf (get ':coalton-config key) value)))
+
+    (asdf:load-system "{{ project_name }}")
+
+    #+sbcl
+     (sb-ext:save-lisp-and-die "{{ project_name }}.exe"
+                               :toplevel #'{{ project_name }}:main
+                               :executable t
+                               :compression 9)
+
+    EOF
+    echo "Creating ASDF file ..."
+    cat <<'EOF' > {{ project_name }}.asd
+    (defsystem "{{ project_name }}"
+      :defsystem-depends-on ("coalton-asdf")
+      :depends-on ("coalton")
+      :serial t
+      :components ((:ct-file "main")))
+    EOF
+    echo "Creating main.ct ..."
+    cat << 'EOF' > main.ct
+    (defpackage #:{{ project_name }}
+      (:use #:coalton #:coalton-prelude)
+      (:export #:main))
+
+    (in-package #:{{ project_name }})
+
+    (coalton-toplevel
+
+      (declare main (Void -> Void))
+      (define (main)
+        (print "HELLO COALTON.")))
+    EOF
+
+[group('coalton')]
+coalton-single-file-init NAME:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    file="{{ NAME }}.ct"
+
+    if [[ -e "$file" ]]; then
+      echo "Error: $file already exists" >&2
+      exit 1
+    fi
+
+    cat << 'EOF' > $file
+    (defpackage #:{{ NAME }}
+      (:use #:coalton #:coalton-prelude)
+      (:export #:main))
+
+    (in-package #:{{ NAME }})
+
+    (named-readtables:in-readtable coalton:coalton)
+
+    (coalton-toplevel
+
+     (declare main (Void -> Void))
+     (define (main)
+        (print "HELLO COALTON.")))
+
+    #+sbcl
+     (sb-ext:save-lisp-and-die "{{ NAME }}.exe"
+                               :toplevel #'main
+                               :executable cl:t
+                               :compression 9)
+
+    EOF
+
+[group('coalton')]
+coalton-single-file-build FILE:
+    COALTON_ENV=release sbcl --noinform --eval '(asdf:load-system "coalton")' --load {{ FILE }}
