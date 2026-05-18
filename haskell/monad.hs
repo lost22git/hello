@@ -1,20 +1,21 @@
-
 -- Monad
 --
 -- class Applicative m => Monad m where
 --   (>>=) :: m a -> (a -> m b) -> m b
 --
 --   (>>)  :: m a -> m b -> m b
---   m >> k = m >>= \_ -> k
---   fail  :: String -> m a
---   fail = error
+--   >> = *> -- from Applicative
+--
+--   return :: a -> m a
+--   return = pure -- from Applicative
 
-import Text.Printf
+
 import Text.Read (readMaybe)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 
 main = do
   test_guess_num
+  print $ findRightTriangles 100
 
 test_guess_num = do
   n <- getPOSIXTime >>= (pure . (`mod` 100) . floor)
@@ -35,3 +36,10 @@ guess_num n = do
     Nothing ->
       fail "Input is not a valid number."
 
+findRightTriangles n = do
+  a <- [1..n]
+  b <- [a..n]
+  c <- [b..n]
+  if a ^ 2 + b ^ 2 == c ^ 2
+  then [(a, b, c)]
+  else []
