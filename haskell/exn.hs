@@ -36,5 +36,3 @@ test_try = do
     Right content -> do
       putStrLn "README.md content:"
       putStrLn content
-
-
