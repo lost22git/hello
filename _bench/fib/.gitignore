@@ -3,3 +3,5 @@
 classes
 *.uc
 .unisonHistory
+*.beam
+erl_crash.dump

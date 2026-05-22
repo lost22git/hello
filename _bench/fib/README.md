@@ -20,6 +20,10 @@ just bench_natives
 just bench_scripts
 # or 
 just bench_bytecodes
+# or
+just bench_beams
+# or
+just bench_jvms
 ```
 
 ## Note

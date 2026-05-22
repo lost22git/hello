@@ -6,6 +6,7 @@ clean:
     rm *.class -f
     rm *.uc -f
     rm classes -rf
+    rm *.beam -f
 
 m := "fib"
 
@@ -28,12 +29,16 @@ build:
     ldc2 {{ m }}.d -O3 --release --of={{ m }}_d.exe && strip {{ m }}_d.exe && rm {{ m }}.o -f
     # Dart
     dart compile exe {{ m }}.dart -o {{ m }}_dart.exe && chmod +x $_
+    # Elixir
+    elixirc {{ m }}.ex
     # Go
     go build -o {{ m }}_go.exe {{ m }}.go && strip {{ m }}_go.exe
     # Haskell
     ghc --make {{ m }}.hs -O -o {{ m }}_haskell.exe && strip $_ && rm {{ m }}.hi -f
     # Java
     javac {{ m }}.java
+    # LFE
+    lfec {{ m }}.lfe
     # Nim
     nim c --hints:off -d:release -o:{{ m }}_nim.exe {{ m }}.nim && strip {{ m }}_nim.exe
     # OCaml
@@ -99,8 +104,12 @@ scripts := f"./{{m}}.jl ./{{m}}.ts ./{{m}}.lua ./{{m}}.ss"
 clojure_cp := `clj -Spath || true`
 clojure := f"java -Xmx8m -Xms8m -XX:TieredStopAtLevel=1 -cp ./classes:{{clojure_cp}} {{m}}"
 java := f"java -Xmx8m -Xms8m -XX:TieredStopAtLevel=1 {{m}}"
+jvms := f"{{quote(clojure)}} {{quote(java)}}"
+elixir := f"erl -noshell -eval \"'Elixir.{{capitalize(m)}}':main(), init:stop().\""
+lfe := f"erl -noshell -eval \"{{m}}:main(), init:stop().\""
+beams := f"{{quote(elixir)}} {{quote(lfe)}}"
 unison := f"ucm run.compiled {{m}}.uc"
-bytecodes := f"'{{clojure}}' '{{java}}' '{{unison}}'"
+bytecodes := f"{{beams}} {{jvms}} {{quote(unison)}}"
 
 [group('bench')]
 bench_all:
@@ -117,3 +126,11 @@ bench_scripts:
 [group('bench')]
 bench_bytecodes:
     hyperfine --warmup {{ warmup }} {{ bytecodes }}
+
+[group('bench')]
+bench_beams:
+    hyperfine --warmup {{ warmup }} {{ beams }}
+
+[group('bench')]
+bench_jvms:
+    hyperfine --warmup {{ warmup }} {{ jvms }}
