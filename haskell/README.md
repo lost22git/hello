@@ -2,11 +2,12 @@
 
 ## Resources
 
-- https://learnyouahaskell.github.io
 - https://www.haskell.org/documentation/
-- https://hoogle.haskell.org
-- https://youtu.be/wGgJJZEWdqE?si=jTiZ5ekrgiI8z6A_
 - https://www.microsoft.com/en-us/research/wp-content/uploads/2016/07/mark.pdf
+- https://hoogle.haskell.org
+- https://learnyouahaskell.github.io
+- https://www.williamyaoh.com/posts/2023-06-10-monad-transformers-101.html
+- https://youtu.be/wGgJJZEWdqE?si=jTiZ5ekrgiI8z6A_
 
 ## Tips
 
@@ -16,6 +17,12 @@
 
 ```sh
 :l[oad] demo.hs
+```
+
+- Reload all loaded modules
+
+```sh
+:r[eload]
 ```
 
 - View type of a symbol
