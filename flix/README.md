@@ -7,7 +7,7 @@ https://flix.dev
 ```sh
 mkdir ~/.local/lib/flix
 wget -O ~/.local/lib/flix/flix.jar https://github.com/flix/flix/releases/latest/download/flix.jar
-cat <<EOF > ~/.local/bin/flix
+cat <<'EOF' > ~/.local/bin/flix
 #!/usr/bin/env bash
 java -jar ~/.local/lib/flix/flix.jar "$@"
 EOF
@@ -16,31 +16,13 @@ chmod +x ~/.local/bin/flix
 
 ## Try it
 
-- create a project
+- REPL on Dev
+
 ```sh
-mkdir demo && cd demo
-flix init
+flix repl
 ```
 
-- check the project
 ```sh
-flix check
-```
-
-- run the project
-```sh
-flix run
-```
-
-- run the project's tests
-```sh
-flix test
-```
-
-- build the project
-```sh
-flix build-jar
-# or
-flix build-fatjar
-
+flix> :help
+flix> :info println
 ```
