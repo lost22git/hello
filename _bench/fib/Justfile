@@ -4,8 +4,9 @@ _default:
 clean:
     rm *.exe -f
     rm *.class -f
-    rm *.uc -f
     rm classes -rf
+    rm *.jar -f
+    rm *.uc -f
     rm *.beam -f
 
 m := "fib"
@@ -92,6 +93,8 @@ build:
     sbcl --script {{ m }}.lisp
     # Coalton/SBCL
     COALTON_ENV=release sbcl --noinform --eval '(asdf:load-system "coalton")' --load {{ m }}.ct
+    # Scala
+    scala package {{ m }}.scala --power --assembly -o {{ m }}_scala.jar && rm .scala-build -rf
     # Swift
     swiftc {{ m }}.swift -static-stdlib -O -o {{ m }}_swift.exe && strip $_
     # V
@@ -104,7 +107,8 @@ scripts := f"./{{m}}.jl ./{{m}}.ts ./{{m}}.lua ./{{m}}.ss"
 clojure_cp := `clj -Spath || true`
 clojure := f"java -Xmx8m -Xms8m -XX:TieredStopAtLevel=1 -cp ./classes:{{clojure_cp}} {{m}}"
 java := f"java -Xmx8m -Xms8m -XX:TieredStopAtLevel=1 {{m}}"
-jvms := f"{{quote(clojure)}} {{quote(java)}}"
+scala := f"java -Xmx8m -Xms8m -XX:TieredStopAtLevel=1 -jar {{m}}_scala.jar"
+jvms := f" {{quote(clojure)}} {{quote(java)}} {{quote(scala)}}"
 elixir := f"erl -noshell -eval \"'Elixir.{{capitalize(m)}}':main(), init:stop().\""
 lfe := f"erl -noshell -eval \"{{m}}:main(), init:stop().\""
 beams := f"{{quote(elixir)}} {{quote(lfe)}}"

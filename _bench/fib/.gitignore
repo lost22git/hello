@@ -1,6 +1,7 @@
 *.exe
 *.class
 classes
+*.jar
 *.uc
 .unisonHistory
 *.beam
