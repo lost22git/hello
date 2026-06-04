@@ -1,0 +1,14 @@
+_default:
+    @just --list --unsorted
+
+[group('single-file')]
+single-file-run FILE:
+    scala run {{ FILE }}
+
+[group('single-file')]
+single-file-fatjar FILE:
+    scala package {{ FILE }} --power --assembly -o {{ file_stem(FILE) }}.jar
+
+[group('single-file')]
+single-file-native FILE *NATIVE_OPTS:
+    scala package {{ FILE }} --power --native --native-mode release-fast -o {{ file_stem(FILE) }}.exe
