@@ -3,12 +3,12 @@ mod Qsort {
     if (low >= high)
       ()
     else
-      let pp = findPivotPos(r, low, high, a);
-      qsort(r, low, pp - 1, a);
-      qsort(r, pp + 1, high, a)
+      let p = partition(r, low, high, a);
+      qsort(r, low, p - 1, a);
+      qsort(r, p + 1, high, a)
   }
 
-  def findPivotPos(r: Region[r], low: Int32, high: Int32, a: Array[a, r]): Int32 \ r with Order[a] = {
+  def partition(r: Region[r], low: Int32, high: Int32, a: Array[a, r]): Int32 \ r with Order[a] = {
     let pivot = Array.get(high, a);
     let pos = Ref.fresh(r, low);
     foreach (i <- Range(low, high + 1)) {

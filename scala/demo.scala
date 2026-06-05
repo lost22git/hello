@@ -43,19 +43,19 @@ def qsort[E](a: Array[E], l: Int, r: Int)(using ord: Ordering[E]): Unit =
     val t = a(i)
     a(i) = a(j)
     a(j) = t
-  def findPivotPos(l: Int, r: Int): Int =
+  def partition(l: Int, r: Int): Int =
     val pivot = a(r)
-    var pos = l
+    var p = l
     for i <- l until r do
       if ord.lt(a(i), pivot) then
-        swap(i, pos)
-        pos += 1
-    swap(r, pos)
-    pos
+        swap(i, p)
+        p += 1
+    swap(r, p)
+    p
 
   if a.isEmpty || l >= r then ()
   else
-    val pp = findPivotPos(l, r)
+    val pp = partition(l, r)
     qsort(a, l, pp - 1)
     qsort(a, pp + 1, r)
 
