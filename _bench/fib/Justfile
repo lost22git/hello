@@ -70,6 +70,8 @@ build:
       koka {{ m }}.kk -v0 -O3 -o {{ m }}_koka.exe && strip $_ && chmod +x $_ && rm .koka -rf
       # Moonbit
       moon run {{ m }}.mbt --target native --release && cp _build/native/release/build/single/single.exe {{ m }}_moon.exe && strip $_ && rm _build -rf
+      # Odin
+      odin build {{ m }}.odin -file -o:speed -out:{{ m }}_odin.exe && strip {{ m }}_odin.exe
       # Pony    
       ponyc -b {{ m }}_pony.exe && strip $_
       # Racket CS
