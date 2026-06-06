@@ -1,6 +1,6 @@
 project_path := justfile_directory()
 project_name := file_name(project_path)
-build_dir := "_build"
+build_dir := ".build"
 
 _default:
     @just --list --unsorted
