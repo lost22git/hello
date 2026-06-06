@@ -33,22 +33,27 @@ run_qsort :: proc() {
     a[i] = int(rand.uint64()) % 100
   }
   fmt.println("a =", a)
-  qsort(a[:], 0, len(a) - 1)
+  qsort(a[:])
   fmt.println("a =", a)
 }
 
-qsort :: proc(a: []$T, l, r: int) {
-  if l >= r { return }
-  p := partition(a, l, r)
-  qsort(a, l, p - 1)
-  qsort(a, p + 1, r)
+qsort :: proc(a: []$T) {
+  if len(a) < 2 { return }
+  p := partition(a)
+  if p > 0 {
+    qsort(a[:p])
+  }
+  if p < (len(a) - 1) {
+    qsort(a[(p + 1):])
+  }
 
-  partition :: proc(a: []$T, l, r: int) -> int {
+  partition :: proc(a: []$T) -> int {
+    r := len(a) - 1
     pivot := a[r]
-    p := l
-    for i in l..<r {
-      if a[i] < pivot {
-        a[i], a[p] = a[p], a[i]
+    p := 0
+    for &v in a {
+      if v < pivot {
+        v, a[p] = a[p], v
         p += 1
       }
     }
