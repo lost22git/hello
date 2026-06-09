@@ -56,7 +56,7 @@ fn int partition(Type[] a) <Type> {
 }
 
 fn void? random_ints(int[] result) {
-  FixedThreadPool* pool = mem::malloc(FixedThreadPool.sizeof);
+  FixedThreadPool* pool = mem::alloc(FixedThreadPool);
   defer mem::free(pool);
   pool.init(os::num_cpu(), queue_size: 10)!;
   defer pool.destroy()!!;
