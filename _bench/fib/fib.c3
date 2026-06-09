@@ -5,6 +5,9 @@ fn void main() {
   io::printn(fib(n));
 }
 
+<*
+ @pure
+*>
 fn ulong fib(ulong n) {
   if (n < 2) {
     return 1;
