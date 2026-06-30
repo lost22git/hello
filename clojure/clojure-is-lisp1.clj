@@ -1,5 +1,7 @@
 #!/usr/bin/env -S clj -M
 
+;; Clojure is Lisp-1
+
 (comment
   (->> (let [filter :abc
              search "foo"]
