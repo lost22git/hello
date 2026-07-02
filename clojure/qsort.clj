@@ -26,13 +26,32 @@
        (qsort a l (dec p))
        (qsort a (inc p) r)))))
 
+(defn qselect
+  "Qselect the smallest `k` nth"
+  ([a ^long k] (qselect a k 0 (dec (alength a))))
+  ([a ^long k ^long l ^long r]
+   (if-not (and (<= l r)
+                (< 0 k)
+                (<= k (inc (- r l))))
+     nil
+     (let [p (qsort-partition a l r)
+           n (inc (- p l))]
+       (cond
+         (= n k) (aget a p)
+         (> n k) (qselect a k l (dec p))
+         :else (qselect a (- k n) (inc p) r))))))
+
 (comment
-  (let [a (->>
-           (iterate (fn [_] (rand-int 100)) 0)
-           (take 10)
-           int-array)]
-    (printf "a = [%s]\n"
-            (clojure.string/join ", " a))
+  (require '[clojure.string :as str])
+  (let [n 9
+        k 6
+        a (int-array (repeatedly n #(rand-int 100)))
+        b (aclone a)]
+    (printf "a = [%s]\n" (str/join ", " a))
     (qsort a)
-    (printf "a = [%s]\n"
-            (clojure.string/join ", " a))))
+    (printf "a = [%s]\n" (str/join ", " a))
+    (assert (=
+             (if (and (< 0 k) (<= k (alength a)))
+               (aget a (dec k))
+               nil)
+             (doto (qselect b k) println)))))

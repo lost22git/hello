@@ -36,13 +36,20 @@
   (print-title "Thread Table (after call add-tap)")
   (print-table (get-thread-table))
 
-  ;; future: clojure-agent-send-off-pool
+  ;; future
+  ;; see agent send-off executor
   (future (fn [] 1))
   (print-title "Thread Table (after call future)")
   (print-table (get-thread-table))
 
-  ;; send agent: clojure-agent-send-pool
-  ;; send-off agent: clojure-agent-send-off-pool
+  ;; send-off (for blocking operations)
+  ;;  - pool-name: clojure-agent-send-off-pool
+  ;;  - pool-var: clojure.lang.Agent/soloExecutor (default: CacheThreadPoolExecutor)
+  ;;  - set pool: (set-agent-send-off-executor! custom-executor)
+  ;; send (for pure computation operations)
+  ;;  - pool-name: clojure-agent-send-off-pool
+  ;;  - pool-var: clojure.lang.Agent/poolExecutor (default: CacheThreadPoolExecutor)
+  ;;  - set pool: (set-agent-send-executor! custom-executor)
   (let [a (agent 1)]
     (dotimes [_ 1000]
       (send a inc))
@@ -54,7 +61,8 @@
     (print-title "Thread Table (after call sned-off agent)")
     (print-table (get-thread-table)))
 
-;; pmap: clojure-agent-send-off-pool
+  ;; pmap
+  ;; see agent send-off executor
   (doall (pmap (fn [v] v) (range 0 1000)))
   (print-title "Thread Table (after call pmap)")
   (print-table (get-thread-table)))

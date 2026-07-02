@@ -24,21 +24,6 @@
   (assert (= lang "Javascript")))
 (assert (= lang "Java"))
 
-;; list
-;; singly-linked-list '()
-(def mylist '("alex" "bob"))
-(def mylist (conj mylist "cindy")) ; cnoj: prepend
-(assert (= (count mylist) 3))
-(assert (= (first mylist) "cindy"))
-(assert (= (rest mylist) '("alex" "bob")))
-(assert (= (last mylist) "bob"))
-(assert (= ["fred" "douglas" "cindy" "alex" "bob"]
-           (into  mylist ["douglas" "fred"])))   ; into: union
-
-;; vector
-
-;; map
-
 ;; set
 (clojure.set/difference #{1 2} #{2 3})
 (clojure.set/difference #{2 3} #{1 2})
@@ -166,33 +151,6 @@
 (->
  #uuid "f0babccb-e33e-49a9-bc38-46a9c6267dcc"
  ((juxt clojure.core.protocols/datafy clojure.datafy/datafy str)))
-
-;; symbol / var / ns
-(def a 1)
-;; var from symbol
-(assert (= #'user/a
-           (var a)
-           (find-var 'user/a)
-           (resolve 'a)
-           (ns-resolve 'user 'a)))
-;; get val from var
-(assert (= 1
-           a
-           @#'a
-           (deref #'a)
-           (var-get #'a)))
-
-;; resolve symbol as var
-(assert (= #'clojure.core/map
-           (resolve 'map)
-           (ns-resolve 'clojure.core 'map)))
-(assert (= java.lang.Exception
-           (resolve 'Exception)
-           (ns-resolve *ns* 'Exception)))
-(assert
- (fn? @#'map))
-(assert
- (fn? map))
 
 ;; random
 (rand-int 10)
