@@ -1,9 +1,6 @@
 #!/usr/bin/env elixir
 
-# check Tail Call Optimization support
-
 defmodule Fib do
-  # this would check if TCO
   defp visit(0, a, _b), do: a
   defp visit(i, a, b), do: visit(i - 1, a + b, a)
 

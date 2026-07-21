@@ -1,5 +1,10 @@
 #!/usr/bin/env elixir
 
+# === To String ===
+
+to_string([1, 2])
+inspect([1, 2])
+
 # === Print ===
 
 dbg(1 == 1)
@@ -13,6 +18,9 @@ IO.puts(["HE", ?L, ~c"LO"])
 
 # new line ( inspect given item )
 IO.inspect(%{a: 1, b: 2})
+
+# string interpolation
+IO.puts("ENV TMPDIR => #{System.get_env("TMPDIR")}")
 
 # === Prompt ===
 
@@ -63,29 +71,6 @@ Stream.resource(
 |> Stream.take(3)
 |> Stream.each(&IO.puts/1)
 |> Stream.run()
-
-# === JSON ===
-
-defmodule Book do
-  @derive JSON.Encoder
-  defstruct [:id, :title, :created_at, :tags]
-end
-
-book = %Book{
-  id: 1,
-  title: "Elixir Book",
-  created_at: DateTime.utc_now(),
-  tags: [:programming, :elixir]
-}
-
-json_str =
-  JSON.encode!(book) |> IO.inspect(label: "json encoded str")
-
-json_io_data =
-  JSON.encode_to_iodata!(book) |> IO.inspect(label: "json encoded io data")
-
-decoded_data =
-  JSON.decode!(json_str) |> IO.inspect(label: "json decoded")
 
 # === with ===
 
@@ -169,37 +154,3 @@ end
 
 message_queue_len = Process.info(self())[:message_queue_len]
 message_queue_len |> IO.inspect(label: :message_queue_len)
-
-# === Task ===
-
-work = fn secs ->
-  Process.sleep(secs)
-  secs
-end
-
-IO.puts("#{DateTime.utc_now()} awaiting")
-
-Task.await_many(
-  [1000, 2000]
-  |> Enum.map(&Task.async(fn -> work.(&1) end))
-)
-|> IO.inspect(label: "results")
-
-IO.puts("#{DateTime.utc_now()} done")
-
-# Task Stream
-
-IO.puts("#{DateTime.utc_now()} awaiting")
-
-Task.async_stream([1000, 2000], fn x ->
-  Process.sleep(x)
-  x
-end)
-|> Stream.each(&IO.inspect(&1, label: "results"))
-|> Stream.run()
-
-IO.puts("#{DateTime.utc_now()} done")
-
-# === GenServer ===
-
-# === Macros ===
