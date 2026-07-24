@@ -50,3 +50,44 @@
 (= false (sequential? {:a 1}))
 (= true (sequential? (seq {:a 1})))
 (= true (sequential? (cons 1 [])))
+
+;; not chunked-seq vs chunked-seq
+;;
+;; N is requests, M is loads
+;;
+;; (map) is chunked-seq if the mapped seq is chunked-seq
+;; not chunked-seq map : M = N
+;; chunked-seq map     : M = (* 32 (ceil (/ N 32)))
+;; 
+;; (pmap) use (map) internally, is chunked-seq if the pmappd seq is chunked-seq
+;; load (+ 2 N-core) when request the first, then only load 1 since request the second
+;; not chunked-seq pmap : M = (+ N (+ 2 N-core))
+;; chunked-seq pmap     : M = (* 32 (ceil (/ (+ N (+ 2 N-core)) 32)))
+
+;; not chunked-seq map
+(->> (iterate inc 0)
+     (map #(doto % println))
+     (drop 4)
+     (take 4)
+     vec)
+
+;; chunked-seq map
+(->> (range 33)
+     (map #(doto % println))
+     (drop 4)
+     (take 4)
+     vec)
+
+;; not chunked-seq pmap
+(->> (iterate inc 0)
+     (pmap (fn [x] (Thread/sleep 1000) (printf "%d\n" x) (flush) x))
+     (drop 4)
+     (take 4)
+     vec)
+
+;; chunked-seq pmap
+(->> (range 33)
+     (pmap (fn [x] (Thread/sleep 1000) (printf "%d\n" x) (flush) x))
+     (drop 4)
+     (take 4)
+     vec)

@@ -78,19 +78,6 @@
 ; cond->
 ; cond->>
 
-;; more seq ops
-(assert (= (take 4 (repeat "ha"))
-           (take 4 (repeatedly (fn [] "ha")))
-           ["ha" "ha" "ha" "ha"]))
-
-;; lazy-seq
-(defn cons-lazy-seq
-  ([] (cons-lazy-seq 0))
-  ([n] (cons n (lazy-seq (cons-lazy-seq (+ n 2))))))
-
-(assert (= (take 4 (cons-lazy-seq))
-           [0 2 4 6]))
-
 ;; run!
 (run! (comp println #(str "user-" %) clojure.string/upper-case)
       "JOse")
@@ -132,20 +119,6 @@
  count
  (= (* 10 10))
  assert)
-
-;; when/when-not/when-some/when-let
-
-;; if/if-not/if-some/if-let
-
-;; case
-(assert (= "t"
-           (case (= 1 1)
-             true "t"
-             false "f")))
-
-;; cond
-
-;; condp
 
 ;; datafy VS str
 (->

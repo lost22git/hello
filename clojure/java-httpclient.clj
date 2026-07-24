@@ -17,8 +17,26 @@
 (defmacro printfn
   "A variant of `printf` with newline and autoflush"
   [^String fmt & args]
-  `(do (printf (str ~fmt "\n") ~@args)
-       (flush)))
+  (cond
+    (string? fmt)
+    (let [fmtn (str fmt \newline)]
+      `(do (printf ~fmtn ~@args)
+           (flush)))
+    :else
+    `(do (printf (str ~fmt \newline) ~@args)
+         (flush))))
+
+(comment
+  ;; macroexpand
+  (prn (let [fmt "%s => %d"]
+         (macroexpand '(printfn fmt "foo" 11))))
+  (prn (macroexpand '(printfn "%s => %d" "foo" 11)))
+  ;; test
+  (printfn "%s => %d" "foo" 11)
+  (let [fmt "%s => %d"]
+    (printfn fmt "foo" 11))
+  ;;
+  )
 
 (defmacro str+
   "(str ...) but 'nil' instead of '' for nil"
@@ -29,14 +47,6 @@
 (comment
   (str+ nil)
   (str+ 11 "/" (first nil) "/" nil))
-
-(defmacro or+
-  [x p & body]
-  `(if (~p ~x) ~x (do ~@body)))
-
-(comment
-  (or+ 2 odd? (println "compute default value") 42)
-  (or+ 2 even? (println "compute default value") 42))
 
 (defn current-thread-name
   "Current thread name:
@@ -59,7 +69,7 @@
 (comment
   (current-thread-name))
 
-(defn callable
+(defn callable-mapper
   "Returns a new function which has args of `f`,
   and returns java.util.concurrent.Callable applied `f`"
   [f]
@@ -74,8 +84,8 @@
 (defn vpmap
   "(pmap ...) but dispatch to virtual-threads"
   [f coll]
-  (let [mf (callable f)
-        calls (mapv mf coll)
+  (let [cm (callable-mapper f)
+        calls (mapv cm coll)
         ;; here will blocking wait,
         ;; and all of futs will be done
         futs (with-open [executor (Executors/newVirtualThreadPerTaskExecutor)]
@@ -138,7 +148,8 @@
                            (apply ^[String,int] InetSocketAddress/createUnresolved)
                            (ProxySelector/of)))
 
-(defn- inspect-response [^HttpResponse response]
+(defn- inspect-response ^HttpResponse
+  [^HttpResponse response]
   (printfn
    "=======================================
 VERSION : %s
@@ -147,7 +158,8 @@ BODY    : %s
 "
    (str+ (.version response))
    (str+ (.statusCode response))
-   (str+ (.body response))))
+   (str+ (.body response)))
+  response)
 
 (defn random-bytes
   "Random `n` bytes"
@@ -162,17 +174,16 @@ BODY    : %s
                                             (.select uri)
                                             ^Proxy (.get 0)
                                             (.address)))
-          request (-> uri
-                      (HttpRequest/newBuilder)
-                      (.version HttpClient$Version/HTTP_1_1)
-                      (.header "Accept" "application/octet-stream")
-                      (.GET)
-                      (.build))
-          response (.send http-client
-                          request
-                          (HttpResponse$BodyHandlers/ofByteArray))]
-
-      (inspect-response response)
+          ^HttpRequest request (-> uri
+                                   (HttpRequest/newBuilder)
+                                   (.version HttpClient$Version/HTTP_1_1)
+                                   (.header "Accept" "application/octet-stream")
+                                   (.GET)
+                                   (.build))
+          ^HttpResponse response (-> http-client
+                                     (.send request
+                                            (HttpResponse$BodyHandlers/ofByteArray))
+                                     inspect-response)]
 
       (when (not= 200 (.statusCode response))
         (throw (ex-info "HTTP-STATUS-ERROR" {:status-code (.statusCode response)})))
