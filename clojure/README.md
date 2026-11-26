@@ -20,6 +20,8 @@ https://clojure.org/guides/install_clojure
 - [Clojure Compilation](https://blog.ndk.io/clojure-compilation.html)
 - [ clojure-goes-fast ](https://clojure-gose-fast.com)
   - https://clojure-goes-fast.com/blog/clojures-deadly-sin/
+- [readable-clojure](https://tonsky.me/blog/readable-clojure/)
+- [implementing-clean-architecture-in-clojure](https://en.andros.dev/blog/bebb6f27/implementing-clean-architecture-in-clojure/)
 
 ## New Project
 
